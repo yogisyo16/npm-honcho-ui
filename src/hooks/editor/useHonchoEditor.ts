@@ -373,6 +373,8 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
                     ? gallery.raw_edited.path
                     : gallery?.download?.path;
             if (imagePath) {
+                console.log(imagePath);
+                console.log({...gallery});
                 await loadImageFromUrl(imagePath);
             } else {
                 throw new Error("Controller did not return a valid image object with path.");
