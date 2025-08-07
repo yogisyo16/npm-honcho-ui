@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { SelectChangeEvent } from "@mui/material";
 import { HonchoEditor } from '../../lib/editor/honcho-editor';
+import { Gallery } from '../../hooks/editor/type'
 
 // Augment the global window object for the WASM Module
 declare global {
@@ -23,20 +24,18 @@ interface NavigatorWithConnection extends Navigator {
 
 export interface Controller {
     // Image Handling
-    onGetImage(imageID: string): Promise<string | null>;
-    getImageList(): Promise<ImageItem[]>;
+    onGetImage(firebaseUid: string, imageID: string): Promise<Gallery | null>;
+    getImageList(firebaseUid: string): Promise<Gallery[]>;
 
     // syncConfig
-    syncConfig(): Promise<void>;
-    handleBack():void;
-    handleNext():void;
-    handlePrev():void;
+    syncConfig(firebaseUid: string): Promise<void>;
+    handleBack(firebaseUid: string):void;
 
     // Preset
-    getPresets(): Promise<Preset[]>;
-    createPreset(name: string, settings: AdjustmentState): Promise<Preset | null>;
-    deletePreset(presetId: string): Promise<void>;
-    renamePreset(presetId: string, newName: string): Promise<void>;
+    getPresets(firebaseUid: string): Promise<Preset[]>;
+    createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset | null>;
+    deletePreset(firebaseUid: string, presetId: string): Promise<void>;
+    renamePreset(firebaseUid: string, presetId: string, newName: string): Promise<void>;
 }
 
 export type AdjustmentState = {
@@ -75,7 +74,9 @@ const initialAdjustments: AdjustmentState = {
 
 const clamp = (value: number) => Math.max(-100, Math.min(100, value));
 
-export function useHonchoEditor(controller: Controller) {
+export function useHonchoEditor(controller: Controller, initImageId: string, firebaseUid: string) {
+    const [currentImageId, setCurrentImageId] = useState(initImageId);
+
     // MARK: - Core Editor State & Refs
     const editorRef = useRef<HonchoEditor | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -348,7 +349,7 @@ export function useHonchoEditor(controller: Controller) {
             const blob = await response.blob();
             const filename = url.substring(url.lastIndexOf('/') + 1) || 'image.jpg';
             const file = new File([blob], filename, { type: blob.type });
-
+            
             await loadImage(file); // Pass the final File object to the core loader
         } catch (error) {
             console.error(error);
@@ -356,15 +357,15 @@ export function useHonchoEditor(controller: Controller) {
         }
     }, [loadImage]);
 
-    const loadImageFromId = useCallback(async (imageId: string) => {
+    const loadImageFromId = useCallback(async (firebaseUid: string, imageId: string) => {
         if (!controller) return;
-        setEditorStatus("Fetching image URL...");
+        setEditorStatus("Fetching image...");
         try {
-            const imageUrl = await controller.onGetImage(imageId);
-            if (imageUrl) {
-                await loadImageFromUrl(imageUrl);
+            const gallery = await controller.onGetImage(firebaseUid, imageId);
+            if (gallery && gallery.original && gallery.original.path) {
+                await loadImageFromUrl(gallery.original.path);
             } else {
-                throw new Error("Controller did not return an image URL.");
+                throw new Error("Controller did not return a valid image object with path.");
             }
         } catch (error) {
             console.error("Failed to fetch or load image via controller:", error);
@@ -372,27 +373,24 @@ export function useHonchoEditor(controller: Controller) {
         }
     }, [controller, loadImageFromUrl]);
 
+    const handlePrev = useCallback(async(firebaseUid: string) => {
+        const prevImageId = imageList[imageList.length - 2]?.id;
+        if (prevImageId) {
+            setCurrentImageId(prevImageId);
+        }
+    }, [imageList]);
+
+    const handleNext = useCallback(async(firebaseUid: string) => {
+        const nextImageId = imageList[1]?.id;
+        if (nextImageId) {
+            setCurrentImageId(nextImageId);
+        }
+    }, [imageList]);
+
     useEffect(() => {
-        // Define the function that the native app will call to load an image
-        const loadInitialImageFromNative = (imageId: string) => {
-            if (typeof imageId === 'string' && imageId) {
-                console.log(`[WebView Bridge] Received command to load imageId: ${imageId}`);
-                // Use the loadImageFromId function directly from the hook's scope
-                loadImageFromId(imageId);
-            } else {
-                console.error(`[WebView Bridge] Invalid imageId received from native:`, imageId);
-            }
-        };
-
-        // Expose both functions on the window object for native code to access
-        (window as any).loadInitialImageFromNative = loadInitialImageFromNative;
-
-        // Cleanup function to remove the global handlers when the component unmounts
-        return () => {
-            delete (window as any).loadInitialImageFromNative;
-            delete (window as any).setAuthToken;
-        };
-    }, [loadImageFromId]);
+        loadImageFromId(firebaseUid, currentImageId ); // initImageId became state
+        // so when next prev changes only setCurrentImageId
+    }, [currentImageId, firebaseUid, loadImageFromId]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target?.files;
@@ -853,7 +851,7 @@ export function useHonchoEditor(controller: Controller) {
     const fetchPresets = useCallback(async () => {
         if (!controller) return;
         try {
-            const fetchedPresets = await controller.getPresets();
+            const fetchedPresets = await controller.getPresets(firebaseUid);
             setPresets(fetchedPresets);
         } catch (error) {
             console.error("Failed to fetch presets:", error);
@@ -873,7 +871,7 @@ export function useHonchoEditor(controller: Controller) {
         if (!controller || !activePresetMenuId) return;
 
         try {
-            await controller.renamePreset(activePresetMenuId, newName);
+            await controller.renamePreset(firebaseUid, activePresetMenuId, newName);
             // On success, update the preset in local state
             setPresets(prev => prev.map(p => 
                 p.id === activePresetMenuId ? { ...p, name: newName } : p
@@ -889,7 +887,7 @@ export function useHonchoEditor(controller: Controller) {
         if (!controller || !activePresetMenuId) return;
         
         try {
-            await controller.deletePreset(activePresetMenuId);
+            await controller.deletePreset(firebaseUid, activePresetMenuId);
             // On success, remove the preset from local state
             setPresets(prevPresets => prevPresets.filter(p => p.id !== activePresetMenuId));
         } catch (error) {
@@ -909,7 +907,7 @@ export function useHonchoEditor(controller: Controller) {
         const currentAdjustments: AdjustmentState = { tempScore, tintScore, vibranceScore, exposureScore, highlightsScore, shadowsScore, whitesScore, blacksScore, saturationScore, contrastScore, clarityScore, sharpnessScore };
 
         try {
-            const newPreset = await controller.createPreset(presetName, currentAdjustments);
+            const newPreset = await controller.createPreset(firebaseUid, presetName, currentAdjustments);
             if (newPreset) {
                 // Add the new preset returned from the API to our local state
                 setPresets(prevPresets => [...prevPresets, newPreset]);
@@ -966,7 +964,7 @@ export function useHonchoEditor(controller: Controller) {
         if (!presetToRename || !newPresetName) return;
 
         try {
-            await controller.renamePreset(presetToRename.id, newPresetName);
+            await controller.renamePreset(firebaseUid, presetToRename.id, newPresetName);
             // On success, update the preset in local state
             setPresets(prev => prev.map(p =>
                 p.id === presetToRename.id ? { ...p, name: newPresetName } : p
@@ -1143,6 +1141,8 @@ export function useHonchoEditor(controller: Controller) {
     }, []);
 
     return {
+        handlePrev,
+        handleNext,
         // Refs
         canvasRef,
         canvasContainerRef,
@@ -1156,8 +1156,6 @@ export function useHonchoEditor(controller: Controller) {
         createPreset: controller.createPreset,
         deletePreset: controller.deletePreset,
         renamePreset: controller.renamePreset,
-        handleNext: controller.handleNext,
-        handlePrev: controller.handlePrev,
 
         // Refs for mobile panel
         panelRef,
