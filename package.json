@@ -1,0 +1,41 @@
+{
+  "name": "@yogiswara/honcho-editor-ui",
+  "version": "1.0.9",
+  "description": "A complete UI component library for the Honcho photo editor.",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "public"
+  ],
+  "scripts": {
+    "build": "tsc"
+  },
+  "peerDependencies": {
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.15.0",
+    "@mui/material": "^5.15.0",
+    "next": "^13.5.6 || ^14.0.0",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.15.0",
+    "@mui/material": "^5.15.0",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "next": "^13.5.6 || ^14.0.0",
+    "react": "^18",
+    "react-dom": "^18",
+    "tsup": "^8.0.0",
+    "typescript": "^5"
+  },
+  "license": "ISC",
+  "keywords": [],
+  "author": ""
+}
