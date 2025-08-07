@@ -240,6 +240,12 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         }
     }, [/* handleOpenCopyDialog dependency */]);
 
+    useEffect(() => {
+        if (editorRef.current?.getInitialized() === false) {
+            editorRef.current?.initialize();
+        }
+    }, [editorRef]);
+
     // Effect for measuring mobile panel content
     useEffect(() => {
         const timeoutId = setTimeout(() => {
@@ -322,6 +328,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         try {
             await editorRef.current.loadImageFromFile(file);
             setIsImageLoaded(true);
+            updateCanvas();
         } catch (e) {
             console.error("Error loading image:", e);
             setEditorStatus("Error: Could not load the image.");
@@ -391,8 +398,9 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     }, [imageList]);
 
     useEffect(() => {
-        loadImageFromId(firebaseUid, currentImageId ); // initImageId became state
-        // so when next prev changes only setCurrentImageId
+        if(currentImageId && firebaseUid){
+            loadImageFromId(firebaseUid, currentImageId);
+        }
     }, [currentImageId, firebaseUid, loadImageFromId]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -476,103 +484,6 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
             setHistoryIndex(nextIndex);
         }
     }, [history, historyIndex, applyAdjustmentState]);
-
-    // MARK: - Bulk Editor Functions For Desktop and Mobile
-    // const adjustTempBulk = useCallback((uiAmount: number) => {
-    //     setTempScore(prevScore => {
-    //         const newScore = clamp(prevScore + uiAmount);
-    //         console.log("Adjusting temperature. New score:", newScore);
-    //         return newScore;
-    //     });
-    // }, []);
-
-    // const adjustTintBulk = useCallback((uiAmount: number) => {
-    //     setTintScore(prevScore => {
-    //         const newScore = clamp(prevScore + uiAmount);
-    //         console.log("Adjusting tint. New score:", newScore);
-    //         return newScore;
-    //     });
-    // }, []);
-
-    // const adjustVibranceBulk = useCallback((uiAmount: number) => {
-    //     setVibranceScore(prevScore => {
-    //         const newScore = clamp(prevScore + uiAmount);
-    //         console.log("Adjusting vibrance. New score:", newScore);
-    //         return newScore;
-    //     });
-    // }, []);
-
-    // const adjustSaturationBulk = useCallback((uiAmount: number) => {
-    //     setSaturationScore(prevScore => {
-    //         const newScore = clamp(prevScore + uiAmount);
-    //         console.log("Adjusting saturation. New score:", newScore);
-    //         return newScore;
-    //     });
-    // }, []);
-
-    // const adjustExposureBulk = useCallback((uiAmount: number) => {
-    //     setExposureScore(prevScore => {
-    //         const newScore = clamp(prevScore + uiAmount);
-    //         console.log("Adjusting exposure. New score:", newScore);
-    //         return newScore;
-    //     });
-    // }, []);
-
-    // const adjustContrastBulk = useCallback((uiAmount: number) => {
-    //     setContrastScore(prevScore => {
-    //         const newScore = clamp(prevScore + uiAmount);
-    //         console.log("Adjusting contrast. New score:", newScore);
-    //         return newScore;
-    //     });
-    // }, []);
-
-    // const adjustHighlightsBulk = useCallback((uiAmount: number) => {
-    //     setHighlightsScore(prevScore => {
-    //         const newScore = clamp(prevScore + uiAmount);
-    //         console.log("Adjusting highlights. New score:", newScore);
-    //         return newScore;
-    //     });
-    // }, []);
-
-    // const adjustShadowsBulk = useCallback((uiAmount: number) => {
-    //     setShadowsScore(prevScore => {
-    //         const newScore = clamp(prevScore + uiAmount);
-    //         console.log("Adjusting shadows. New score:", newScore);
-    //         return newScore;
-    //     });
-    // }, []);
-
-    // const adjustWhitesBulk = useCallback((uiAmount: number) => {
-    //     setWhitesScore(prevScore => {
-    //         const newScore = clamp(prevScore + uiAmount);
-    //         console.log("Adjusting whites. New score:", newScore);
-    //         return newScore;
-    //     });
-    // }, []);
-
-    // const adjustBlacksBulk = useCallback((uiAmount: number) => {
-    //     setBlacksScore(prevScore => {
-    //         const newScore = clamp(prevScore + uiAmount);
-    //         console.log("Adjusting blacks. New score:", newScore);
-    //         return newScore;
-    //     });
-    // }, []);
-
-    // const adjustClarityBulk = useCallback((uiAmount: number) => {
-    //     setClarityScore(prevScore => {
-    //         const newScore = clamp(prevScore + uiAmount);
-    //         console.log("Adjusting clarity. New score:", newScore);
-    //         return newScore;
-    //     });
-    // }, []);
-
-    // const adjustSharpnessBulk = useCallback((uiAmount: number) => {
-    //     setSharpnessScore(prevScore => {
-    //         const newScore = clamp(prevScore + uiAmount);
-    //         console.log("Adjusting sharpness. New score:", newScore);
-    //         return newScore;
-    //     });
-    // }, []);
 
     const handleToggleImageSelection = useCallback((imageId: string) => {
         const newSelectedIds = new Set(selectedImageIds);
@@ -729,6 +640,10 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
             });
         }
     }, []);
+
+    const handleBackCallback = useCallback(() => {
+        controller.handleBack(firebaseUid);
+    },[controller]);
 
     // MARK: - UI Handlers (Moved from page.tsx)
     // Header and Dialog Handlers
@@ -1112,20 +1027,14 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     }, []);
 
     return {
-        handlePrev,
-        handleNext,
         // Refs
         canvasRef,
         canvasContainerRef,
         fileInputRef,
         displayedToken,
-        handleBack: controller.handleBack,
-        onGetImage: controller.onGetImage,
-        getImageList: controller.getImageList,
-        syncConfig: controller.syncConfig,
-        getPresets: controller.getPresets,
-        createPreset: controller.createPreset,
-        deletePreset: controller.deletePreset,
+        handleBackCallback,
+        handlePrev,
+        handleNext,
 
         // Refs for mobile panel
         panelRef,
