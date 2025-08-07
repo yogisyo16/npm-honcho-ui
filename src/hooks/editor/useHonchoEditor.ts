@@ -35,7 +35,6 @@ export interface Controller {
     getPresets(firebaseUid: string): Promise<Preset[]>;
     createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset>;
     deletePreset(firebaseUid: string, presetId: string): Promise<void>;
-    renamePreset(firebaseUid: string, presetId: string, newName: string): Promise<void>;
 }
 
 export type AdjustmentState = {
@@ -871,22 +870,6 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     const handlePresetMenuClose = () => { setPresetMenuAnchorEl(null); setActivePresetMenuId(null); };
     const handleRemovePreset = () => { console.log(`Remove: ${activePresetMenuId}`); handlePresetMenuClose(); };
     
-    const handleRenamePreset = useCallback(async (newName: string) => {
-        if (!controller || !activePresetMenuId) return;
-
-        try {
-            await controller.renamePreset(firebaseUid, activePresetMenuId, newName);
-            // On success, update the preset in local state
-            setPresets(prev => prev.map(p => 
-                p.id === activePresetMenuId ? { ...p, name: newName } : p
-            ));
-        } catch (error) {
-            console.error("Failed to rename preset:", error);
-        }
-        
-        handlePresetMenuClose();
-    }, [controller, activePresetMenuId]);
-
     const handleDeletePreset = useCallback(async () => {
         if (!controller || !activePresetMenuId) return;
         
@@ -963,22 +946,6 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         setPresetToRename(null);
         setNewPresetName("");
     };
-
-    const handleConfirmRename = useCallback(async () => {
-        if (!presetToRename || !newPresetName) return;
-
-        try {
-            await controller.renamePreset(firebaseUid, presetToRename.id, newPresetName);
-            // On success, update the preset in local state
-            setPresets(prev => prev.map(p =>
-                p.id === presetToRename.id ? { ...p, name: newPresetName } : p
-            ));
-        } catch (error) {
-            console.error("Failed to rename preset:", error);
-        }
-        
-        handleCloseRenameModal();
-    }, [controller, presetToRename, newPresetName]);
 
     // Bulk Editing Handlers
     const toggleBulkEditing = () => {
@@ -1159,7 +1126,6 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         getPresets: controller.getPresets,
         createPreset: controller.createPreset,
         deletePreset: controller.deletePreset,
-        renamePreset: controller.renamePreset,
 
         // Refs for mobile panel
         panelRef,
@@ -1259,7 +1225,6 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         handlePresetMenuClose,
         handleCreatePreset,
         handleRemovePreset,
-        handleRenamePreset,
         handleDeletePreset,
         handleOpenPresetModal,
         handleClosePresetModal,
@@ -1274,7 +1239,6 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         setNewPresetName,
         handleOpenRenameModal,
         handleCloseRenameModal,
-        handleConfirmRename,
         handleOpenWatermarkView,
         handleSaveWatermark,
         handleCancelWatermark,

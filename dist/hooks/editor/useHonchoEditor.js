@@ -265,8 +265,11 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         setEditorStatus("Fetching image...");
         try {
             const gallery = await controller.onGetImage(firebaseUid, imageId);
-            if (gallery && gallery.original && gallery.original.path) {
-                await loadImageFromUrl(gallery.original.path);
+            const imagePath = gallery?.raw_edited?.path
+                ? gallery.raw_edited.path
+                : gallery?.download?.path;
+            if (imagePath) {
+                await loadImageFromUrl(imagePath);
             }
             else {
                 throw new Error("Controller did not return a valid image object with path.");
@@ -717,19 +720,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     };
     const handlePresetMenuClose = () => { setPresetMenuAnchorEl(null); setActivePresetMenuId(null); };
     const handleRemovePreset = () => { console.log(`Remove: ${activePresetMenuId}`); handlePresetMenuClose(); };
-    const handleRenamePreset = useCallback(async (newName) => {
-        if (!controller || !activePresetMenuId)
-            return;
-        try {
-            await controller.renamePreset(firebaseUid, activePresetMenuId, newName);
-            // On success, update the preset in local state
-            setPresets(prev => prev.map(p => p.id === activePresetMenuId ? { ...p, name: newName } : p));
-        }
-        catch (error) {
-            console.error("Failed to rename preset:", error);
-        }
-        handlePresetMenuClose();
-    }, [controller, activePresetMenuId]);
     const handleDeletePreset = useCallback(async () => {
         if (!controller || !activePresetMenuId)
             return;
@@ -798,19 +788,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         setPresetToRename(null);
         setNewPresetName("");
     };
-    const handleConfirmRename = useCallback(async () => {
-        if (!presetToRename || !newPresetName)
-            return;
-        try {
-            await controller.renamePreset(firebaseUid, presetToRename.id, newPresetName);
-            // On success, update the preset in local state
-            setPresets(prev => prev.map(p => p.id === presetToRename.id ? { ...p, name: newPresetName } : p));
-        }
-        catch (error) {
-            console.error("Failed to rename preset:", error);
-        }
-        handleCloseRenameModal();
-    }, [controller, presetToRename, newPresetName]);
     // Bulk Editing Handlers
     const toggleBulkEditing = () => {
         setIsBulkEditing(prev => {
@@ -1010,7 +987,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         getPresets: controller.getPresets,
         createPreset: controller.createPreset,
         deletePreset: controller.deletePreset,
-        renamePreset: controller.renamePreset,
         // Refs for mobile panel
         panelRef,
         contentRef,
@@ -1106,7 +1082,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         handlePresetMenuClose,
         handleCreatePreset,
         handleRemovePreset,
-        handleRenamePreset,
         handleDeletePreset,
         handleOpenPresetModal,
         handleClosePresetModal,
@@ -1121,7 +1096,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         setNewPresetName,
         handleOpenRenameModal,
         handleCloseRenameModal,
-        handleConfirmRename,
         handleOpenWatermarkView,
         handleSaveWatermark,
         handleCancelWatermark,

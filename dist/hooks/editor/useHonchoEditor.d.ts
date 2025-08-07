@@ -6,14 +6,13 @@ declare global {
     }
 }
 export interface Controller {
-    onGetImage(firebaseUid: string, imageID: string): Promise<Gallery | null>;
+    onGetImage(firebaseUid: string, imageID: string): Promise<Gallery>;
     getImageList(firebaseUid: string): Promise<Gallery[]>;
     syncConfig(firebaseUid: string): Promise<void>;
     handleBack(firebaseUid: string): void;
     getPresets(firebaseUid: string): Promise<Preset[]>;
-    createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset | null>;
+    createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset>;
     deletePreset(firebaseUid: string, presetId: string): Promise<void>;
-    renamePreset(firebaseUid: string, presetId: string, newName: string): Promise<void>;
 }
 export type AdjustmentState = {
     tempScore: number;
@@ -47,13 +46,12 @@ export declare function useHonchoEditor(controller: Controller, initImageId: str
     fileInputRef: import("react").MutableRefObject<HTMLInputElement | null>;
     displayedToken: string | null;
     handleBack: (firebaseUid: string) => void;
-    onGetImage: (firebaseUid: string, imageID: string) => Promise<Gallery | null>;
+    onGetImage: (firebaseUid: string, imageID: string) => Promise<Gallery>;
     getImageList: (firebaseUid: string) => Promise<Gallery[]>;
     syncConfig: (firebaseUid: string) => Promise<void>;
     getPresets: (firebaseUid: string) => Promise<Preset[]>;
-    createPreset: (firebaseUid: string, name: string, settings: AdjustmentState) => Promise<Preset | null>;
+    createPreset: (firebaseUid: string, name: string, settings: AdjustmentState) => Promise<Preset>;
     deletePreset: (firebaseUid: string, presetId: string) => Promise<void>;
-    renamePreset: (firebaseUid: string, presetId: string, newName: string) => Promise<void>;
     panelRef: import("react").MutableRefObject<HTMLDivElement | null>;
     contentRef: import("react").MutableRefObject<HTMLDivElement | null>;
     panelHeight: number;
@@ -175,7 +173,6 @@ export declare function useHonchoEditor(controller: Controller, initImageId: str
     handlePresetMenuClose: () => void;
     handleCreatePreset: () => Promise<void>;
     handleRemovePreset: () => void;
-    handleRenamePreset: (newName: string) => Promise<void>;
     handleDeletePreset: () => Promise<void>;
     handleOpenPresetModal: () => void;
     handleClosePresetModal: () => void;
@@ -190,7 +187,6 @@ export declare function useHonchoEditor(controller: Controller, initImageId: str
     setNewPresetName: import("react").Dispatch<import("react").SetStateAction<string>>;
     handleOpenRenameModal: () => void;
     handleCloseRenameModal: () => void;
-    handleConfirmRename: () => Promise<void>;
     handleOpenWatermarkView: () => void;
     handleSaveWatermark: () => void;
     handleCancelWatermark: () => void;
