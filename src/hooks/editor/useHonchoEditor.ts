@@ -383,19 +383,35 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         }
     }, [controller, loadImageFromUrl]);
 
-    const handlePrev = useCallback(async(firebaseUid: string) => {
-        const prevImageId = imageList[imageList.length - 2]?.id;
-        if (prevImageId) {
-            setCurrentImageId(prevImageId);
-        }
-    }, [imageList]);
+    const handlePrev = useCallback(
+        async (firebaseUid: string) => {
+            // Find the current image index
+            const currentIndex = imageList.findIndex(img => img.id === currentImageId);
+            // If not the first image, go to previous
+            if (currentIndex > 0) {
+                const prevImageId = imageList[currentIndex - 1]?.id;
+                if (prevImageId) {
+                    setCurrentImageId(prevImageId);
+                }
+            }
+        },
+        [imageList, currentImageId]
+    );
 
-    const handleNext = useCallback(async(firebaseUid: string) => {
-        const nextImageId = imageList[1]?.id;
-        if (nextImageId) {
-            setCurrentImageId(nextImageId);
-        }
-    }, [imageList]);
+    const handleNext = useCallback(
+        async (firebaseUid: string) => {
+            // Find the current image index
+            const currentIndex = imageList.findIndex(img => img.id === currentImageId);
+            // If not the last image, go to next
+            if (currentIndex < imageList.length - 1 && currentIndex !== -1) {
+                const nextImageId = imageList[currentIndex + 1]?.id;
+                if (nextImageId) {
+                    setCurrentImageId(nextImageId);
+                }
+            }
+        },
+        [imageList, currentImageId]
+    );
 
     useEffect(() => {
         if(currentImageId && firebaseUid){

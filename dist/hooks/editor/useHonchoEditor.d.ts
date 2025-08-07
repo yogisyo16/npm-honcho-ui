@@ -39,19 +39,13 @@ export type ImageItem = {
     file: File;
 };
 export declare function useHonchoEditor(controller: Controller, initImageId: string, firebaseUid: string): {
-    handlePrev: (firebaseUid: string) => Promise<void>;
-    handleNext: (firebaseUid: string) => Promise<void>;
     canvasRef: import("react").MutableRefObject<HTMLCanvasElement | null>;
     canvasContainerRef: import("react").MutableRefObject<HTMLDivElement | null>;
     fileInputRef: import("react").MutableRefObject<HTMLInputElement | null>;
     displayedToken: string | null;
-    handleBack: (firebaseUid: string) => void;
-    onGetImage: (firebaseUid: string, imageID: string) => Promise<Gallery>;
-    getImageList: (firebaseUid: string) => Promise<Gallery[]>;
-    syncConfig: (firebaseUid: string) => Promise<void>;
-    getPresets: (firebaseUid: string) => Promise<Preset[]>;
-    createPreset: (firebaseUid: string, name: string, settings: AdjustmentState) => Promise<Preset>;
-    deletePreset: (firebaseUid: string, presetId: string) => Promise<void>;
+    handleBackCallback: () => void;
+    handlePrev: (firebaseUid: string) => Promise<void>;
+    handleNext: (firebaseUid: string) => Promise<void>;
     panelRef: import("react").MutableRefObject<HTMLDivElement | null>;
     contentRef: import("react").MutableRefObject<HTMLDivElement | null>;
     panelHeight: number;
