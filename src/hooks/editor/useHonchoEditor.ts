@@ -24,7 +24,7 @@ interface NavigatorWithConnection extends Navigator {
 
 export interface Controller {
     // Image Handling
-    onGetImage(firebaseUid: string, imageID: string): Promise<Gallery | null>;
+    onGetImage(firebaseUid: string, imageID: string): Promise<Gallery>;
     getImageList(firebaseUid: string): Promise<Gallery[]>;
 
     // syncConfig
@@ -33,7 +33,7 @@ export interface Controller {
 
     // Preset
     getPresets(firebaseUid: string): Promise<Preset[]>;
-    createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset | null>;
+    createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset>;
     deletePreset(firebaseUid: string, presetId: string): Promise<void>;
     renamePreset(firebaseUid: string, presetId: string, newName: string): Promise<void>;
 }
