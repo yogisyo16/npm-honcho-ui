@@ -275,8 +275,8 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
                 ? gallery.raw_edited.path
                 : gallery?.download?.path;
             if (imagePath) {
-                console.log(imagePath);
-                console.log({ ...gallery });
+                console.log("Test Image Path", imagePath);
+                console.log("Test gallery Path", { ...gallery });
                 await loadImageFromUrl(imagePath);
             }
             else {
