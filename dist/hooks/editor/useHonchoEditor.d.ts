@@ -1,20 +1,19 @@
 import { SelectChangeEvent } from "@mui/material";
+import { Gallery } from '../../hooks/editor/type';
 declare global {
     interface Window {
         Module: any;
     }
 }
 export interface Controller {
-    onGetImage(imageID: string): Promise<string | null>;
-    getImageList(): Promise<ImageItem[]>;
-    syncConfig(): Promise<void>;
-    handleBack(): void;
-    handleNext(): void;
-    handlePrev(): void;
-    getPresets(): Promise<Preset[]>;
-    createPreset(name: string, settings: AdjustmentState): Promise<Preset | null>;
-    deletePreset(presetId: string): Promise<void>;
-    renamePreset(presetId: string, newName: string): Promise<void>;
+    onGetImage(firebaseUid: string, imageID: string): Promise<Gallery | null>;
+    getImageList(firebaseUid: string): Promise<Gallery[]>;
+    syncConfig(firebaseUid: string): Promise<void>;
+    handleBack(firebaseUid: string): void;
+    getPresets(firebaseUid: string): Promise<Preset[]>;
+    createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset | null>;
+    deletePreset(firebaseUid: string, presetId: string): Promise<void>;
+    renamePreset(firebaseUid: string, presetId: string, newName: string): Promise<void>;
 }
 export type AdjustmentState = {
     tempScore: number;
@@ -40,21 +39,21 @@ export type ImageItem = {
     name: string;
     file: File;
 };
-export declare function useHonchoEditor(controller: Controller): {
+export declare function useHonchoEditor(controller: Controller, initImageId: string, firebaseUid: string): {
+    handlePrev: (firebaseUid: string) => Promise<void>;
+    handleNext: (firebaseUid: string) => Promise<void>;
     canvasRef: import("react").MutableRefObject<HTMLCanvasElement | null>;
     canvasContainerRef: import("react").MutableRefObject<HTMLDivElement | null>;
     fileInputRef: import("react").MutableRefObject<HTMLInputElement | null>;
     displayedToken: string | null;
-    handleBack: () => void;
-    onGetImage: (imageID: string) => Promise<string | null>;
-    getImageList: () => Promise<ImageItem[]>;
-    syncConfig: () => Promise<void>;
-    getPresets: () => Promise<Preset[]>;
-    createPreset: (name: string, settings: AdjustmentState) => Promise<Preset | null>;
-    deletePreset: (presetId: string) => Promise<void>;
-    renamePreset: (presetId: string, newName: string) => Promise<void>;
-    handleNext: () => void;
-    handlePrev: () => void;
+    handleBack: (firebaseUid: string) => void;
+    onGetImage: (firebaseUid: string, imageID: string) => Promise<Gallery | null>;
+    getImageList: (firebaseUid: string) => Promise<Gallery[]>;
+    syncConfig: (firebaseUid: string) => Promise<void>;
+    getPresets: (firebaseUid: string) => Promise<Preset[]>;
+    createPreset: (firebaseUid: string, name: string, settings: AdjustmentState) => Promise<Preset | null>;
+    deletePreset: (firebaseUid: string, presetId: string) => Promise<void>;
+    renamePreset: (firebaseUid: string, presetId: string, newName: string) => Promise<void>;
     panelRef: import("react").MutableRefObject<HTMLDivElement | null>;
     contentRef: import("react").MutableRefObject<HTMLDivElement | null>;
     panelHeight: number;
@@ -105,7 +104,7 @@ export declare function useHonchoEditor(controller: Controller): {
     handleScriptReady: () => Promise<void>;
     handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
     handleAlertClose: () => void;
-    loadImageFromId: (imageId: string) => Promise<void>;
+    loadImageFromId: (firebaseUid: string, imageId: string) => Promise<void>;
     loadImageFromUrl: (url: string) => Promise<void>;
     handleRevert: () => void;
     handleUndo: () => void;

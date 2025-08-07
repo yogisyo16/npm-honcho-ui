@@ -357,13 +357,17 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         }
     }, [loadImage]);
 
-    const loadImageFromId = useCallback(async (firebaseUid: string, imageId: string) => {
+   const loadImageFromId = useCallback(async (firebaseUid: string, imageId: string) => {
         if (!controller) return;
         setEditorStatus("Fetching image...");
         try {
             const gallery = await controller.onGetImage(firebaseUid, imageId);
-            if (gallery && gallery.original && gallery.original.path) {
-                await loadImageFromUrl(gallery.original.path);
+            const imagePath =
+                gallery?.raw_edited?.path
+                    ? gallery.raw_edited.path
+                    : gallery?.download?.path;
+            if (imagePath) {
+                await loadImageFromUrl(imagePath);
             } else {
                 throw new Error("Controller did not return a valid image object with path.");
             }

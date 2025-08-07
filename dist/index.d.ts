@@ -1,5 +1,6 @@
 export { useHonchoEditor } from './hooks/editor/useHonchoEditor';
 export type { Controller, AdjustmentState, Preset, ImageItem, } from './hooks/editor/useHonchoEditor';
+export type { Gallery, Content } from './hooks/editor/type';
 export { default as HHeaderEditor } from './components/editor/HHeaderEditor';
 export { default as HFooter } from './components/editor/HFooter';
 export { default as HAccordionColorAdjustment } from './components/editor/HAccordionColorAdjustment';
