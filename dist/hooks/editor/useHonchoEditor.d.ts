@@ -9,7 +9,7 @@ export interface Controller {
     onGetImage(firebaseUid: string, imageID: string): Promise<Gallery>;
     getImageList(firebaseUid: string): Promise<Gallery[]>;
     syncConfig(firebaseUid: string): Promise<void>;
-    handleBack(firebaseUid: string): void;
+    handleBack(firebaseUid: string, imageID: string): void;
     getPresets(firebaseUid: string): Promise<Preset[]>;
     createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset>;
     deletePreset(firebaseUid: string, presetId: string): Promise<void>;

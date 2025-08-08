@@ -528,8 +528,8 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         }
     }, []);
     const handleBackCallback = useCallback(() => {
-        controller.handleBack(firebaseUid);
-    }, [controller]);
+        controller.handleBack(firebaseUid, currentImageId);
+    }, [controller, firebaseUid, currentImageId]);
     // MARK: - UI Handlers (Moved from page.tsx)
     // Header and Dialog Handlers
     const handleHeaderMenuClick = (event) => setHeaderMenuAnchorEl(event.currentTarget);

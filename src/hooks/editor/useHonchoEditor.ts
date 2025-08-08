@@ -29,7 +29,7 @@ export interface Controller {
 
     // syncConfig
     syncConfig(firebaseUid: string): Promise<void>;
-    handleBack(firebaseUid: string):void;
+    handleBack(firebaseUid: string, imageID: string):void;
 
     // Preset
     getPresets(firebaseUid: string): Promise<Preset[]>;
@@ -660,8 +660,8 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     }, []);
 
     const handleBackCallback = useCallback(() => {
-        controller.handleBack(firebaseUid);
-    },[controller]);
+        controller.handleBack(firebaseUid, currentImageId);
+    }, [controller, firebaseUid, currentImageId]);
 
     // MARK: - UI Handlers (Moved from page.tsx)
     // Header and Dialog Handlers
