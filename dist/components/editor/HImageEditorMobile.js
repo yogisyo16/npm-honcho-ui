@@ -9,7 +9,7 @@ const subTabs = {
     colorAdjustment: [
         { value: "color", label: "Color", inactiveIcon: "/v1/svg/white-balance-inactive-mobile.svg", activeIcon: "/v1/svg/white-balance-active-mobile.svg" },
         { value: "light", label: "Light", inactiveIcon: "/v1/svg/light-inactive-mobile.svg", activeIcon: "/v1/svg/light-active-mobile.svg" },
-        { value: "details", label: "Details", inactiveIcon: "/v1/svg/details-inactive-mobile.svg", activeIcon: "/v1/svg/details-active-mobile.svg" },
+        // { value: "details", label: "Details", inactiveIcon: "/v1/svg/details-inactive-mobile.svg", activeIcon: "/v1/svg/details-active-mobile.svg"},
     ],
     aspectRatio: [
         { value: "portrait", label: "Portrait" },
