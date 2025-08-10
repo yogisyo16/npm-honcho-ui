@@ -416,6 +416,12 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     );
 
     useEffect(() => {
+        if (initImageId) {
+            setCurrentImageId(initImageId);
+        }
+    }, [initImageId]);
+
+    useEffect(() => {
         if(currentImageId && firebaseUid){
             loadImageFromId(firebaseUid, currentImageId);
         }
