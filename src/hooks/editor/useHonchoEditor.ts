@@ -73,7 +73,7 @@ const initialAdjustments: AdjustmentState = {
 
 const clamp = (value: number) => Math.max(-100, Math.min(100, value));
 
-export function useHonchoEditor(controller: Controller, initImageId: string, firebaseUid: string) {
+export function useHonchoEditor(controller: Controller, initImageId: string, firebaseUid: string, eventId: string) {
     const [currentImageId, setCurrentImageId] = useState(initImageId);
 
     // MARK: - Core Editor State & Refs
@@ -256,6 +256,32 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         }, 50);
         return () => clearTimeout(timeoutId);
     }, [activeSubPanel, isBulkEditing]);
+    
+    useEffect(() => {
+        const fetchAndSetImageList = async () => {
+            if (controller && firebaseUid && eventId && imageList.length === 0) {
+                try {
+                    console.log("Hook is fetching image list for event:", eventId);
+                    // The controller now requires eventId, adjust the interface if needed
+                    const galleryList: Gallery[] = await controller.getImageList(firebaseUid, eventId);
+                    
+                    const items: ImageItem[] = galleryList.map(g => ({
+                        id: g.id,
+                        url: g.raw_edited?.path || g.download?.path || '',
+                        name: g.uid,
+                        file: new File([], g.id),
+                    }));
+
+                    setImageList(items);
+                    console.log("Image list state updated in hook:", items);
+                } catch (error) {
+                    console.error("Hook failed to fetch image list:", error);
+                }
+            }
+        };
+
+        fetchAndSetImageList();
+    }, [controller, firebaseUid, eventId, imageList.length]);
 
     // Effect for keyboard shortcuts
     useEffect(() => {

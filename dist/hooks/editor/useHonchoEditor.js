@@ -6,7 +6,7 @@ const initialAdjustments = {
     whitesScore: 0, blacksScore: 0, saturationScore: 0, contrastScore: 0, clarityScore: 0, sharpnessScore: 0,
 };
 const clamp = (value) => Math.max(-100, Math.min(100, value));
-export function useHonchoEditor(controller, initImageId, firebaseUid) {
+export function useHonchoEditor(controller, initImageId, firebaseUid, eventId) {
     const [currentImageId, setCurrentImageId] = useState(initImageId);
     // MARK: - Core Editor State & Refs
     const editorRef = useRef(null);
@@ -172,6 +172,29 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         }, 50);
         return () => clearTimeout(timeoutId);
     }, [activeSubPanel, isBulkEditing]);
+    useEffect(() => {
+        const fetchAndSetImageList = async () => {
+            if (controller && firebaseUid && eventId && imageList.length === 0) {
+                try {
+                    console.log("Hook is fetching image list for event:", eventId);
+                    // The controller now requires eventId, adjust the interface if needed
+                    const galleryList = await controller.getImageList(firebaseUid, eventId);
+                    const items = galleryList.map(g => ({
+                        id: g.id,
+                        url: g.raw_edited?.path || g.download?.path || '',
+                        name: g.uid,
+                        file: new File([], g.id),
+                    }));
+                    setImageList(items);
+                    console.log("Image list state updated in hook:", items);
+                }
+                catch (error) {
+                    console.error("Hook failed to fetch image list:", error);
+                }
+            }
+        };
+        fetchAndSetImageList();
+    }, [controller, firebaseUid, eventId, imageList.length]);
     // Effect for keyboard shortcuts
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);

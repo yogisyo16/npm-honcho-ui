@@ -38,7 +38,7 @@ export type ImageItem = {
     name: string;
     file: File;
 };
-export declare function useHonchoEditor(controller: Controller, initImageId: string, firebaseUid: string): {
+export declare function useHonchoEditor(controller: Controller, initImageId: string, firebaseUid: string, eventId: string): {
     canvasRef: import("react").MutableRefObject<HTMLCanvasElement | null>;
     canvasContainerRef: import("react").MutableRefObject<HTMLDivElement | null>;
     fileInputRef: import("react").MutableRefObject<HTMLInputElement | null>;
