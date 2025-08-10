@@ -25,7 +25,7 @@ interface NavigatorWithConnection extends Navigator {
 export interface Controller {
     // Image Handling
     onGetImage(firebaseUid: string, imageID: string): Promise<Gallery>;
-    getImageList(firebaseUid: string): Promise<Gallery[]>;
+    getImageList(firebaseUid: string, eventId: string): Promise<Gallery[]>;
 
     // syncConfig
     syncConfig(firebaseUid: string): Promise<void>;
