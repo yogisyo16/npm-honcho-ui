@@ -7,7 +7,7 @@ declare global {
 }
 export interface Controller {
     onGetImage(firebaseUid: string, imageID: string): Promise<Gallery>;
-    getImageList(firebaseUid: string): Promise<Gallery[]>;
+    getImageList(firebaseUid: string, eventId: string): Promise<Gallery[]>;
     syncConfig(firebaseUid: string): Promise<void>;
     handleBack(firebaseUid: string, imageID: string): void;
     getPresets(firebaseUid: string): Promise<Preset[]>;
