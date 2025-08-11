@@ -390,6 +390,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
 
     const handlePrev = useCallback(
         async (firebaseUid: string) => {
+            console.log("[DEBUG] handlePrev function was called.");
             // Find the current image index
             const currentIndex = imageList.findIndex(img => img.id === currentImageId);
             // If not the first image, go to previous
@@ -404,6 +405,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     );
 
     const handleNext = useCallback(async (firebaseUid: string) => {
+        console.log("[DEBUG] handleNext function was called.");
         const currentIndex = imageList.findIndex(img => img.id === currentImageId);
 
         // Condition 1: We are at the last image of the currently loaded list.
