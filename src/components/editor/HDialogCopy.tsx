@@ -274,7 +274,11 @@ export function HDialogPreset(props: PropsPreset) {
             <Stack>
                 <Stack direction="row" alignItems="center" justifyContent="space-between">
                     <FormControlLabel
-                        label="Color"
+                        label={
+                            <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface, pt: "2px" }}>
+                                Color
+                            </Typography>
+                        }
                         control={ 
                             <Checkbox 
                                 color="default" 
@@ -287,25 +291,29 @@ export function HDialogPreset(props: PropsPreset) {
                                 sx={checkboxStyle} /> }
                     />
                     <Stack direction="row" alignItems="center">
-                        <Typography sx={{ ...typography.labelMedium, color: colors.onSurface }}>{`${colorCheckedCount}/${colorValues.length}`}</Typography>
-                        <IconButton onClick={() => props.onToggleExpand('color')} size="small">
+                        <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface }}>{`${colorCheckedCount}/${colorValues.length}`}</Typography>
+                        <IconButton onClick={() => props.onToggleExpand('color')} size="small" sx={{ pt: "3px" }}>
                             <ExpandMoreIcon sx={{ colors: colors.background, transition: 'transform 0.3s', transform: props.expanded.color ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                         </IconButton>
                     </Stack>
                 </Stack>
                 <Collapse in={props.expanded.color} timeout="auto" unmountOnExit>
                     <Stack direction="column" sx={{ ml: 2, pl: 1.5 }}>
-                        <FormControlLabel label="Temperature" control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} name="temperature" checked={props.colorChecks.temperature} onChange={(e) => props.onChildChange(e, props.setColorChecks)} sx={checkboxStyle} />} />
-                        <FormControlLabel label="Tint" control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} name="tint" checked={props.colorChecks.tint} onChange={(e) => props.onChildChange(e, props.setColorChecks)} sx={checkboxStyle} />} />
-                        <FormControlLabel label="Vibrance" control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} name="vibrance" checked={props.colorChecks.vibrance} onChange={(e) => props.onChildChange(e, props.setColorChecks)} sx={checkboxStyle} />} />
-                        <FormControlLabel label="Saturation" control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} name="saturation" checked={props.colorChecks.saturation} onChange={(e) => props.onChildChange(e, props.setColorChecks)} sx={checkboxStyle} />} />
+                        <FormControlLabel label={ <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface, pt: "2px"  }}>Temperature</Typography> } control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} name="temperature" checked={props.colorChecks.temperature} onChange={(e) => props.onChildChange(e, props.setColorChecks)} sx={checkboxStyle} />} />
+                        <FormControlLabel label={ <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface, pt: "2px"  }}>Tint</Typography> } control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} name="tint" checked={props.colorChecks.tint} onChange={(e) => props.onChildChange(e, props.setColorChecks)} sx={checkboxStyle} />} />
+                        <FormControlLabel label={ <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface, pt: "2px"  }}>Vibrance</Typography> } control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} name="vibrance" checked={props.colorChecks.vibrance} onChange={(e) => props.onChildChange(e, props.setColorChecks)} sx={checkboxStyle} />} />
+                        <FormControlLabel label={ <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface, pt: "2px"  }}>Saturation</Typography> } control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} name="saturation" checked={props.colorChecks.saturation} onChange={(e) => props.onChildChange(e, props.setColorChecks)} sx={checkboxStyle} />} />
                     </Stack>
                 </Collapse>
             </Stack>
             <Stack>
                 <Stack direction="row" alignItems="center" justifyContent="space-between">
                      <FormControlLabel 
-                            label="Light" 
+                            label={
+                                <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface, pt: "2px"  }}>
+                                    Light
+                                </Typography>
+                            }
                             control={ 
                             <Checkbox 
                                 color="default" 
@@ -317,27 +325,31 @@ export function HDialogPreset(props: PropsPreset) {
                                 onChange={(e) => props.onParentChange(e, props.setLightChecks)} 
                                 sx={checkboxStyle} /> } />
                      <Stack direction="row" alignItems="center">
-                        <Typography sx={{ ...typography.labelMedium, color: colors.onSurface }}>{`${lightCheckedCount}/${lightValues.length}`}</Typography>
-                        <IconButton onClick={() => props.onToggleExpand('light')} size="small">
+                        <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface }}>{`${lightCheckedCount}/${lightValues.length}`}</Typography>
+                        <IconButton onClick={() => props.onToggleExpand('light')} size="small" sx={{ pt: "3px" }}>
                              <ExpandMoreIcon sx={{ transition: 'transform 0.3s', transform: props.expanded.light ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                         </IconButton>
                     </Stack>
                 </Stack>
                  <Collapse in={props.expanded.light} timeout="auto" unmountOnExit>
                     <Stack direction="column" sx={{ ml: 2, pl: 1.5 }}>
-                        <FormControlLabel label="Exposure" control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} color="default" name="exposure" checked={props.lightChecks.exposure} onChange={(e) => props.onChildChange(e, props.setLightChecks)} sx={checkboxStyle} />} />
-                        <FormControlLabel label="Contrast" control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} color="default" name="contrast" checked={props.lightChecks.contrast} onChange={(e) => props.onChildChange(e, props.setLightChecks)} sx={checkboxStyle} />} />
-                        <FormControlLabel label="Highlights" control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} color="default" name="highlights" checked={props.lightChecks.highlights} onChange={(e) => props.onChildChange(e, props.setLightChecks)} sx={checkboxStyle} />} />
-                        <FormControlLabel label="Shadows" control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} color="default" name="shadows" checked={props.lightChecks.shadows} onChange={(e) => props.onChildChange(e, props.setLightChecks)} sx={checkboxStyle} />} />
-                        <FormControlLabel label="Whites" control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} color="default" name="whites" checked={props.lightChecks.whites} onChange={(e) => props.onChildChange(e, props.setLightChecks)} sx={checkboxStyle} />} />
-                        <FormControlLabel label="Blacks" control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} color="default" name="blacks" checked={props.lightChecks.blacks} onChange={(e) => props.onChildChange(e, props.setLightChecks)} sx={checkboxStyle} />} />
+                        <FormControlLabel label={ <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface, pt: "2px" }}>Exposure</Typography> } control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} color="default" name="exposure" checked={props.lightChecks.exposure} onChange={(e) => props.onChildChange(e, props.setLightChecks)} sx={checkboxStyle} />} />
+                        <FormControlLabel label={ <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface, pt: "2px" }}>Contrast</Typography> } control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} color="default" name="contrast" checked={props.lightChecks.contrast} onChange={(e) => props.onChildChange(e, props.setLightChecks)} sx={checkboxStyle} />} />
+                        <FormControlLabel label={ <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface, pt: "2px" }}>Highlights</Typography> } control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} color="default" name="highlights" checked={props.lightChecks.highlights} onChange={(e) => props.onChildChange(e, props.setLightChecks)} sx={checkboxStyle} />} />
+                        <FormControlLabel label={ <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface, pt: "2px" }}>Shadows</Typography> } control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} color="default" name="shadows" checked={props.lightChecks.shadows} onChange={(e) => props.onChildChange(e, props.setLightChecks)} sx={checkboxStyle} />} />
+                        <FormControlLabel label={ <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface, pt: "2px" }}>Whites</Typography> } control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} color="default" name="whites" checked={props.lightChecks.whites} onChange={(e) => props.onChildChange(e, props.setLightChecks)} sx={checkboxStyle} />} />
+                        <FormControlLabel label={ <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface, pt: "2px" }}>Blacks</Typography> } control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} color="default" name="blacks" checked={props.lightChecks.blacks} onChange={(e) => props.onChildChange(e, props.setLightChecks)} sx={checkboxStyle} />} />
                     </Stack>
                 </Collapse>
             </Stack>
             <Stack>
                  <Stack direction="row" alignItems="center" justifyContent="space-between">
                      <FormControlLabel 
-                        label="Details" 
+                        label={
+                            <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface, pt: "2px" }}>
+                                Details
+                            </Typography>
+                        }
                         control={ 
                             <Checkbox 
                                 color="default" 
@@ -349,16 +361,16 @@ export function HDialogPreset(props: PropsPreset) {
                                 onChange={(e) => props.onParentChange(e, props.setDetailsChecks)} 
                                 sx={checkboxStyle} /> }/>
                      <Stack direction="row" alignItems="center">
-                        <Typography sx={{ ...typography.labelMedium, color: colors.onSurface }}>{`${detailsCheckedCount}/${detailsValues.length}`}</Typography>
-                        <IconButton onClick={() => props.onToggleExpand('details')} size="small">
+                        <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface }}>{`${detailsCheckedCount}/${detailsValues.length}`}</Typography>
+                        <IconButton onClick={() => props.onToggleExpand('details')} size="small" sx={{ pt: "3px" }}>
                            <ExpandMoreIcon sx={{ transition: 'transform 0.3s', transform: props.expanded.details ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                         </IconButton>
                     </Stack>
                 </Stack>
                 <Collapse in={props.expanded.details} timeout="auto" unmountOnExit>
                     <Stack direction="column" sx={{ ml: 2, pl: 1.5 }}>
-                        <FormControlLabel label="Clarity" control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} color="default" name="clarity" checked={props.detailsChecks.clarity} onChange={(e) => props.onChildChange(e, props.setDetailsChecks)} sx={checkboxStyle} />} />
-                        <FormControlLabel label="Sharpness" control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} color="default" name="sharpness" checked={props.detailsChecks.sharpness} onChange={(e) => props.onChildChange(e, props.setDetailsChecks)} sx={checkboxStyle} />} />
+                        <FormControlLabel label={ <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface, pt: "2px" }}>Clarity</Typography> } control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} color="default" name="clarity" checked={props.detailsChecks.clarity} onChange={(e) => props.onChildChange(e, props.setDetailsChecks)} sx={checkboxStyle} />} />
+                        <FormControlLabel label={ <Typography sx={{ ...typography.bodyMedium, color: colors.onSurface, pt: "2px" }}>Sharpness</Typography> } control={<Checkbox icon={<RoundedSquareIcon color={colors.onSurface} />} checkedIcon={<RoundedSquareCheckedIcon color={colors.onSurface}/>} color="default" name="sharpness" checked={props.detailsChecks.sharpness} onChange={(e) => props.onChildChange(e, props.setDetailsChecks)} sx={checkboxStyle} />} />
                     </Stack>
                 </Collapse>
             </Stack>
