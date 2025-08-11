@@ -37,7 +37,7 @@ export type ImageItem = {
     url: string;
     file: File;
 };
-export declare function useHonchoEditor(controller: Controller, initImageId: string, firebaseUid: string, eventId: string): {
+export declare function useHonchoEditor(controller: Controller, initImageId: string, firebaseUid: string): {
     canvasRef: import("react").MutableRefObject<HTMLCanvasElement | null>;
     canvasContainerRef: import("react").MutableRefObject<HTMLDivElement | null>;
     fileInputRef: import("react").MutableRefObject<HTMLInputElement | null>;
@@ -95,7 +95,7 @@ export declare function useHonchoEditor(controller: Controller, initImageId: str
     handleScriptReady: () => Promise<void>;
     handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
     handleAlertClose: () => void;
-    loadImageFromId: (firebaseUid: string, imageId: string) => Promise<void>;
+    loadImageFromId: (firebaseUid: string, imageId: string) => Promise<Gallery | undefined>;
     loadImageFromUrl: (url: string) => Promise<void>;
     handleRevert: () => void;
     handleUndo: () => void;

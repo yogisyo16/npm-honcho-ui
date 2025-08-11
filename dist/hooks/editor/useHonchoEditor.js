@@ -6,11 +6,12 @@ const initialAdjustments = {
     whitesScore: 0, blacksScore: 0, saturationScore: 0, contrastScore: 0, clarityScore: 0, sharpnessScore: 0,
 };
 const clamp = (value) => Math.max(-100, Math.min(100, value));
-export function useHonchoEditor(controller, initImageId, firebaseUid, eventId) {
+export function useHonchoEditor(controller, initImageId, firebaseUid) {
     const [currentImageId, setCurrentImageId] = useState(initImageId);
     const [currentPage, setCurrentPage] = useState(1);
     const [hasNextPage, setHasNextPage] = useState(true);
     const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+    const [eventId, setEventId] = useState(null);
     // MARK: - Core Editor State & Refs
     const editorRef = useRef(null);
     const canvasRef = useRef(null);
@@ -175,33 +176,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid, eventId) {
         }, 50);
         return () => clearTimeout(timeoutId);
     }, [activeSubPanel, isBulkEditing]);
-    useEffect(() => {
-        const fetchAndSetImageList = async () => {
-            if (controller && firebaseUid && eventId && imageList.length === 0) {
-                try {
-                    console.log("Hook is fetching image list for event:", eventId);
-                    // The controller now requires eventId, adjust the interface if needed
-                    const response = await controller.getImageList(firebaseUid, eventId, 1);
-                    const items = response.gallery.map(g => ({
-                        id: g.id,
-                        url: g.raw_edited?.path || g.download?.path || '',
-                        name: g.id,
-                        file: new File([], g.id),
-                    }));
-                    setImageList(items);
-                    // ✅ ADD THIS CONSOLE LOG
-                    console.log("✅ Image list fetched and set in state:", items);
-                    // ✅ SET INITIAL PAGINATION STATE
-                    setCurrentPage(1);
-                    setHasNextPage(response.next_page !== 0 && response.next_page > response.current_page);
-                }
-                catch (error) {
-                    console.error("Hook failed to fetch image list:", error);
-                }
-            }
-        };
-        fetchAndSetImageList();
-    }, [controller, firebaseUid, eventId]);
     // Effect for keyboard shortcuts
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
@@ -305,9 +279,8 @@ export function useHonchoEditor(controller, initImageId, firebaseUid, eventId) {
                 ? gallery.raw_edited.path
                 : gallery?.download?.path;
             if (imagePath) {
-                console.log("Test Image Path", imagePath);
-                console.log("Test gallery Path", { ...gallery });
                 await loadImageFromUrl(imagePath);
+                return gallery; // ✅ RETURN the gallery object on success
             }
             else {
                 throw new Error("Controller did not return a valid image object with path.");
@@ -333,30 +306,30 @@ export function useHonchoEditor(controller, initImageId, firebaseUid, eventId) {
         const currentIndex = imageList.findIndex(img => img.id === currentImageId);
         // Condition 1: We are at the last image of the currently loaded list.
         if (currentIndex === imageList.length - 1) {
+            // ✅ ADD THIS CHECK: Ensure we have the eventId before trying to fetch.
+            if (!eventId) {
+                console.error("Cannot fetch next page, eventId has not been discovered yet.");
+                return;
+            }
             // Condition 2: Check if there's a next page and we aren't already fetching it.
             if (hasNextPage && !isFetchingNextPage) {
                 console.log(`At end of list. Fetching next page: ${currentPage + 1}`);
-                setIsFetchingNextPage(true); // Prevent multiple fetches
+                setIsFetchingNextPage(true);
                 try {
-                    // Fetch the next page of images
                     const response = await controller.getImageList(firebaseUid, eventId, currentPage + 1);
-                    // If the API returns new images...
                     if (response.gallery && response.gallery.length > 0) {
                         const newItems = response.gallery.map(g => ({
                             id: g.id,
                             url: g.raw_edited?.path || g.download?.path || '',
+                            name: g.id, // ✅ ADDED: Fulfill the ImageItem 'name' property
                             file: new File([], g.id),
                         }));
-                        // Append the new images to our existing list
                         setImageList(prevList => [...prevList, ...newItems]);
-                        // Update the pagination state
                         setCurrentPage(response.current_page);
                         setHasNextPage(response.next_page !== 0 && response.next_page > response.current_page);
-                        // IMPORTANT: Set the current image to the first of the NEW images
                         setCurrentImageId(newItems[0].id);
                     }
                     else {
-                        // No more images left to fetch
                         setHasNextPage(false);
                     }
                 }
@@ -364,7 +337,7 @@ export function useHonchoEditor(controller, initImageId, firebaseUid, eventId) {
                     console.error("Failed to fetch next page:", error);
                 }
                 finally {
-                    setIsFetchingNextPage(false); // Allow fetching again
+                    setIsFetchingNextPage(false);
                 }
             }
             // Condition 3: We are NOT at the end of the list, so just navigate normally.
@@ -398,6 +371,38 @@ export function useHonchoEditor(controller, initImageId, firebaseUid, eventId) {
         loadInitialImage();
         // Dependencies: The external props and readiness flags that trigger this logic.
         // Whenever any of these change, this effect will re-evaluate.
+    }, [initImageId, firebaseUid, controller, isEditorReady, loadImageFromId]);
+    useEffect(() => {
+        const initialize = async () => {
+            // 1. Check if we have the initial data and the editor is ready
+            if (initImageId && firebaseUid && controller && isEditorReady) {
+                console.log(`[INIT] Starting sequence for image: ${initImageId}`);
+                // 2. Load the initial image data and get the gallery object back
+                const initialGallery = await loadImageFromId(firebaseUid, initImageId);
+                // 3. If we got the gallery data and it contains an event_id...
+                if (initialGallery && initialGallery.event_id) {
+                    const fetchedEventId = initialGallery.event_id;
+                    console.log(`[INIT] Discovered eventID: ${fetchedEventId}`);
+                    setEventId(fetchedEventId); // Store the discovered eventId in our state
+                    // 4. Now, use the discovered eventId to fetch the full image list for navigation
+                    const response = await controller.getImageList(firebaseUid, fetchedEventId, 1);
+                    const items = response.gallery.map(g => ({
+                        id: g.id,
+                        url: g.raw_edited?.path || g.download?.path || '',
+                        name: g.id,
+                        file: new File([], g.id),
+                    }));
+                    setImageList(items);
+                    setCurrentPage(1);
+                    setHasNextPage(response.next_page !== 0 && response.next_page > response.current_page);
+                    console.log("[INIT] Image list fetched and set.");
+                }
+                else {
+                    console.error("[INIT] Failed to get initial gallery data or event_id was missing.");
+                }
+            }
+        };
+        initialize();
     }, [initImageId, firebaseUid, controller, isEditorReady, loadImageFromId]);
     useEffect(() => {
         // Ensure we have everything needed before trying to load.
