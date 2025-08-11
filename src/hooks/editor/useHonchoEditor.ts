@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { SelectChangeEvent } from "@mui/material";
 import { HonchoEditor } from '../../lib/editor/honcho-editor';
 import { Gallery, ResponseGalleryPaging } from '../../hooks/editor/type'
+import { mapAdjustmentStateToAdjustmentEditor, mapColorAdjustmentToAdjustmentState } from '../../utils/adjustment';
 
 // Augment the global window object for the WASM Module
 declare global {
@@ -73,7 +74,9 @@ const initialAdjustments: AdjustmentState = {
 const clamp = (value: number) => Math.max(-100, Math.min(100, value));
 
 export function useHonchoEditor(controller: Controller, initImageId: string, firebaseUid: string) {
-    const [currentImageId, setCurrentImageId] = useState(initImageId);
+    const [currentImageId, setCurrentImageId] = useState<string>(initImageId);
+    const [currentImageData, setCurrentImageData] = useState<Gallery | null>(null);
+    const [currentAdjustmentsState, setCurrentAdjustmentsState] = useState<AdjustmentState>(initialAdjustments);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [hasNextPage, setHasNextPage] = useState(true);
@@ -245,9 +248,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     }, [/* handleOpenCopyDialog dependency */]);
 
     useEffect(() => {
-        if (editorRef.current?.getInitialized() === false) {
-            editorRef.current?.initialize();
-        }
+
     }, [editorRef]);
 
     // Effect for measuring mobile panel content
@@ -316,12 +317,12 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     }, []);
 
     // MARK: - Core Editor Logic
-    const updateCanvas = useCallback(() => {
-        if (editorRef.current?.getInitialized() && canvasRef.current) {
+    const updateCanvasEditor = useCallback(() => {
+        if ((editorRef.current?.getInitialized() === true) && canvasRef.current) {
             editorRef.current.processImage();
             editorRef.current.renderToCanvas(canvasRef.current);
         }
-    }, []);
+    }, [canvasRef.current, editorRef.current]);
 
     const loadImage = useCallback(async (file: File) => {
         if (!editorRef.current) {
@@ -329,6 +330,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
             return;
         }
         setEditorStatus("Loading image...");
+        // TODO move
         try {
             await editorRef.current.loadImageFromFile(file);
             setIsImageLoaded(true);
@@ -389,6 +391,77 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
             setEditorStatus("Error: Could not fetch the image.");
         }
     }, [controller, loadImageFromUrl]);
+
+    const getImageFromId = useCallback(async (firebaseUid: string, imageId: string) => {
+        if (!controller) return;
+
+        setEditorStatus("Fetching image...");
+        try {
+            const gallery = await controller.onGetImage(firebaseUid, imageId);
+            const imagePath =
+                gallery?.raw_edited?.path
+                    ? gallery.raw_edited.path
+                    : gallery?.download?.path;
+            console.log("[DEBUG] Extracted imagePath to load:", imagePath);
+            if (imagePath) {
+                return gallery; // ✅ RETURN the gallery object on success
+            } else {
+                throw new Error("Controller did not return a valid image object with path.");
+            }
+        } catch (error) {
+            console.error("Failed to fetch or load image via controller:", error);
+            setEditorStatus("Error: Could not fetch the image.");
+        }
+    }, [controller]);
+
+    const extractPathFromGallery = useCallback((data: Gallery) => {
+        const imagePath =
+            data?.raw_edited?.path
+                ? data.raw_edited.path
+                : data?.download?.path;
+        console.log("[DEBUG] Extracted imagePath to load:", imagePath);
+        return imagePath;
+    }, []);
+
+    const loadImageEditor = useCallback(async (file: File) => {
+        if (!editorRef.current) {
+            setEditorStatus("Editor not ready.");
+            return;
+        }
+        setEditorStatus("Loading image...");
+        // TODO move
+        try {
+            await editorRef.current.loadImageFromFile(file);
+            setIsImageLoaded(true);
+            updateCanvas();
+        } catch (e) {
+            console.error("Error loading image:", e);
+            setEditorStatus("Error: Could not load the image.");
+            setIsImageLoaded(false);
+        }
+    }, [editorRef.current]);
+
+    const loadImageEditorFromUrl = useCallback(async (url: string) => {
+        try {
+            if (!editorRef.current) return;
+
+            setEditorStatus("Downloading image...");
+            console.log(`[DEBUG] Attempting to fetch image from URL: ${url}`);
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Failed to fetch image from URL: ${url}`);
+            
+            const blob = await response.blob();
+            const filename = url.substring(url.lastIndexOf('/') + 1) || 'image.jpg';
+            const file = new File([blob], filename, { type: blob.type });
+            
+            await editorRef.current.loadImageFromFile(file);
+            setIsImageLoaded(true);
+        } catch (error) {
+            console.error(error);
+            setEditorStatus("Error: Could not load image from URL.");
+            setIsImageLoaded(false);
+        }
+    }, [editorRef.current]);
 
     const handlePrev = useCallback(
         async (firebaseUid: string) => {
@@ -465,10 +538,10 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
 
     useEffect(() => {
         const initialize = async () => {
-            if (initImageId && firebaseUid && controller && isEditorReady) {
-                console.log(`[INIT] Starting sequence for image: ${initImageId}`);
+            if (currentImageId && firebaseUid && controller && isEditorReady) {
+                console.log(`[INIT] Starting sequence for image: ${currentImageId}`);
 
-                const initialGallery = await loadImageFromId(firebaseUid, initImageId);
+                const initialGallery = await loadImageFromId(firebaseUid, currentImageId);
 
                 // ✅ ADD THIS BLOCK TO CHECK THE DATA
                 console.group("[DEBUG] Checking Initial Gallery Data");
@@ -504,7 +577,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         };
 
         initialize();
-    }, [initImageId, firebaseUid, controller, isEditorReady, loadImageFromId]);
+    }, [currentImageId, firebaseUid, controller, isEditorReady, loadImageFromId]);
 
     // useEffect(() => {
     //     // Ensure we have everything needed before trying to load.
@@ -572,31 +645,31 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         }
     }, [isBulkEditing, applyUiStateToSelectedImages]);
 
-    const handleRevert = useCallback(() => {
-        // This will reset the UI controls and, if in bulk mode, the selected images
-        applyAdjustmentState(initialAdjustments);
+    // const handleRevert = useCallback(() => {
+    //     // This will reset the UI controls and, if in bulk mode, the selected images
+    //     applyAdjustmentState(initialAdjustments);
         
-        // For single image mode, also reset the underlying canvas engine
-        if (!isBulkEditing && editorRef.current) {
-            editorRef.current.resetAdjustments();
-        }
-    }, [applyAdjustmentState, isBulkEditing]);
+    //     // For single image mode, also reset the underlying canvas engine
+    //     if (!isBulkEditing && editorRef.current) {
+    //         editorRef.current.resetAdjustments();
+    //     }
+    // }, [applyAdjustmentState, isBulkEditing]);
 
-    const handleUndo = useCallback(() => {
-        if (historyIndex > 0) {
-            const prevIndex = historyIndex - 1;
-            applyAdjustmentState(history[prevIndex]);
-            setHistoryIndex(prevIndex);
-        }
-    }, [history, historyIndex, applyAdjustmentState]);
+    // const handleUndo = useCallback(() => {
+    //     if (historyIndex > 0) {
+    //         const prevIndex = historyIndex - 1;
+    //         applyAdjustmentState(history[prevIndex]);
+    //         setHistoryIndex(prevIndex);
+    //     }
+    // }, [history, historyIndex, applyAdjustmentState]);
 
-    const handleRedo = useCallback(() => {
-        if (historyIndex < history.length - 1) {
-            const nextIndex = historyIndex + 1;
-            applyAdjustmentState(history[nextIndex]);
-            setHistoryIndex(nextIndex);
-        }
-    }, [history, historyIndex, applyAdjustmentState]);
+    // const handleRedo = useCallback(() => {
+    //     if (historyIndex < history.length - 1) {
+    //         const nextIndex = historyIndex + 1;
+    //         applyAdjustmentState(history[nextIndex]);
+    //         setHistoryIndex(nextIndex);
+    //     }
+    // }, [history, historyIndex, applyAdjustmentState]);
 
     const handleToggleImageSelection = useCallback((imageId: string) => {
         const newSelectedIds = new Set(selectedImageIds);
@@ -1139,6 +1212,98 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         };
     }, []);
 
+    // DEBUG
+
+    // Undo, Redo, Revert
+    const handleRevert = useCallback(() => {
+        setCurrentAdjustmentsState(initialAdjustments);
+
+    }, [updateCanvasEditor]);
+
+    const handleUndo = useCallback(() => {
+        if (historyIndex > 0) {
+            const prevIndex = historyIndex - 1;
+            setCurrentAdjustmentsState(history[prevIndex]);
+            setHistoryIndex(prevIndex);
+        }
+    }, [history, historyIndex, updateCanvasEditor]);
+
+    const handleRedo = useCallback(() => {
+        if (historyIndex < history.length - 1) {
+            const nextIndex = historyIndex + 1;
+            setCurrentAdjustmentsState(history[nextIndex]);
+            setHistoryIndex(nextIndex);
+        }
+    }, [history, historyIndex, updateCanvasEditor]);
+    // Undo, Redo, Revert [END]
+
+    // Swipe
+    const swipeNext = useCallback(() => {
+        // find next imageId
+        // setCurrentImageId()
+    }, []);
+
+    const swipePrev = useCallback(() => {
+        // find next imageId
+        // setCurrentImageId()
+    }, []);
+    // Swipe [END]
+
+    useEffect(() => {
+        // will trigger when currentImageId change
+        if (!currentImageId) return;
+
+        const init = async() => {
+            if (editorRef.current?.getInitialized() === false) {
+                await editorRef.current?.initialize();
+            }
+
+            const imageData = await getImageFromId(firebaseUid, currentImageId);
+            if (!imageData) {
+                // TODO please check to make sure not crash
+                throw new Error("can't load image data");
+            }
+            
+            setCurrentImageData(imageData);
+
+            const adjustmentData = imageData.editor_config?.color_adjustment;
+            
+            // set event
+            setEventId(imageData.event_id);
+
+            // TODO get slideshow image list
+            // set to imageList
+
+
+
+            const pathGallery = extractPathFromGallery(imageData);
+            // load image to editor
+            await loadImageEditorFromUrl(pathGallery);
+            console.log("Image loaded to editor");
+
+            // adjustment setup
+            if (adjustmentData) {
+                const adjustmentState = mapColorAdjustmentToAdjustmentState(adjustmentData);
+                // set adjustment to editor to make adjustmentState change
+                setCurrentAdjustmentsState(adjustmentState); 
+            } else {
+                console.log("no adjustment found, use default");
+            }
+        }
+
+        init();
+    }, [currentImageId, editorRef.current]);
+
+    useEffect(() => {
+        // Render photo if adjustmentState change;
+        if (!editorRef.current) return;
+
+        editorRef.current.setAdjustments(mapAdjustmentStateToAdjustmentEditor(currentAdjustmentsState));
+        updateCanvasEditor();
+    }, [editorRef.current, currentAdjustmentsState]);
+
+    //
+
     return {
         // Refs
         canvasRef,
@@ -1268,18 +1433,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         handleSelectBulkPreset,
 
         // Adjustment State & Setters
-        tempScore, setTempScore: setTempScoreAbs,
-        tintScore, setTintScore: setTintScoreAbs,
-        vibranceScore, setVibranceScore: setVibranceScoreAbs,
-        saturationScore, setSaturationScore: setSaturationScoreAbs,
-        exposureScore, setExposureScore: setExposureScoreAbs,
-        highlightsScore, setHighlightsScore: setHighlightsScoreAbs,
-        shadowsScore, setShadowsScore: setShadowsScoreAbs,
-        whitesScore, setWhitesScore: setWhitesScoreAbs,
-        blacksScore, setBlacksScore: setBlacksScoreAbs,
-        contrastScore, setContrastScore: setContrastScoreAbs,
-        clarityScore, setClarityScore: setClarityScoreAbs,
-        sharpnessScore, setSharpnessScore: setSharpnessScoreAbs,
+        currentAdjustmentsState, setCurrentAdjustmentsState,
 
         // Bulk Adjustment Handlers
         // Note: These handlers are for image list
