@@ -44,16 +44,21 @@ export function useEditorWithHistory() {
         actions.pushState(newState);
     };
 
-    // Example: Apply preset with batch mode
-    const applyPreset = (presetState: AdjustmentState) => {
-        // Enable batch mode to group all preset changes into one undo operation
+    // Example: Apply preset with batch mode for smooth UI updates
+    const applyPresetWithSmoothUI = (presetState: AdjustmentState) => {
+        // Enable batch mode to group all changes into one undo operation
         config.setBatchMode(true);
         
-        // Apply the preset
-        actions.pushState(presetState);
+        // These will update the UI immediately but not create history entries
+        actions.pushState({ ...currentAdjustments, tempScore: presetState.tempScore });
+        actions.pushState({ ...currentAdjustments, tempScore: presetState.tempScore, tintScore: presetState.tintScore });
+        actions.pushState({ ...currentAdjustments, tempScore: presetState.tempScore, tintScore: presetState.tintScore, exposureScore: presetState.exposureScore });
+        actions.pushState(presetState); // Final complete state
         
-        // Disable batch mode to commit the changes
+        // Disable batch mode to commit only the final state to history
         config.setBatchMode(false);
+        
+        // Result: UI updated 4 times (smooth animation), but only 1 undo operation
     };
 
     // Example: Bulk update multiple adjustments
@@ -86,7 +91,7 @@ export function useEditorWithHistory() {
         
         // Adjustment functions
         updateTemperature,
-        applyPreset,
+        applyPresetWithSmoothUI,
         updateMultipleAdjustments,
         resetAdjustments,
         
@@ -131,6 +136,38 @@ export function integrateWithHonchoEditor() {
         history.actions.pushState(newState);
     };
     
+    // Smooth preset application with multiple UI updates
+    const handlePresetWithAnimation = async (presetState: AdjustmentState) => {
+        history.config.setBatchMode(true);
+        
+        // Animate through intermediate states for smooth UI
+        const steps = 4;
+        for (let i = 1; i <= steps; i++) {
+            const progress = i / steps;
+            const intermediateState: AdjustmentState = {
+                tempScore: Math.round(currentAdjustments.tempScore + (presetState.tempScore - currentAdjustments.tempScore) * progress),
+                tintScore: Math.round(currentAdjustments.tintScore + (presetState.tintScore - currentAdjustments.tintScore) * progress),
+                vibranceScore: Math.round(currentAdjustments.vibranceScore + (presetState.vibranceScore - currentAdjustments.vibranceScore) * progress),
+                saturationScore: Math.round(currentAdjustments.saturationScore + (presetState.saturationScore - currentAdjustments.saturationScore) * progress),
+                exposureScore: Math.round(currentAdjustments.exposureScore + (presetState.exposureScore - currentAdjustments.exposureScore) * progress),
+                highlightsScore: Math.round(currentAdjustments.highlightsScore + (presetState.highlightsScore - currentAdjustments.highlightsScore) * progress),
+                shadowsScore: Math.round(currentAdjustments.shadowsScore + (presetState.shadowsScore - currentAdjustments.shadowsScore) * progress),
+                whitesScore: Math.round(currentAdjustments.whitesScore + (presetState.whitesScore - currentAdjustments.whitesScore) * progress),
+                blacksScore: Math.round(currentAdjustments.blacksScore + (presetState.blacksScore - currentAdjustments.blacksScore) * progress),
+                contrastScore: Math.round(currentAdjustments.contrastScore + (presetState.contrastScore - currentAdjustments.contrastScore) * progress),
+                clarityScore: Math.round(currentAdjustments.clarityScore + (presetState.clarityScore - currentAdjustments.clarityScore) * progress),
+                sharpnessScore: Math.round(currentAdjustments.sharpnessScore + (presetState.sharpnessScore - currentAdjustments.sharpnessScore) * progress),
+            };
+            
+            history.actions.pushState(intermediateState);
+            
+            // Small delay for smooth animation
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+        
+        history.config.setBatchMode(false); // Commit only final state to history
+    };
+    
     // Your existing undo/redo handlers become:
     const handleUndo = history.actions.undo;
     const handleRedo = history.actions.redo;
@@ -141,6 +178,7 @@ export function integrateWithHonchoEditor() {
         canUndo,
         canRedo,
         handleSliderChange,
+        handlePresetWithAnimation,
         handleUndo,
         handleRedo,
         handleRevert

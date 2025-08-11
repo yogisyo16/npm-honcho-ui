@@ -139,10 +139,12 @@ export function useAdjustmentHistory(
     // Core state management
     const [history, setHistory] = useState<AdjustmentState[]>([initialState]);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [currentState, setCurrentState] = useState<AdjustmentState>(initialState);
     
     // Batch mode state - ref to avoid triggering effects
     const batchModeRef = useRef(internalOptions.enableBatching);
     const batchStartIndexRef = useRef<number | null>(null);
+    const batchStartStateRef = useRef<AdjustmentState | null>(null);
     
     // Configuration refs - prevent re-renders when config changes
     const maxSizeRef = useRef(internalOptions.maxSize);
@@ -155,10 +157,12 @@ export function useAdjustmentHistory(
         largeHistoryWarningShown: false
     });
 
-    // Get current state from history
-    const currentState = history[currentIndex];
-
-    // Memory usage estimation (approximate bytes)
+    // Sync currentState with history when not in batch mode
+    useEffect(() => {
+        if (!batchModeRef.current) {
+            setCurrentState(history[currentIndex]);
+        }
+    }, [history, currentIndex]);
     const getMemoryUsage = useCallback(() => {
         try {
             const historyString = JSON.stringify(history);
@@ -224,21 +228,20 @@ export function useAdjustmentHistory(
             return;
         }
 
-        setHistory(prevHistory => {
-            let newHistory: AdjustmentState[];
-            
-            if (batchModeRef.current && batchStartIndexRef.current !== null) {
-                // In batch mode: replace everything from batch start to current
-                const beforeBatch = prevHistory.slice(0, batchStartIndexRef.current);
-                newHistory = [...beforeBatch, newState];
-                setCurrentIndex(beforeBatch.length);
-            } else {
-                // Normal mode: truncate forward history and add new state
-                const truncatedHistory = prevHistory.slice(0, currentIndex + 1);
-                newHistory = [...truncatedHistory, newState];
-                setCurrentIndex(truncatedHistory.length);
-            }
+        // Always update currentState immediately for smooth UI
+        setCurrentState(newState);
 
+        if (batchModeRef.current) {
+            // In batch mode: Don't update history yet, just update UI state
+            // History will be updated when batch mode ends
+            return;
+        }
+
+        // Normal mode: Update history immediately
+        setHistory(prevHistory => {
+            const truncatedHistory = prevHistory.slice(0, currentIndex + 1);
+            const newHistory = [...truncatedHistory, newState];
+            setCurrentIndex(newHistory.length - 1);
             return newHistory;
         });
     }, [currentState, currentIndex]);
@@ -246,52 +249,61 @@ export function useAdjustmentHistory(
     // Undo to previous state
     const undo = useCallback(() => {
         if (currentIndex > 0) {
-            setCurrentIndex(currentIndex - 1);
+            const newIndex = currentIndex - 1;
+            setCurrentIndex(newIndex);
+            setCurrentState(history[newIndex]);
             
             // Exit batch mode when undoing
             if (batchModeRef.current) {
                 batchModeRef.current = false;
                 batchStartIndexRef.current = null;
+                batchStartStateRef.current = null;
             }
         }
-    }, [currentIndex]);
+    }, [currentIndex, history]);
 
     // Redo to next state
     const redo = useCallback(() => {
         if (currentIndex < history.length - 1) {
-            setCurrentIndex(currentIndex + 1);
+            const newIndex = currentIndex + 1;
+            setCurrentIndex(newIndex);
+            setCurrentState(history[newIndex]);
         }
-    }, [currentIndex, history.length]);
+    }, [currentIndex, history]);
 
     // Reset history with new initial state
     const reset = useCallback((newInitialState: AdjustmentState) => {
         setHistory([newInitialState]);
         setCurrentIndex(0);
+        setCurrentState(newInitialState);
         batchModeRef.current = internalOptions.enableBatching;
         batchStartIndexRef.current = null;
+        batchStartStateRef.current = null;
     }, [internalOptions.enableBatching]);
 
     // Jump to specific index in history
     const jumpToIndex = useCallback((index: number) => {
         if (index >= 0 && index < history.length) {
             setCurrentIndex(index);
+            setCurrentState(history[index]);
             
             // Exit batch mode when jumping
             if (batchModeRef.current) {
                 batchModeRef.current = false;
                 batchStartIndexRef.current = null;
+                batchStartStateRef.current = null;
             }
         }
-    }, [history.length]);
+    }, [history]);
 
     // Clear all history and start fresh
     const clearHistory = useCallback(() => {
-        const currentStateValue = history[currentIndex];
-        setHistory([currentStateValue]);
+        setHistory([currentState]);
         setCurrentIndex(0);
         batchModeRef.current = internalOptions.enableBatching;
         batchStartIndexRef.current = null;
-    }, [history, currentIndex, internalOptions.enableBatching]);
+        batchStartStateRef.current = null;
+    }, [currentState, internalOptions.enableBatching]);
 
     // Get copy of entire history
     const getHistory = useCallback(() => {
@@ -313,16 +325,32 @@ export function useAdjustmentHistory(
 
     const setBatchMode = useCallback((enabled: boolean) => {
         const wasInBatch = batchModeRef.current;
-        batchModeRef.current = enabled;
         
         if (enabled && !wasInBatch) {
-            // Starting batch mode - mark current position as batch start
+            // Starting batch mode - save current state as batch start
+            batchModeRef.current = true;
             batchStartIndexRef.current = currentIndex;
+            batchStartStateRef.current = currentState;
         } else if (!enabled && wasInBatch) {
-            // Ending batch mode - clear batch start
+            // Ending batch mode - commit final state to history
+            batchModeRef.current = false;
+            
+            // Only add to history if state actually changed from batch start
+            if (batchStartStateRef.current && 
+                !compareAdjustmentStates(currentState, batchStartStateRef.current)) {
+                
+                setHistory(prevHistory => {
+                    const truncatedHistory = prevHistory.slice(0, batchStartIndexRef.current! + 1);
+                    const newHistory = [...truncatedHistory, currentState];
+                    setCurrentIndex(newHistory.length - 1);
+                    return newHistory;
+                });
+            }
+            
             batchStartIndexRef.current = null;
+            batchStartStateRef.current = null;
         }
-    }, [currentIndex]);
+    }, [currentIndex, currentState]);
 
     // History info object
     const historyInfo: HistoryInfo = useMemo(() => ({
