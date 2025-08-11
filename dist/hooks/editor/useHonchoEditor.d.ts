@@ -35,7 +35,6 @@ export type Preset = {
 export type ImageItem = {
     id: string;
     url: string;
-    name: string;
     file: File;
 };
 export declare function useHonchoEditor(controller: Controller, initImageId: string, firebaseUid: string, eventId: string): {

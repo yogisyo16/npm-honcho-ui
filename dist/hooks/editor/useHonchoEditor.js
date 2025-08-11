@@ -182,7 +182,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid, eventId) {
                     const items = galleryList.map(g => ({
                         id: g.id,
                         url: g.raw_edited?.path || g.download?.path || '',
-                        name: g.uid,
                         file: new File([], g.id),
                     }));
                     setImageList(items);

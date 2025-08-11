@@ -61,8 +61,7 @@ export type Preset = {
 
 export type ImageItem = {
     id: string;
-    url: string;    // Temporary URL for displaying the thumbnail
-    name: string;
+    url: string;    // Temporary URL for displaying the thumbnails
     file: File;     // The actual File object
 };
 
@@ -268,7 +267,6 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
                     const items: ImageItem[] = galleryList.map(g => ({
                         id: g.id,
                         url: g.raw_edited?.path || g.download?.path || '',
-                        name: g.uid,
                         file: new File([], g.id),
                     }));
 
