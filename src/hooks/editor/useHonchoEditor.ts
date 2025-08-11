@@ -25,7 +25,7 @@ interface NavigatorWithConnection extends Navigator {
 export interface Controller {
     // Image Handling
     onGetImage(firebaseUid: string, imageID: string): Promise<Gallery>;
-    getImageList(firebaseUid: string, eventId: string): Promise<Gallery[]>; // To get gallery events
+    getImageList(firebaseUid: string, eventId: string, page: number): Promise<ResponseGallery>;
 
     // syncConfig
     syncConfig(firebaseUid: string): Promise<void>;
@@ -35,6 +35,15 @@ export interface Controller {
     getPresets(firebaseUid: string): Promise<Preset[]>;
     createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset>;
     deletePreset(firebaseUid: string, presetId: string): Promise<void>;
+}
+
+export interface ResponseGallery {
+	gallery: Gallery[];
+	limit: number;
+	current_page: number;
+	prev_page: number;
+	next_page: number;
+	sum_of_image?: number;
 }
 
 export type AdjustmentState = {
@@ -74,6 +83,10 @@ const clamp = (value: number) => Math.max(-100, Math.min(100, value));
 
 export function useHonchoEditor(controller: Controller, initImageId: string, firebaseUid: string, eventId: string) {
     const [currentImageId, setCurrentImageId] = useState(initImageId);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [hasNextPage, setHasNextPage] = useState(true);
+    const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
 
     // MARK: - Core Editor State & Refs
     const editorRef = useRef<HonchoEditor | null>(null);
@@ -262,16 +275,19 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
                 try {
                     console.log("Hook is fetching image list for event:", eventId);
                     // The controller now requires eventId, adjust the interface if needed
-                    const galleryList: Gallery[] = await controller.getImageList(firebaseUid, eventId);
-                    
-                    const items: ImageItem[] = galleryList.map(g => ({
+                    const response = await controller.getImageList(firebaseUid, eventId, 1);
+                
+                    const items: ImageItem[] = response.gallery.map(g => ({
                         id: g.id,
                         url: g.raw_edited?.path || g.download?.path || '',
                         file: new File([], g.id),
                     }));
 
                     setImageList(items);
-                    console.log("Image list state updated in hook:", items);
+
+                    // ✅ SET INITIAL PAGINATION STATE
+                    setCurrentPage(1);
+                    setHasNextPage(response.next_page !== 0 && response.next_page > response.current_page);
                 } catch (error) {
                     console.error("Hook failed to fetch image list:", error);
                 }
@@ -279,7 +295,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         };
 
         fetchAndSetImageList();
-    }, [controller, firebaseUid, eventId, imageList.length]);
+    }, [controller, firebaseUid, eventId])
 
     // Effect for keyboard shortcuts
     useEffect(() => {
@@ -424,20 +440,60 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         [imageList, currentImageId]
     );
 
-    const handleNext = useCallback(
-        async (firebaseUid: string) => {
-            // Find the current image index
-            const currentIndex = imageList.findIndex(img => img.id === currentImageId);
-            // If not the last image, go to next
-            if (currentIndex < imageList.length - 1 && currentIndex !== -1) {
-                const nextImageId = imageList[currentIndex + 1]?.id;
-                if (nextImageId) {
-                    setCurrentImageId(nextImageId);
+    const handleNext = useCallback(async (firebaseUid: string) => {
+        const currentIndex = imageList.findIndex(img => img.id === currentImageId);
+
+        // Condition 1: We are at the last image of the currently loaded list.
+        if (currentIndex === imageList.length - 1) {
+            
+            // Condition 2: Check if there's a next page and we aren't already fetching it.
+            if (hasNextPage && !isFetchingNextPage) {
+                console.log(`At end of list. Fetching next page: ${currentPage + 1}`);
+                setIsFetchingNextPage(true); // Prevent multiple fetches
+
+                try {
+                    // Fetch the next page of images
+                    const response = await controller.getImageList(firebaseUid, eventId, currentPage + 1);
+                    
+                    // If the API returns new images...
+                    if (response.gallery && response.gallery.length > 0) {
+                        const newItems: ImageItem[] = response.gallery.map(g => ({
+                            id: g.id,
+                            url: g.raw_edited?.path || g.download?.path || '',
+                            file: new File([], g.id),
+                        }));
+                        
+                        // Append the new images to our existing list
+                        setImageList(prevList => [...prevList, ...newItems]);
+                        
+                        // Update the pagination state
+                        setCurrentPage(response.current_page);
+                        setHasNextPage(response.next_page !== 0 && response.next_page > response.current_page);
+
+                        // IMPORTANT: Set the current image to the first of the NEW images
+                        setCurrentImageId(newItems[0].id);
+                    } else {
+                        // No more images left to fetch
+                        setHasNextPage(false);
+                    }
+
+                } catch (error) {
+                    console.error("Failed to fetch next page:", error);
+                } finally {
+                    setIsFetchingNextPage(false); // Allow fetching again
                 }
             }
-        },
-        [imageList, currentImageId]
-    );
+        // Condition 3: We are NOT at the end of the list, so just navigate normally.
+        } else if (currentIndex !== -1) {
+            const nextImageId = imageList[currentIndex + 1]?.id;
+            if (nextImageId) {
+                setCurrentImageId(nextImageId);
+            }
+        }
+    }, [
+        imageList, currentImageId, hasNextPage, 
+        isFetchingNextPage, currentPage, controller, firebaseUid, eventId
+    ]);
 
     useEffect(() => {
         // This is now the single point of control for loading an image based on the initial props.
