@@ -10,7 +10,10 @@
     "public"
   ],
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "peerDependencies": {
     "@emotion/react": "^11.11.1",
@@ -26,12 +29,18 @@
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^6.1.2",
     "@mui/material": "^6.1.2",
+    "@testing-library/jest-dom": "^6.6.4",
+    "@testing-library/react": "^16.3.0",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
     "next": "^13.5.6 || ^14.0.0",
     "react": "^18",
     "react-dom": "^18",
+    "ts-jest": "^29.4.1",
     "tsup": "^8.0.0",
     "typescript": "^5"
   },
