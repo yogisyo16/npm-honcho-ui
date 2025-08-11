@@ -353,6 +353,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     const loadImageFromUrl = useCallback(async (url: string) => {
         try {
             setEditorStatus("Downloading image...");
+            console.log(`[DEBUG] Attempting to fetch image from URL: ${url}`);
             const response = await fetch(url);
             if (!response.ok) throw new Error(`Failed to fetch image from URL: ${url}`);
             
@@ -376,6 +377,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
                 gallery?.raw_edited?.path
                     ? gallery.raw_edited.path
                     : gallery?.download?.path;
+            console.log("[DEBUG] Extracted imagePath to load:", imagePath);
             if (imagePath) {
                 await loadImageFromUrl(imagePath);
                 return gallery; // ✅ RETURN the gallery object on success
