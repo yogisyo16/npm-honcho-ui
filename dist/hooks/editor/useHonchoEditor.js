@@ -374,12 +374,19 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     }, [initImageId, firebaseUid, controller, isEditorReady, loadImageFromId]);
     useEffect(() => {
         const initialize = async () => {
-            // 1. Check if we have the initial data and the editor is ready
             if (initImageId && firebaseUid && controller && isEditorReady) {
                 console.log(`[INIT] Starting sequence for image: ${initImageId}`);
-                // 2. Load the initial image data and get the gallery object back
                 const initialGallery = await loadImageFromId(firebaseUid, initImageId);
-                // 3. If we got the gallery data and it contains an event_id...
+                // ✅ ADD THIS BLOCK TO CHECK THE DATA
+                console.group("[DEBUG] Checking Initial Gallery Data");
+                if (initialGallery) {
+                    console.log("Full gallery object received:", initialGallery);
+                    console.log("Discovered eventId from data:", initialGallery.event_id);
+                }
+                else {
+                    console.error("Failed to fetch the initial gallery object.");
+                }
+                console.groupEnd();
                 if (initialGallery && initialGallery.event_id) {
                     const fetchedEventId = initialGallery.event_id;
                     console.log(`[INIT] Discovered eventID: ${fetchedEventId}`);
