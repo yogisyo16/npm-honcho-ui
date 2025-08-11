@@ -185,9 +185,12 @@ export function useHonchoEditor(controller, initImageId, firebaseUid, eventId) {
                     const items = response.gallery.map(g => ({
                         id: g.id,
                         url: g.raw_edited?.path || g.download?.path || '',
+                        name: g.id,
                         file: new File([], g.id),
                     }));
                     setImageList(items);
+                    // ✅ ADD THIS CONSOLE LOG
+                    console.log("✅ Image list fetched and set in state:", items);
                     // ✅ SET INITIAL PAGINATION STATE
                     setCurrentPage(1);
                     setHasNextPage(response.next_page !== 0 && response.next_page > response.current_page);
@@ -396,6 +399,14 @@ export function useHonchoEditor(controller, initImageId, firebaseUid, eventId) {
         // Dependencies: The external props and readiness flags that trigger this logic.
         // Whenever any of these change, this effect will re-evaluate.
     }, [initImageId, firebaseUid, controller, isEditorReady, loadImageFromId]);
+    useEffect(() => {
+        // Ensure we have everything needed before trying to load.
+        if (currentImageId && firebaseUid && controller && isEditorReady) {
+            console.log(`[EFFECT] currentImageId changed to: ${currentImageId}. Loading new image into canvas.`);
+            // Load the new image specified by the updated currentImageId
+            loadImageFromId(firebaseUid, currentImageId);
+        }
+    }, [currentImageId, isEditorReady]);
     const handleFileChange = (event) => {
         const files = event.target?.files;
         if (!files || files.length === 0)
