@@ -1,5 +1,5 @@
 import { SelectChangeEvent } from "@mui/material";
-import { Gallery } from '../../hooks/editor/type';
+import { Gallery, ResponseGalleryPaging } from '../../hooks/editor/type';
 declare global {
     interface Window {
         Module: any;
@@ -7,20 +7,12 @@ declare global {
 }
 export interface Controller {
     onGetImage(firebaseUid: string, imageID: string): Promise<Gallery>;
-    getImageList(firebaseUid: string, eventId: string, page: number): Promise<ResponseGallery>;
+    getImageList(firebaseUid: string, eventId: string, page: number): Promise<ResponseGalleryPaging>;
     syncConfig(firebaseUid: string): Promise<void>;
     handleBack(firebaseUid: string, imageID: string): void;
     getPresets(firebaseUid: string): Promise<Preset[]>;
     createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset>;
     deletePreset(firebaseUid: string, presetId: string): Promise<void>;
-}
-export interface ResponseGallery {
-    gallery: Gallery[];
-    limit: number;
-    current_page: number;
-    prev_page: number;
-    next_page: number;
-    sum_of_image?: number;
 }
 export type AdjustmentState = {
     tempScore: number;
