@@ -357,26 +357,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         isFetchingNextPage, currentPage, controller, firebaseUid, eventId
     ]);
     useEffect(() => {
-        // This is now the single point of control for loading an image based on the initial props.
-        // 1. First, check if all conditions are met to even attempt loading.
-        //    We ensure the editor itself is ready before doing anything.
-        const canLoad = initImageId && firebaseUid && controller && isEditorReady;
-        if (!canLoad) {
-            return;
-        }
-        // 2. Define the loading sequence as an async function inside the effect.
-        const loadInitialImage = async () => {
-            console.log(`[EFFECT] Starting to load initial image ID: ${initImageId}`);
-            // This directly calls the loading function. We don't need to set
-            // an intermediate 'currentImageId' state, which avoids an extra re-render and potential loop.
-            await loadImageFromId(firebaseUid, initImageId);
-        };
-        // 3. Execute the loading sequence.
-        loadInitialImage();
-        // Dependencies: The external props and readiness flags that trigger this logic.
-        // Whenever any of these change, this effect will re-evaluate.
-    }, [initImageId, firebaseUid, controller, isEditorReady, loadImageFromId]);
-    useEffect(() => {
         const initialize = async () => {
             if (initImageId && firebaseUid && controller && isEditorReady) {
                 console.log(`[INIT] Starting sequence for image: ${initImageId}`);
@@ -415,14 +395,14 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         };
         initialize();
     }, [initImageId, firebaseUid, controller, isEditorReady, loadImageFromId]);
-    useEffect(() => {
-        // Ensure we have everything needed before trying to load.
-        if (currentImageId && firebaseUid && controller && isEditorReady) {
-            console.log(`[EFFECT] currentImageId changed to: ${currentImageId}. Loading new image into canvas.`);
-            // Load the new image specified by the updated currentImageId
-            loadImageFromId(firebaseUid, currentImageId);
-        }
-    }, [currentImageId, isEditorReady]);
+    // useEffect(() => {
+    //     // Ensure we have everything needed before trying to load.
+    //     if (currentImageId && firebaseUid && controller && isEditorReady) {
+    //         console.log(`[EFFECT] currentImageId changed to: ${currentImageId}. Loading new image into canvas.`);
+    //         // Load the new image specified by the updated currentImageId
+    //         loadImageFromId(firebaseUid, currentImageId);
+    //     }
+    // }, [currentImageId, isEditorReady]);
     const handleFileChange = (event) => {
         const files = event.target?.files;
         if (!files || files.length === 0)
