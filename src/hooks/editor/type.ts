@@ -79,3 +79,12 @@ export interface Gallery {
 	editor_config?: EditorConfig;
 	log: Log;
 }
+
+export interface ResponseGalleryPaging {
+	gallery: Gallery[];
+	limit: number;
+	current_page: number;
+	prev_page: number;
+	next_page: number;
+	sum_of_image?: number;
+}

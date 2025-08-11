@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { SelectChangeEvent } from "@mui/material";
 import { HonchoEditor } from '../../lib/editor/honcho-editor';
-import { Gallery } from '../../hooks/editor/type'
+import { Gallery, ResponseGalleryPaging } from '../../hooks/editor/type'
 
 // Augment the global window object for the WASM Module
 declare global {
@@ -25,7 +25,7 @@ interface NavigatorWithConnection extends Navigator {
 export interface Controller {
     // Image Handling
     onGetImage(firebaseUid: string, imageID: string): Promise<Gallery>;
-    getImageList(firebaseUid: string, eventId: string, page: number): Promise<ResponseGallery>;
+    getImageList(firebaseUid: string, eventId: string, page: number): Promise<ResponseGalleryPaging>;
 
     // syncConfig
     syncConfig(firebaseUid: string): Promise<void>;
@@ -35,15 +35,6 @@ export interface Controller {
     getPresets(firebaseUid: string): Promise<Preset[]>;
     createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset>;
     deletePreset(firebaseUid: string, presetId: string): Promise<void>;
-}
-
-export interface ResponseGallery {
-	gallery: Gallery[];
-	limit: number;
-	current_page: number;
-	prev_page: number;
-	next_page: number;
-	sum_of_image?: number;
 }
 
 export type AdjustmentState = {
