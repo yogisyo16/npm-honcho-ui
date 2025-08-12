@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { HonchoEditor } from '../../lib/editor/honcho-editor';
 import { mapAdjustmentStateToAdjustmentEditor, mapColorAdjustmentToAdjustmentState } from '../../utils/adjustment';
 import { useAdjustmentHistory } from '../useAdjustmentHistory';
@@ -10,15 +10,12 @@ const initialAdjustments = {
 };
 const clamp = (value) => Math.max(-100, Math.min(100, value));
 export function useHonchoEditor(controller, initImageId, firebaseUid) {
-    const [currentImageId, setCurrentImageId] = useState(initImageId);
-    const [currentImageData, setCurrentImageData] = useState(null);
-    const [currentAdjustmentsState, setCurrentAdjustmentsState] = useState(initialAdjustments);
-    const { onSwipeNext, onSwipePrev, isNextAvailable, isPrevAvailable, isLoading: isGalleryLoading, error: galleryError, } = useGallerySwipe(firebaseUid, initImageId, controller);
+    // const [currentImageId, setCurrentImageId] = useState<string>(initImageId);
+    // const [currentImageData, setCurrentImageData] = useState<Gallery | null>(null);
+    // const [currentAdjustmentsState, setCurrentAdjustmentsState] = useState<AdjustmentState>(initialAdjustments);
+    const { onSwipeNext, onSwipePrev, isNextAvailable, isPrevAvailable, isLoading: isGalleryLoading, error: galleryError, currentImageData: galleryImageData } = useGallerySwipe(firebaseUid, initImageId, controller);
     // The useAdjustmentHistory hook now manages all undo/redo and adjustment state logic.
-    const { currentState: currentAdjustmentState, actions: historyActions, historyInfo, config: historyConfig, } = useAdjustmentHistory(initialAdjustments);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [hasNextPage, setHasNextPage] = useState(true);
-    const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+    const { currentState: currentAdjustmentsState, actions: historyActions, historyInfo, config: historyConfig, } = useAdjustmentHistory(initialAdjustments);
     const [eventId, setEventId] = useState(null);
     // MARK: - Core Editor State & Refs
     const editorRef = useRef(null);
@@ -30,36 +27,17 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     const [isImageLoaded, setIsImageLoaded] = useState(false);
     const [zoomLevel, setZoomLevel] = useState(1);
     // MARK: - Adjustment & History State
-    // const [adjustments, setAdjustments] = useState<AdjustmentState>(initialAdjustments);
-    const [history, setHistory] = useState([initialAdjustments]);
-    const [historyIndex, setHistoryIndex] = useState(0);
-    const [isViewingOriginal, setIsViewingOriginal] = useState(false);
     const [copiedAdjustments, setCopiedAdjustments] = useState(null);
     const [copyColorChecks, setCopyColorChecks] = useState({ temperature: true, tint: true, vibrance: true, saturation: true });
     const [copyLightChecks, setCopyLightChecks] = useState({ exposure: true, contrast: true, highlights: true, shadows: true, whites: true, blacks: true });
     const [copyDetailsChecks, setCopyDetailsChecks] = useState({ clarity: true, sharpness: true });
     const [copyDialogExpanded, setCopyDialogExpanded] = useState({ color: true, light: true, details: true });
-    const [adjustmentsMap, setAdjustmentsMap] = useState(new Map());
-    // Individual Adjustment State
-    // const [tempScore, setTempScore] = useState(0);
-    // const [tintScore, setTintScore] = useState(0);
-    // const [vibranceScore, setVibranceScore] = useState(0);
-    // const [saturationScore, setSaturationScore] = useState(0);
-    // const [exposureScore, setExposureScore] = useState(0);
-    // const [highlightsScore, setHighlightsScore] = useState(0);
-    // const [shadowsScore, setShadowsScore] = useState(0);
-    // const [whitesScore, setWhitesScore] = useState(0);
-    // const [blacksScore, setBlacksScore] = useState(0);
-    // const [contrastScore, setContrastScore] = useState(0);
-    // const [clarityScore, setClarityScore] = useState(0);
-    // const [sharpnessScore, setSharpnessScore] = useState(0);
     // MARK: - UI & App State (Moved from page.tsx)
     // General UI State
     const [isOnline, setIsOnline] = useState(true);
     const [isConnectionSlow, setIsConnectionSlow] = useState(false);
     const [showCopyAlert, setShowCopyAlert] = useState(false);
     const [isCopyDialogOpen, setCopyDialogOpen] = useState(false);
-    const [isPublished, setIsPublished] = useState(false);
     const [activePanel, setActivePanel] = useState('colorAdjustment');
     const [activeSubPanel, setActiveSubPanel] = useState('');
     const [headerMenuAnchorEl, setHeaderMenuAnchorEl] = useState(null);
@@ -77,7 +55,7 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     const [isPresetCreated, setIsPresetCreated] = useState(false);
     const [selectedMobilePreset, setSelectedMobilePreset] = useState('preset1');
     const [selectedDesktopPreset, setSelectedDesktopPreset] = useState('preset1');
-    const [selectedBulkPreset, setSelectedBulkPreset] = useState('preset1');
+    // const [selectedBulkPreset, setSelectedBulkPreset] = useState<string>('preset1');
     const [presetMenuAnchorEl, setPresetMenuAnchorEl] = useState(null);
     const [activePresetMenuId, setActivePresetMenuId] = useState(null);
     const [isRenameModalOpen, setRenameModalOpen] = useState(false);
@@ -85,25 +63,22 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     const [newPresetName, setNewPresetName] = useState("");
     // Aspect Ratio State
     // Note: not used yet
-    const [currentAspectRatio, setCurrentAspectRatio] = useState('potrait');
-    const [currentSquareRatio, setCurrentSquareRatio] = useState('original');
-    const [currentWideRatio, setCurrentWideRatio] = useState('1:1');
-    const [angelScore, setAngleScore] = useState(0);
-    const [widthSizePX, setWidthSizePX] = useState(0);
-    const [heightSizePX, setHeightSizePX] = useState(0);
+    // const [currentAspectRatio, setCurrentAspectRatio] = useState('potrait');
+    // const [currentSquareRatio, setCurrentSquareRatio] = useState('original');
+    // const [currentWideRatio, setCurrentWideRatio] = useState('1:1');
+    // const [angelScore, setAngleScore] = useState(0);
+    // const [widthSizePX, setWidthSizePX] = useState(0);
+    // const [heightSizePX, setHeightSizePX] = useState(0);
     // Bulk Editing State
-    const [isBulkEditing, setIsBulkEditing] = useState(false);
-    const [selectedImages, setSelectedImages] = useState('Select');
-    const [imageList, setImageList] = useState([]);
-    const [selectedImageIds, setSelectedImageIds] = useState(new Set());
+    // const [isBulkEditing, setIsBulkEditing] = useState(false);
+    // const [selectedImages, setSelectedImages] = useState('Select');
+    // const [imageList, setImageList] = useState<ImageItem[]>([]);
+    // const [selectedImageIds, setSelectedImageIds] = useState<Set<string>>(new Set());
     // MARK: Framse- (Later use)
-    const [isFrameApplied, setIsFrameApplied] = useState(false);
     // State for Copying specific adjustments
     const [colorAdjustments, setColorAdjustments] = useState(true);
     const [lightAdjustments, setLightAdjustments] = useState(true);
     const [detailsAdjustments, setDetailsAdjustments] = useState(true);
-    // for connection native
-    const [displayedToken, setDisplayedToken] = useState(null);
     // MARK: dragable
     const PEEK_HEIGHT = 20;
     const COLLAPSED_HEIGHT = 165;
@@ -169,18 +144,17 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
             handleOpenCopyDialog(); // Assumes handleOpenCopyDialog is defined in the hook
         }
     }, [ /* handleOpenCopyDialog dependency */]);
-    useEffect(() => {
-    }, [editorRef]);
     // Effect for measuring mobile panel content
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            if (contentRef.current) {
-                const height = contentRef.current.scrollHeight;
-                setContentHeight(height);
-            }
-        }, 50);
-        return () => clearTimeout(timeoutId);
-    }, [activeSubPanel, isBulkEditing]);
+    // useEffect(() => {
+    //     const timeoutId = setTimeout(() => {
+    //         if (contentRef.current) {
+    //             const height = contentRef.current.scrollHeight;
+    //             setContentHeight(height);
+    //         }
+    //     }, 50);
+    //     return () => clearTimeout(timeoutId);
+    // }, [activeSubPanel ]);
+    // isBulkEditing
     // Effect for keyboard shortcuts
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
@@ -226,108 +200,12 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         };
     }, []);
     // MARK: - Core Editor Logic
-    const { tempScore, tintScore, vibranceScore, saturationScore, exposureScore, highlightsScore, shadowsScore, whitesScore, blacksScore, contrastScore, clarityScore, sharpnessScore } = currentAdjustmentsState;
     const updateCanvasEditor = useCallback(() => {
         if ((editorRef.current?.getInitialized() === true) && canvasRef.current) {
             editorRef.current.processImage();
             editorRef.current.renderToCanvas(canvasRef.current);
         }
     }, [canvasRef.current, editorRef.current]);
-    const loadImage = useCallback(async (file) => {
-        if (!editorRef.current) {
-            setEditorStatus("Editor not ready.");
-            return;
-        }
-        setEditorStatus("Loading image...");
-        // TODO move
-        try {
-            await editorRef.current.loadImageFromFile(file);
-            setIsImageLoaded(true);
-            updateCanvasEditor();
-        }
-        catch (e) {
-            console.error("Error loading image:", e);
-            setEditorStatus("Error: Could not load the image.");
-            setIsImageLoaded(false);
-        }
-    }, []);
-    const applyUiStateToSelectedImages = useCallback((uiState) => {
-        setAdjustmentsMap(prevMap => {
-            const newMap = new Map(prevMap);
-            selectedImageIds.forEach(id => {
-                newMap.set(id, uiState);
-            });
-            return newMap;
-        });
-    }, [selectedImageIds]);
-    const loadImageFromUrl = useCallback(async (url) => {
-        try {
-            setEditorStatus("Downloading image...");
-            console.log(`[DEBUG] Attempting to fetch image from URL: ${url}`);
-            const response = await fetch(url);
-            if (!response.ok)
-                throw new Error(`Failed to fetch image from URL: ${url}`);
-            const blob = await response.blob();
-            const filename = url.substring(url.lastIndexOf('/') + 1) || 'image.jpg';
-            const file = new File([blob], filename, { type: blob.type });
-            await loadImage(file); // Pass the final File object to the core loader
-        }
-        catch (error) {
-            console.error(error);
-            setEditorStatus("Error: Could not load image from URL.");
-        }
-    }, [loadImage]);
-    const loadImageFromId = useCallback(async (firebaseUid, imageId) => {
-        if (!controller)
-            return;
-        setEditorStatus("Fetching image...");
-        try {
-            const gallery = await controller.onGetImage(firebaseUid, imageId);
-            const imagePath = gallery?.raw_edited?.path
-                ? gallery.raw_edited.path
-                : gallery?.download?.path;
-            console.log("[DEBUG] Extracted imagePath to load:", imagePath);
-            if (imagePath) {
-                await loadImageFromUrl(imagePath);
-                return gallery; // ✅ RETURN the gallery object on success
-            }
-            else {
-                throw new Error("Controller did not return a valid image object with path.");
-            }
-        }
-        catch (error) {
-            console.error("Failed to fetch or load image via controller:", error);
-            setEditorStatus("Error: Could not fetch the image.");
-        }
-    }, [controller, loadImageFromUrl]);
-    const updateAdjustments = useCallback((newValues) => {
-        // In batch mode (like dragging a slider), this only updates the UI.
-        // When not in batch mode (or when the slider drag ends), it creates a history entry.
-        const newState = { ...currentAdjustmentsState, ...newValues };
-        historyActions.pushState(newState);
-    }, [currentAdjustmentsState, historyActions]);
-    const getImageFromId = useCallback(async (firebaseUid, imageId) => {
-        if (!controller)
-            return;
-        setEditorStatus("Fetching image...");
-        try {
-            const gallery = await controller.onGetImage(firebaseUid, imageId);
-            const imagePath = gallery?.raw_edited?.path
-                ? gallery.raw_edited.path
-                : gallery?.download?.path;
-            console.log("[DEBUG] Extracted imagePath to load:", imagePath);
-            if (imagePath) {
-                return gallery; // ✅ RETURN the gallery object on success
-            }
-            else {
-                throw new Error("Controller did not return a valid image object with path.");
-            }
-        }
-        catch (error) {
-            console.error("Failed to fetch or load image via controller:", error);
-            setEditorStatus("Error: Could not fetch the image.");
-        }
-    }, [controller]);
     const extractPathFromGallery = useCallback((data) => {
         const imagePath = data?.raw_edited?.path
             ? data.raw_edited.path
@@ -356,241 +234,59 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
             setIsImageLoaded(false);
         }
     }, [editorRef.current]);
-    const handlePrev = useCallback(async (firebaseUid) => {
-        console.log("[DEBUG] handlePrev function was called.");
-        // Find the current image index
-        const currentIndex = imageList.findIndex(img => img.id === currentImageId);
-        // If not the first image, go to previous
-        if (currentIndex > 0) {
-            const prevImageId = imageList[currentIndex - 1]?.id;
-            if (prevImageId) {
-                setCurrentImageId(prevImageId);
-            }
-        }
-    }, [imageList, currentImageId]);
-    const handleNext = useCallback(async (firebaseUid) => {
-        console.log("[DEBUG] handleNext function was called.");
-        const currentIndex = imageList.findIndex(img => img.id === currentImageId);
-        // Condition 1: We are at the last image of the currently loaded list.
-        if (currentIndex === imageList.length - 1) {
-            // ✅ ADD THIS CHECK: Ensure we have the eventId before trying to fetch.
-            if (!eventId) {
-                console.error("Cannot fetch next page, eventId has not been discovered yet.");
-                return;
-            }
-            // Condition 2: Check if there's a next page and we aren't already fetching it.
-            if (hasNextPage && !isFetchingNextPage) {
-                console.log(`At end of list. Fetching next page: ${currentPage + 1}`);
-                setIsFetchingNextPage(true);
-                try {
-                    const response = await controller.getImageList(firebaseUid, eventId, currentPage + 1);
-                    if (response.gallery && response.gallery.length > 0) {
-                        const newItems = response.gallery.map(g => ({
-                            id: g.id,
-                            url: g.raw_edited?.path || g.download?.path || '',
-                            name: g.id, // ✅ ADDED: Fulfill the ImageItem 'name' property
-                            file: new File([], g.id),
-                        }));
-                        setImageList(prevList => [...prevList, ...newItems]);
-                        setCurrentPage(response.current_page);
-                        setHasNextPage(response.next_page !== 0 && response.next_page > response.current_page);
-                        setCurrentImageId(newItems[0].id);
-                    }
-                    else {
-                        setHasNextPage(false);
-                    }
-                }
-                catch (error) {
-                    console.error("Failed to fetch next page:", error);
-                }
-                finally {
-                    setIsFetchingNextPage(false);
-                }
-            }
-            // Condition 3: We are NOT at the end of the list, so just navigate normally.
-        }
-        else if (currentIndex !== -1) {
-            const nextImageId = imageList[currentIndex + 1]?.id;
-            if (nextImageId) {
-                setCurrentImageId(nextImageId);
-            }
-        }
-    }, [
-        imageList, currentImageId, hasNextPage,
-        isFetchingNextPage, currentPage, controller, firebaseUid, eventId
-    ]);
-    useEffect(() => {
-        const initialize = async () => {
-            if (currentImageId && firebaseUid && controller && isEditorReady) {
-                console.log(`[INIT] Starting sequence for image: ${currentImageId}`);
-                const initialGallery = await loadImageFromId(firebaseUid, currentImageId);
-                // ✅ ADD THIS BLOCK TO CHECK THE DATA
-                console.group("[DEBUG] Checking Initial Gallery Data");
-                if (initialGallery) {
-                    console.log("Full gallery object received:", initialGallery);
-                    console.log("Discovered eventId from data:", initialGallery.event_id);
-                }
-                else {
-                    console.error("Failed to fetch the initial gallery object.");
-                }
-                console.groupEnd();
-                if (initialGallery && initialGallery.event_id) {
-                    const fetchedEventId = initialGallery.event_id;
-                    console.log(`[INIT] Discovered eventID: ${fetchedEventId}`);
-                    setEventId(fetchedEventId); // Store the discovered eventId in our state
-                    // 4. Now, use the discovered eventId to fetch the full image list for navigation
-                    const response = await controller.getImageList(firebaseUid, fetchedEventId, 1);
-                    const items = response.gallery.map(g => ({
-                        id: g.id,
-                        url: g.raw_edited?.path || g.download?.path || '',
-                        name: g.id,
-                        file: new File([], g.id),
-                    }));
-                    setImageList(items);
-                    setCurrentPage(1);
-                    setHasNextPage(response.next_page !== 0 && response.next_page > response.current_page);
-                    console.log("[INIT] Image list fetched and set.");
-                }
-                else {
-                    console.error("[INIT] Failed to get initial gallery data or event_id was missing.");
-                }
-            }
-        };
-        initialize();
-    }, [currentImageId, firebaseUid, controller, isEditorReady, loadImageFromId]);
-    // useEffect(() => {
-    //     // Ensure we have everything needed before trying to load.
-    //     if (currentImageId && firebaseUid && controller && isEditorReady) {
-    //         console.log(`[EFFECT] currentImageId changed to: ${currentImageId}. Loading new image into canvas.`);
-    //         // Load the new image specified by the updated currentImageId
-    //         loadImageFromId(firebaseUid, currentImageId);
+    // MARK: Batch Edit logic
+    // const handleToggleImageSelection = useCallback((imageId: string) => {
+    //     const newSelectedIds = new Set(selectedImageIds);
+    //     const isCurrentlySelected = newSelectedIds.has(imageId);
+    //     if (isCurrentlySelected) {
+    //         if (newSelectedIds.size > 1) {
+    //             newSelectedIds.delete(imageId);
+    //         }
+    //     } else {
+    //         newSelectedIds.add(imageId);
+    //         // Apply the current UI's adjustments to the newly selected image.
+    //         setAdjustmentsMap(prevMap => {
+    //             const newMap = new Map(prevMap);
+    //             const currentUiState = {
+    //                 tempScore, tintScore, vibranceScore, saturationScore,
+    //                 exposureScore, highlightsScore, shadowsScore, whitesScore,
+    //                 blacksScore, contrastScore, clarityScore, sharpnessScore
+    //             };
+    //             newMap.set(imageId, currentUiState);
+    //             return newMap;
+    //         });
     //     }
-    // }, [currentImageId, isEditorReady]);
-    const handleFileChange = (event) => {
-        const files = event.target?.files;
-        if (!files || files.length === 0)
-            return;
-        setHistory([initialAdjustments]);
-        setHistoryIndex(0);
-        if (files.length === 1) {
-            setIsBulkEditing(false);
-            setImageList([]);
-            setSelectedImageIds(new Set());
-            setAdjustmentsMap(new Map());
-            loadImage(files[0]);
-        }
-        else {
-            setIsBulkEditing(true);
-            const newImageList = Array.from(files).map((file, index) => ({
-                id: `${file.name}-${Date.now()}-${index}`,
-                name: file.name,
-                file: file,
-                url: URL.createObjectURL(file),
-            }));
-            const newAdjustmentsMap = new Map();
-            newImageList.forEach(image => {
-                newAdjustmentsMap.set(image.id, { ...initialAdjustments });
-            });
-            setAdjustmentsMap(newAdjustmentsMap);
-            setImageList(newImageList);
-            setIsImageLoaded(true);
-            setSelectedImageIds(new Set(newImageList.map(img => img.id)));
-        }
-    };
-    // const applyAdjustmentState = useCallback((state: AdjustmentState) => {
-    //     // Always update the UI controls
-    //     setTempScore(state.tempScore);
-    //     setTintScore(state.tintScore);
-    //     setVibranceScore(state.vibranceScore);
-    //     setExposureScore(state.exposureScore);
-    //     setHighlightsScore(state.highlightsScore);
-    //     setShadowsScore(state.shadowsScore);
-    //     setWhitesScore(state.whitesScore);
-    //     setBlacksScore(state.blacksScore);
-    //     setSaturationScore(state.saturationScore);
-    //     setContrastScore(state.contrastScore);
-    //     setClarityScore(state.clarityScore);
-    //     setSharpnessScore(state.sharpnessScore);
-    //     // If in bulk mode, apply this state to all selected images
+    //     setSelectedImageIds(newSelectedIds);
+    // }, [selectedImageIds, tempScore, tintScore, vibranceScore, saturationScore, exposureScore, highlightsScore, shadowsScore, whitesScore, blacksScore, contrastScore, clarityScore, sharpnessScore]);
+    // const createAbsoluteSetter = (key: keyof AdjustmentState, setter: React.Dispatch<React.SetStateAction<number>>) => (value: number) => {
+    //     setter(value); // Update UI slider
+    //     if(isBulkEditing) {
+    //         setAdjustmentsMap(prevMap => {
+    //             const newMap = new Map(prevMap);
+    //             selectedImageIds.forEach(id => {
+    //                 const currentState = newMap.get(id) || initialAdjustments;
+    //                 newMap.set(id, { ...currentState, [key]: value });
+    //             });
+    //             return newMap;
+    //         });
+    //     }
+    // };
+    // const createRelativeAdjuster = (key: keyof AdjustmentState, uiSetter: React.Dispatch<React.SetStateAction<number>>, amount: number) => () => {
+    //     uiSetter(prev => clamp(prev + amount));
     //     if (isBulkEditing) {
-    //         applyUiStateToSelectedImages(state);
+    //         setAdjustmentsMap(prevMap => {
+    //             const newMap = new Map(prevMap);
+    //             selectedImageIds.forEach(id => {
+    //                 const currentState = newMap.get(id) || initialAdjustments;
+    //                 const currentValue = currentState[key];
+    //                 const newValue = clamp(currentValue + amount);
+    //                 newMap.set(id, { ...currentState, [key]: newValue });
+    //             });
+    //             console.log("this is UI Setter: ", uiSetter);
+    //             return newMap;
+    //         });
     //     }
-    // }, [isBulkEditing, applyUiStateToSelectedImages]);
-    // const handleRevert = useCallback(() => {
-    //     // This will reset the UI controls and, if in bulk mode, the selected images
-    //     applyAdjustmentState(initialAdjustments);
-    //     // For single image mode, also reset the underlying canvas engine
-    //     if (!isBulkEditing && editorRef.current) {
-    //         editorRef.current.resetAdjustments();
-    //     }
-    // }, [applyAdjustmentState, isBulkEditing]);
-    // const handleUndo = useCallback(() => {
-    //     if (historyIndex > 0) {
-    //         const prevIndex = historyIndex - 1;
-    //         applyAdjustmentState(history[prevIndex]);
-    //         setHistoryIndex(prevIndex);
-    //     }
-    // }, [history, historyIndex, applyAdjustmentState]);
-    // const handleRedo = useCallback(() => {
-    //     if (historyIndex < history.length - 1) {
-    //         const nextIndex = historyIndex + 1;
-    //         applyAdjustmentState(history[nextIndex]);
-    //         setHistoryIndex(nextIndex);
-    //     }
-    // }, [history, historyIndex, applyAdjustmentState]);
-    const handleToggleImageSelection = useCallback((imageId) => {
-        const newSelectedIds = new Set(selectedImageIds);
-        const isCurrentlySelected = newSelectedIds.has(imageId);
-        if (isCurrentlySelected) {
-            if (newSelectedIds.size > 1) {
-                newSelectedIds.delete(imageId);
-            }
-        }
-        else {
-            newSelectedIds.add(imageId);
-            // Apply the current UI's adjustments to the newly selected image.
-            setAdjustmentsMap(prevMap => {
-                const newMap = new Map(prevMap);
-                const currentUiState = {
-                    tempScore, tintScore, vibranceScore, saturationScore,
-                    exposureScore, highlightsScore, shadowsScore, whitesScore,
-                    blacksScore, contrastScore, clarityScore, sharpnessScore
-                };
-                newMap.set(imageId, currentUiState);
-                return newMap;
-            });
-        }
-        setSelectedImageIds(newSelectedIds);
-    }, [selectedImageIds, tempScore, tintScore, vibranceScore, saturationScore, exposureScore, highlightsScore, shadowsScore, whitesScore, blacksScore, contrastScore, clarityScore, sharpnessScore]);
-    const createAbsoluteSetter = (key, setter) => (value) => {
-        setter(value); // Update UI slider
-        if (isBulkEditing) {
-            setAdjustmentsMap(prevMap => {
-                const newMap = new Map(prevMap);
-                selectedImageIds.forEach(id => {
-                    const currentState = newMap.get(id) || initialAdjustments;
-                    newMap.set(id, { ...currentState, [key]: value });
-                });
-                return newMap;
-            });
-        }
-    };
-    const createRelativeAdjuster = (key, uiSetter, amount) => () => {
-        uiSetter(prev => clamp(prev + amount));
-        if (isBulkEditing) {
-            setAdjustmentsMap(prevMap => {
-                const newMap = new Map(prevMap);
-                selectedImageIds.forEach(id => {
-                    const currentState = newMap.get(id) || initialAdjustments;
-                    const currentValue = currentState[key];
-                    const newValue = clamp(currentValue + amount);
-                    newMap.set(id, { ...currentState, [key]: newValue });
-                });
-                console.log("this is UI Setter: ", uiSetter);
-                return newMap;
-            });
-        }
-    };
+    // };
     // const setTempScoreAbs = createAbsoluteSetter('tempScore', setTempScore);
     // const setTintScoreAbs = createAbsoluteSetter('tintScore', setTintScore);
     // const setVibranceScoreAbs = createAbsoluteSetter('vibranceScore', setVibranceScore);
@@ -678,8 +374,10 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         }
     }, []);
     const handleBackCallback = useCallback(() => {
-        controller.handleBack(firebaseUid, currentImageId);
-    }, [controller, firebaseUid, currentImageId]);
+        if (!galleryImageData)
+            return;
+        controller.handleBack(firebaseUid, galleryImageData.id);
+    }, [controller, firebaseUid, galleryImageData]);
     // MARK: - UI Handlers (Moved from page.tsx)
     // Header and Dialog Handlers
     const handleHeaderMenuClick = (event) => setHeaderMenuAnchorEl(event.currentTarget);
@@ -689,22 +387,22 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     };
     const handleOpenCopyDialog = () => {
         const newColorChecks = {
-            temperature: tempScore !== 0,
-            tint: tintScore !== 0,
-            vibrance: vibranceScore !== 0,
-            saturation: saturationScore !== 0,
+            temperature: currentAdjustmentsState.tempScore !== 0,
+            tint: currentAdjustmentsState.tintScore !== 0,
+            vibrance: currentAdjustmentsState.vibranceScore !== 0,
+            saturation: currentAdjustmentsState.saturationScore !== 0,
         };
         const newLightChecks = {
-            exposure: exposureScore !== 0,
-            contrast: contrastScore !== 0,
-            highlights: highlightsScore !== 0,
-            shadows: shadowsScore !== 0,
-            whites: whitesScore !== 0,
-            blacks: blacksScore !== 0,
+            exposure: currentAdjustmentsState.exposureScore !== 0,
+            contrast: currentAdjustmentsState.contrastScore !== 0,
+            highlights: currentAdjustmentsState.highlightsScore !== 0,
+            shadows: currentAdjustmentsState.shadowsScore !== 0,
+            whites: currentAdjustmentsState.whitesScore !== 0,
+            blacks: currentAdjustmentsState.blacksScore !== 0,
         };
         const newDetailsChecks = {
-            clarity: clarityScore !== 0,
-            sharpness: sharpnessScore !== 0,
+            clarity: currentAdjustmentsState.clarityScore !== 0,
+            sharpness: currentAdjustmentsState.sharpnessScore !== 0,
         };
         setCopyColorChecks(newColorChecks);
         setCopyLightChecks(newLightChecks);
@@ -739,40 +437,37 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         const adjustmentsToCopy = {};
         // Color Adjustments
         if (copyColorChecks.temperature)
-            adjustmentsToCopy.tempScore = tempScore;
+            adjustmentsToCopy.tempScore = currentAdjustmentsState.tempScore;
         if (copyColorChecks.tint)
-            adjustmentsToCopy.tintScore = tintScore;
+            adjustmentsToCopy.tintScore = currentAdjustmentsState.tintScore;
         if (copyColorChecks.vibrance)
-            adjustmentsToCopy.vibranceScore = vibranceScore;
+            adjustmentsToCopy.vibranceScore = currentAdjustmentsState.vibranceScore;
         if (copyColorChecks.saturation)
-            adjustmentsToCopy.saturationScore = saturationScore;
+            adjustmentsToCopy.saturationScore = currentAdjustmentsState.saturationScore;
         // Light Adjustments
         if (copyLightChecks.exposure)
-            adjustmentsToCopy.exposureScore = exposureScore;
+            adjustmentsToCopy.exposureScore = currentAdjustmentsState.exposureScore;
         if (copyLightChecks.contrast)
-            adjustmentsToCopy.contrastScore = contrastScore;
+            adjustmentsToCopy.contrastScore = currentAdjustmentsState.contrastScore;
         if (copyLightChecks.highlights)
-            adjustmentsToCopy.highlightsScore = highlightsScore;
+            adjustmentsToCopy.highlightsScore = currentAdjustmentsState.highlightsScore;
         if (copyLightChecks.shadows)
-            adjustmentsToCopy.shadowsScore = shadowsScore;
+            adjustmentsToCopy.shadowsScore = currentAdjustmentsState.shadowsScore;
         if (copyLightChecks.whites)
-            adjustmentsToCopy.whitesScore = whitesScore;
+            adjustmentsToCopy.whitesScore = currentAdjustmentsState.whitesScore;
         if (copyLightChecks.blacks)
-            adjustmentsToCopy.blacksScore = blacksScore;
+            adjustmentsToCopy.blacksScore = currentAdjustmentsState.blacksScore;
         // Details Adjustments
         if (copyDetailsChecks.clarity)
-            adjustmentsToCopy.clarityScore = clarityScore;
+            adjustmentsToCopy.clarityScore = currentAdjustmentsState.clarityScore;
         if (copyDetailsChecks.sharpness)
-            adjustmentsToCopy.sharpnessScore = sharpnessScore;
+            adjustmentsToCopy.sharpnessScore = currentAdjustmentsState.sharpnessScore;
         // Combine with existing copied adjustments to not lose unchecked values from a previous copy
         setCopiedAdjustments(prev => ({ ...initialAdjustments, ...prev, ...adjustmentsToCopy }));
         console.log("Copied selected adjustments:", adjustmentsToCopy);
-    }, [
-        copyColorChecks, copyLightChecks, copyDetailsChecks,
-        tempScore, tintScore, vibranceScore, saturationScore, exposureScore, contrastScore,
-        highlightsScore, shadowsScore, whitesScore, blacksScore, clarityScore, sharpnessScore
-    ]);
+    }, [copyColorChecks, copyLightChecks, copyDetailsChecks, currentAdjustmentsState]);
     const handleConfirmCopy = () => { handleCopyEdit(); handleCloseCopyDialog(); setShowCopyAlert(true); };
+    // MARK: - UI Handlers
     // Panel Handlers
     const handleColorAccordionChange = (panel) => (_, isExpanded) => {
         setColorAdjustmentExpandedPanels(prev => isExpanded ? [...new Set([...prev, panel])] : prev.filter(p => p !== panel));
@@ -810,7 +505,7 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     const handleCreatePreset = useCallback(async () => {
         if (!controller)
             return;
-        const currentAdjustments = { tempScore, tintScore, vibranceScore, exposureScore, highlightsScore, shadowsScore, whitesScore, blacksScore, saturationScore, contrastScore, clarityScore, sharpnessScore };
+        const currentAdjustments = { ...currentAdjustmentsState };
         try {
             const newPreset = await controller.createPreset(firebaseUid, presetName, currentAdjustments);
             if (newPreset) {
@@ -827,7 +522,7 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         setIsPresetCreated(true);
         handleClosePresetModal();
         setTimeout(() => setIsPresetCreated(false), 1000);
-    }, [controller, presetName, tempScore, tintScore, exposureScore, highlightsScore, shadowsScore, whitesScore, blacksScore, saturationScore, contrastScore, clarityScore, sharpnessScore]);
+    }, [controller, presetName, currentAdjustmentsState, firebaseUid]);
     const handleOpenPresetModalMobile = () => { setIsPresetCreated(false); setPresetModalOpenMobile(true); };
     const handleClosePresetModalMobile = () => setPresetModalOpenMobile(false);
     const handleCreatePresetMobile = () => {
@@ -849,48 +544,47 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         const preset = presets.find(p => p.id === activePresetMenuId);
         if (preset) {
             setPresetToRename(preset);
-            setNewPresetName(preset.name); // Pre-fill the input with the current name
+            setNewPresetName(preset.name);
             setRenameModalOpen(true);
         }
-        handlePresetMenuClose(); // Close the small options menu
+        handlePresetMenuClose();
     }, [activePresetMenuId, presets]);
     const handleCloseRenameModal = () => {
         setRenameModalOpen(false);
         setPresetToRename(null);
         setNewPresetName("");
     };
-    // Bulk Editing Handlers
-    const toggleBulkEditing = () => {
-        setIsBulkEditing(prev => {
-            const isNowBulk = !prev;
-            setSelectedImages(isNowBulk ? 'Selected' : 'Select');
-            return isNowBulk;
-        });
-    };
-    const handleSelectBulkPreset = (event) => setSelectedBulkPreset(event.target.value);
+    // // Bulk Editing Handlers
+    // const toggleBulkEditing = () => {
+    //     setIsBulkEditing(prev => {
+    //         const isNowBulk = !prev;
+    //         setSelectedImages(isNowBulk ? 'Selected' : 'Select');
+    //         return isNowBulk;
+    //     });
+    // };
+    // const handleSelectBulkPreset = (event: SelectChangeEvent<string>) => setSelectedBulkPreset(event.target.value as string);
     // MARK : Image original and canvas
-    const handleShowOriginal = useCallback(() => {
-        if (!editorRef.current || !isImageLoaded)
-            return;
-        console.log("Showing original image...");
-        // 1. Set the flag to true to pause history recording
-        setIsViewingOriginal(true);
-        // 2. Apply the initial state to the view
-        // applyAdjustmentState(initialAdjustments);
-    }, [isImageLoaded]);
-    const handleShowEdited = useCallback(() => {
-        if (!editorRef.current || !isImageLoaded)
-            return;
-        console.log("Restoring edited image...");
-        const latestState = history[historyIndex];
-        if (latestState) {
-            // 3. Re-apply the latest state from history
-            // applyAdjustmentState(latestState);
-        }
-        // 4. Set the flag back to false AFTER the state has been restored.
-        // A small timeout ensures this runs after the re-render.
-        setTimeout(() => setIsViewingOriginal(false), 0);
-    }, [isImageLoaded, history, historyIndex]);
+    // const handleShowOriginal = useCallback(() => {
+    //     if (!editorRef.current || !isImageLoaded) return;
+    //     console.log("Showing original image...");
+    //     // 1. Set the flag to true to pause history recording
+    //     setIsViewingOriginal(true);
+    //     // 2. Apply the initial state to the view
+    //     // applyAdjustmentState(initialAdjustments);
+    // }, [isImageLoaded]);
+    // const handleShowEdited = useCallback(() => {
+    //     if (!editorRef.current || !isImageLoaded) return;
+    //     console.log("Restoring edited image...");
+    //     const latestState = history[historyIndex];
+    //     if (latestState) {
+    //         // 3. Re-apply the latest state from history
+    //         // applyAdjustmentState(latestState);
+    //     }
+    //     // 4. Set the flag back to false AFTER the state has been restored.
+    //     // A small timeout ensures this runs after the re-render.
+    //     setTimeout(() => setIsViewingOriginal(false), 0);
+    // }, [isImageLoaded, history, historyIndex]);
+    // MARK: DEBUG (NEW LOGIC)
     // MARK: - Zoom Handlers
     const handleZoomAction = useCallback((action) => {
         let newZoom = zoomLevel;
@@ -931,35 +625,9 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         }
         setZoomLevel(Math.max(0.1, Math.min(newZoom, 8)));
     }, [zoomLevel, isImageLoaded]);
-    // Adjustment USE EFFECTS
-    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setExposure(exposureScore); updateCanvas(); } }, [exposureScore, isImageLoaded, updateCanvas]);
-    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setVibrance(vibranceScore); updateCanvas(); } }, [vibranceScore, isImageLoaded, updateCanvas]);
-    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setContrast(contrastScore); updateCanvas(); } }, [contrastScore, isImageLoaded, updateCanvas]);
-    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setHighlights(highlightsScore); updateCanvas(); } }, [highlightsScore, isImageLoaded, updateCanvas]);
-    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setShadows(shadowsScore); updateCanvas(); } }, [shadowsScore, isImageLoaded, updateCanvas]);
-    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setSaturation(saturationScore); updateCanvas(); } }, [saturationScore, isImageLoaded, updateCanvas]);
-    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setTemperature(tempScore); updateCanvas(); } }, [tempScore, isImageLoaded, updateCanvas]);
-    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setTint(tintScore); updateCanvas(); } }, [tintScore, isImageLoaded, updateCanvas]);
-    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setBlacks(blacksScore); updateCanvas(); } }, [blacksScore, isImageLoaded, updateCanvas]);
-    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setWhites(whitesScore); updateCanvas(); } }, [whitesScore, isImageLoaded, updateCanvas]);
-    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setClarity(clarityScore); updateCanvas(); } }, [clarityScore, isImageLoaded, updateCanvas]);
-    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setSharpness(sharpnessScore); updateCanvas(); } }, [sharpnessScore, isImageLoaded, updateCanvas]);
-    useEffect(() => {
-        // 5. Add a check to ignore state changes while viewing the original
-        if (!isImageLoaded || isViewingOriginal)
-            return;
-        const newState = { tempScore, tintScore, vibranceScore, exposureScore, highlightsScore, shadowsScore, whitesScore, blacksScore, saturationScore, contrastScore, clarityScore, sharpnessScore };
-        if (JSON.stringify(history[historyIndex]) === JSON.stringify(newState))
-            return;
-        const newHistory = history.slice(0, historyIndex + 1);
-        setHistory([...newHistory, newState]);
-        setHistoryIndex(newHistory.length);
-    }, [
-        tempScore, tintScore, vibranceScore, exposureScore, highlightsScore, shadowsScore,
-        whitesScore, blacksScore, saturationScore, contrastScore, clarityScore, sharpnessScore,
-        isImageLoaded, history, historyIndex,
-        isViewingOriginal
-    ]);
+    const zoomLevelText = useMemo(() => {
+        return `${Math.round(zoomLevel * 100)}%`;
+    }, [zoomLevel]);
     useEffect(() => {
         if (showCopyAlert) {
             const timer = setTimeout(() => setShowCopyAlert(false), 2000);
@@ -977,123 +645,25 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         };
     }, []);
     useEffect(() => {
-        // The function returned by useEffect is the cleanup function.
-        // It will run only when the component that uses this hook unmounts.
-        return () => {
-            if (editorRef.current) {
-                console.log("Cleaning up Honcho Editor instance...");
-                editorRef.current.cleanup(); // This calls the C++ cleanup function
-            }
-        };
-    }, []);
-    // MARK: DEBUG (NEW LOGIC)
-    // const { width, height } = editorRef.current.getImageSize();
-    // canvasRef.current.width = width;
-    // canvasRef.current.height = height;
-    useEffect(() => {
         if (canvasRef.current) {
             canvasRef.current.style.transition = 'transform 0.1s ease-out';
             canvasRef.current.style.transform = `scale(${zoomLevel})`;
         }
     }, [zoomLevel]);
-    const setTempScore = (value) => {
-        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.tempScore) : value;
-        updateAdjustments({ tempScore: newValue });
-    };
-    const setTintScore = (value) => {
-        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.tintScore) : value;
-        updateAdjustments({ tintScore: newValue });
-    };
-    // ...and so on for all 12 adjustments. Here are the rest:
-    const setVibranceScore = (value) => {
-        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.vibranceScore) : value;
-        updateAdjustments({ vibranceScore: newValue });
-    };
-    const setSaturationScore = (value) => {
-        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.saturationScore) : value;
-        updateAdjustments({ saturationScore: newValue });
-    };
-    const setExposureScore = (value) => {
-        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.exposureScore) : value;
-        updateAdjustments({ exposureScore: newValue });
-    };
-    const setHighlightsScore = (value) => {
-        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.highlightsScore) : value;
-        updateAdjustments({ highlightsScore: newValue });
-    };
-    const setShadowsScore = (value) => {
-        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.shadowsScore) : value;
-        updateAdjustments({ shadowsScore: newValue });
-    };
-    const setWhitesScore = (value) => {
-        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.whitesScore) : value;
-        updateAdjustments({ whitesScore: newValue });
-    };
-    const setBlacksScore = (value) => {
-        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.blacksScore) : value;
-        updateAdjustments({ blacksScore: newValue });
-    };
-    const setContrastScore = (value) => {
-        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.contrastScore) : value;
-        updateAdjustments({ contrastScore: newValue });
-    };
-    const setClarityScore = (value) => {
-        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.clarityScore) : value;
-        updateAdjustments({ clarityScore: newValue });
-    };
-    const setSharpnessScore = (value) => {
-        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.sharpnessScore) : value;
-        updateAdjustments({ sharpnessScore: newValue });
-    };
-    // Undo, Redo, Revert
-    const handleRevert = useCallback(() => {
-        setCurrentAdjustmentsState(initialAdjustments);
-    }, [updateCanvasEditor]);
-    const handleUndo = useCallback(() => {
-        if (historyIndex > 0) {
-            const prevIndex = historyIndex - 1;
-            setCurrentAdjustmentsState(history[prevIndex]);
-            setHistoryIndex(prevIndex);
-        }
-    }, [history, historyIndex, updateCanvasEditor]);
-    const handleRedo = useCallback(() => {
-        if (historyIndex < history.length - 1) {
-            const nextIndex = historyIndex + 1;
-            setCurrentAdjustmentsState(history[nextIndex]);
-            setHistoryIndex(nextIndex);
-        }
-    }, [history, historyIndex, updateCanvasEditor]);
-    // Undo, Redo, Revert [END]
-    // Swipe
-    const swipeNext = useCallback(() => {
-        // find next imageId
-        // setCurrentImageId()
-    }, []);
-    const swipePrev = useCallback(() => {
-        // find next imageId
-        // setCurrentImageId()
-    }, []);
-    // Swipe [END]
     useEffect(() => {
         // will trigger when currentImageId change
-        if (!currentImageId)
+        if (!galleryImageData)
             return;
         const init = async () => {
             if (editorRef.current?.getInitialized() === false) {
                 await editorRef.current?.initialize();
             }
-            const imageData = await getImageFromId(firebaseUid, currentImageId);
-            if (!imageData) {
-                // TODO please check to make sure not crash
-                throw new Error("can't load image data");
-            }
-            setCurrentImageData(imageData);
-            const adjustmentData = imageData.editor_config?.color_adjustment;
+            const adjustmentData = galleryImageData.editor_config?.color_adjustment;
             // set event
-            setEventId(imageData.event_id);
+            setEventId(galleryImageData.event_id);
             // TODO get slideshow image list
             // set to imageList
-            const pathGallery = extractPathFromGallery(imageData);
+            const pathGallery = extractPathFromGallery(galleryImageData);
             // load image to editor
             await loadImageEditorFromUrl(pathGallery);
             console.log("Image loaded to editor");
@@ -1101,14 +671,14 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
             if (adjustmentData) {
                 const adjustmentState = mapColorAdjustmentToAdjustmentState(adjustmentData);
                 // set adjustment to editor to make adjustmentState change
-                setCurrentAdjustmentsState(adjustmentState);
+                historyActions.syncHistory([adjustmentState]);
             }
             else {
                 console.log("no adjustment found, use default");
             }
         };
         init();
-    }, [currentImageId, editorRef.current]);
+    }, [galleryImageData, editorRef.current]);
     useEffect(() => {
         // Render photo if adjustmentState change;
         if (!editorRef.current)
@@ -1126,12 +696,15 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         editorStatus,
         isEditorReady,
         isImageLoaded: isImageLoaded && !isGalleryLoading, // Combine loading states
-        galleryError,
-        // Gallery Swipe functions and state
-        handlePrev: onSwipePrev,
-        handleNext: onSwipeNext,
-        isPrevAvailable,
+        onSwipeNext,
+        onSwipePrev,
         isNextAvailable,
+        isPrevAvailable,
+        isGalleryLoading,
+        galleryError,
+        galleryImageData,
+        currentAdjustmentsState,
+        historyActions,
         // History functions and state
         handleUndo: historyActions.undo,
         handleRedo: historyActions.redo,
@@ -1152,7 +725,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         isConnectionSlow,
         showCopyAlert,
         isCopyDialogOpen,
-        isPublished,
         activePanel,
         activeSubPanel,
         headerMenuAnchorEl,
@@ -1166,32 +738,18 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         isPresetCreated,
         selectedMobilePreset,
         selectedDesktopPreset,
-        selectedBulkPreset,
         presetMenuAnchorEl,
         activePresetMenuId,
-        currentAspectRatio,
-        currentSquareRatio,
-        currentWideRatio,
-        angelScore,
-        widthSizePX,
-        heightSizePX,
-        isBulkEditing,
-        selectedImages,
         colorAdjustments,
         lightAdjustments,
         detailsAdjustments,
-        handleShowOriginal,
-        handleShowEdited,
         handleWheelZoom,
         handleZoomAction,
-        zoomLevelText: `${Math.round(zoomLevel * 100)}%`,
+        zoomLevelText,
         presets,
         // Functions
         handleScriptReady,
-        handleFileChange,
         handleAlertClose,
-        loadImageFromId,
-        loadImageFromUrl,
         handleOpenCopyDialog,
         handleCloseCopyDialog,
         copyColorChecks,
@@ -1243,29 +801,8 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         handleOpenWatermarkView,
         handleSaveWatermark,
         handleCancelWatermark,
-        toggleBulkEditing,
-        handleSelectBulkPreset,
-        // Adjustment State & Setters
-        currentAdjustmentsState,
-        setTempScore,
-        setTintScore,
-        setVibranceScore,
-        setSaturationScore,
-        setExposureScore,
-        setHighlightsScore,
-        setShadowsScore,
-        setWhitesScore,
-        setBlacksScore,
-        setContrastScore,
-        setClarityScore,
-        setSharpnessScore,
-        setCurrentAdjustmentsState,
         // Bulk Adjustment Handlers
         // Note: These handlers are for image list
-        imageList,
-        adjustmentsMap,
-        selectedImageIds,
-        handleToggleImageSelection,
         // Note: These handlers are for bulk adjustments
         // Adjustment Colors
         // handleBulkTempDecreaseMax,

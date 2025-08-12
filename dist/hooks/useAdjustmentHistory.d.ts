@@ -47,6 +47,8 @@ export interface HistoryActions {
     getHistory: () => AdjustmentState[];
     /** Trim history to specified size, keeping most recent entries */
     trimHistory: (keepLast: number) => void;
+    /** Replace entire history with new list of adjustment states */
+    syncHistory: (newHistory: AdjustmentState[], targetIndex?: number) => void;
 }
 /**
  * Configuration actions for runtime adjustment

@@ -9,10 +9,15 @@ export declare function useEditorWithHistory(): {
     updateTemperature: (newTemp: number) => void;
     applyPresetWithSmoothUI: (presetState: AdjustmentState) => void;
     updateMultipleAdjustments: (updates: Partial<AdjustmentState>) => void;
+    loadSavedHistory: (savedStates: AdjustmentState[]) => void;
+    loadHistoryToSpecificPoint: (savedStates: AdjustmentState[], targetIndex: number) => void;
+    mergeWithNewStates: (newStates: AdjustmentState[]) => void;
+    loadPresetVariations: () => void;
     resetAdjustments: () => void;
     jumpToIndex: (index: number) => void;
     getHistory: () => AdjustmentState[];
     clearHistory: () => void;
+    syncHistory: (newHistory: AdjustmentState[], targetIndex?: number) => void;
     setBatchMode: (enabled: boolean) => void;
     setMaxSize: (size: number | "unlimited") => void;
     getMemoryUsage: () => number;

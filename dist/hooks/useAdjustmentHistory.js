@@ -205,6 +205,65 @@ export function useAdjustmentHistory(initialState, options = {}) {
     const trimHistory = useCallback((keepLast) => {
         trimHistoryToSize(keepLast);
     }, [trimHistoryToSize]);
+    // Sync/replace entire history with new list
+    const syncHistory = useCallback((newHistory, targetIndex) => {
+        // Validate input
+        if (!Array.isArray(newHistory) || newHistory.length === 0) {
+            console.warn('syncHistory: newHistory must be a non-empty array');
+            return;
+        }
+        // Validate all items are AdjustmentState objects
+        const isValidHistory = newHistory.every(state => state && typeof state === 'object' &&
+            typeof state.tempScore === 'number' &&
+            typeof state.tintScore === 'number' &&
+            typeof state.vibranceScore === 'number' &&
+            typeof state.saturationScore === 'number' &&
+            typeof state.exposureScore === 'number' &&
+            typeof state.highlightsScore === 'number' &&
+            typeof state.shadowsScore === 'number' &&
+            typeof state.whitesScore === 'number' &&
+            typeof state.blacksScore === 'number' &&
+            typeof state.contrastScore === 'number' &&
+            typeof state.clarityScore === 'number' &&
+            typeof state.sharpnessScore === 'number');
+        if (!isValidHistory) {
+            console.warn('syncHistory: All items in newHistory must be valid AdjustmentState objects');
+            return;
+        }
+        // Exit batch mode if active
+        if (batchModeRef.current) {
+            batchModeRef.current = false;
+            batchStartIndexRef.current = null;
+            batchStartStateRef.current = null;
+        }
+        // Determine target index
+        let finalIndex = targetIndex ?? newHistory.length - 1; // Default to last item
+        finalIndex = Math.max(0, Math.min(finalIndex, newHistory.length - 1)); // Clamp to valid range
+        // Create a copy of the new history to avoid mutations
+        const historyToSet = newHistory.map(state => ({ ...state }));
+        // Apply max size limit if needed
+        if (maxSizeRef.current !== 'unlimited' && historyToSet.length > maxSizeRef.current) {
+            const trimAmount = historyToSet.length - maxSizeRef.current;
+            const trimmedHistory = historyToSet.slice(trimAmount);
+            // Adjust target index
+            finalIndex = Math.max(0, finalIndex - trimAmount);
+            setHistory(trimmedHistory);
+            setCurrentIndex(finalIndex);
+            setCurrentState(trimmedHistory[finalIndex]);
+            if (devWarningsRef.current) {
+                console.warn(`syncHistory: Trimmed ${trimAmount} entries to respect maxSize of ${maxSizeRef.current}`);
+            }
+        }
+        else {
+            // Set history as-is
+            setHistory(historyToSet);
+            setCurrentIndex(finalIndex);
+            setCurrentState(historyToSet[finalIndex]);
+        }
+        if (devWarningsRef.current) {
+            console.log(`syncHistory: Synchronized ${historyToSet.length} states, current index: ${finalIndex}`);
+        }
+    }, []);
     // Configuration setters
     const setMaxSize = useCallback((size) => {
         maxSizeRef.current = size;
@@ -255,8 +314,9 @@ export function useAdjustmentHistory(initialState, options = {}) {
         jumpToIndex,
         clearHistory,
         getHistory,
-        trimHistory
-    }), [pushState, undo, redo, reset, jumpToIndex, clearHistory, getHistory, trimHistory]);
+        trimHistory,
+        syncHistory
+    }), [pushState, undo, redo, reset, jumpToIndex, clearHistory, getHistory, trimHistory, syncHistory]);
     // Config object - stabilized with useMemo
     const config = useMemo(() => ({
         setMaxSize,
