@@ -334,6 +334,43 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     // const handleBulkSharpnessIncrease = createRelativeAdjuster('sharpnessScore', setSharpnessScore, 5);
     // const handleBulkSharpnessIncreaseMax = createRelativeAdjuster('sharpnessScore', setSharpnessScore, 20);
 
+    // // Bulk Editing Handlers
+    // const toggleBulkEditing = () => {
+    //     setIsBulkEditing(prev => {
+    //         const isNowBulk = !prev;
+    //         setSelectedImages(isNowBulk ? 'Selected' : 'Select');
+    //         return isNowBulk;
+    //     });
+    // };
+
+    // const handleSelectBulkPreset = (event: SelectChangeEvent<string>) => setSelectedBulkPreset(event.target.value as string);
+
+    // MARK : Image original and canvas
+    // const handleShowOriginal = useCallback(() => {
+    //     if (!editorRef.current || !isImageLoaded) return;
+        
+    //     console.log("Showing original image...");
+    //     // 1. Set the flag to true to pause history recording
+    //     setIsViewingOriginal(true);
+    //     // 2. Apply the initial state to the view
+    //     // applyAdjustmentState(initialAdjustments);
+    // }, [isImageLoaded]);
+
+    // const handleShowEdited = useCallback(() => {
+    //     if (!editorRef.current || !isImageLoaded) return;
+
+    //     console.log("Restoring edited image...");
+    //     const latestState = history[historyIndex];
+    //     if (latestState) {
+    //         // 3. Re-apply the latest state from history
+    //         // applyAdjustmentState(latestState);
+    //     }
+        
+    //     // 4. Set the flag back to false AFTER the state has been restored.
+    //     // A small timeout ensures this runs after the re-render.
+    //     setTimeout(() => setIsViewingOriginal(false), 0);
+    // }, [isImageLoaded, history, historyIndex]);
+
     // Mobile Panel Drag Handlers
     const handleContentHeightChange = useCallback((height: number) => {
         if (height > 0 && height !== contentHeight) setContentHeight(height);
@@ -398,7 +435,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
             data?.raw_edited?.path
                 ? data.raw_edited.path
                 : data?.download?.path;
-        console.log("[DEBUG] Extracted imagePath to load:", imagePath);
+        console.log("[DEBUG FOR EXTRACT] Extracted imagePath to load:", imagePath);
         return imagePath;
     }, []);
 
@@ -407,13 +444,13 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
             if (!editorRef.current) return;
 
             setEditorStatus("Downloading image...");
-            console.log(`[DEBUG] Attempting to fetch image from URL: ${url}`);
             const response = await fetch(url);
             if (!response.ok) throw new Error(`Failed to fetch image from URL: ${url}`);
             
             const blob = await response.blob();
             const filename = url.substring(url.lastIndexOf('/') + 1) || 'image.jpg';
             const file = new File([blob], filename, { type: blob.type });
+            console.log("[DEBUG FOR LOAD] File to load:", file);
             
             await editorRef.current.loadImageFromFile(file);
             setIsImageLoaded(true);
@@ -554,43 +591,6 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         setPresetToRename(null);
         setNewPresetName("");
     };
-
-    // // Bulk Editing Handlers
-    // const toggleBulkEditing = () => {
-    //     setIsBulkEditing(prev => {
-    //         const isNowBulk = !prev;
-    //         setSelectedImages(isNowBulk ? 'Selected' : 'Select');
-    //         return isNowBulk;
-    //     });
-    // };
-
-    // const handleSelectBulkPreset = (event: SelectChangeEvent<string>) => setSelectedBulkPreset(event.target.value as string);
-
-    // MARK : Image original and canvas
-    // const handleShowOriginal = useCallback(() => {
-    //     if (!editorRef.current || !isImageLoaded) return;
-        
-    //     console.log("Showing original image...");
-    //     // 1. Set the flag to true to pause history recording
-    //     setIsViewingOriginal(true);
-    //     // 2. Apply the initial state to the view
-    //     // applyAdjustmentState(initialAdjustments);
-    // }, [isImageLoaded]);
-
-    // const handleShowEdited = useCallback(() => {
-    //     if (!editorRef.current || !isImageLoaded) return;
-
-    //     console.log("Restoring edited image...");
-    //     const latestState = history[historyIndex];
-    //     if (latestState) {
-    //         // 3. Re-apply the latest state from history
-    //         // applyAdjustmentState(latestState);
-    //     }
-        
-    //     // 4. Set the flag back to false AFTER the state has been restored.
-    //     // A small timeout ensures this runs after the re-render.
-    //     setTimeout(() => setIsViewingOriginal(false), 0);
-    // }, [isImageLoaded, history, historyIndex]);
     
     // MARK: DEBUG (NEW LOGIC)
 
@@ -794,30 +794,37 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     useEffect(() => {
         // will trigger when currentImageId change
         if (!galleryImageData) return;
-
+        console.log("++ USEEFFECT FOR NEXT AND PREV");
         const init = async() => {
+            console.log("1. INIT EDITOR")
             if (editorRef.current?.getInitialized() === false) {
                 await editorRef.current?.initialize();
             }
 
             const adjustmentData = galleryImageData.editor_config?.color_adjustment;
-            
+            console.log("2. ADJUSTMENTDATA: ", adjustmentData);
             // set event
             setEventId(galleryImageData.event_id);
+            console.log("3. EVENTID: ", eventId);
 
             // TODO get slideshow image list
             // set to imageList
 
             const pathGallery = extractPathFromGallery(galleryImageData);
             // load image to editor
+            console.log("4. PATHGALLERY: ", pathGallery);
             await loadImageEditorFromUrl(pathGallery);
+            console.log("5. LOAD IMAGE TO EDITOR");
             
             updateCanvasEditor();
+            console.log("6. UPDATE CANVAS EDITOR");
 
             // adjustment setup
             if (adjustmentData) {
+                console.log("7. ADJUSTMENTDATA FOUND");
                 const adjustmentState = mapColorAdjustmentToAdjustmentState(adjustmentData);
                 // set adjustment to editor to make adjustmentState change
+                console.log("8. SYNC HISTORY");
                 historyActions.syncHistory([adjustmentState]); 
             } else {
                 console.log("no adjustment found, use default");
@@ -830,7 +837,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     useEffect(() => {
         // Render photo if adjustmentState change;
         if (!editorRef.current || !isImageLoaded) return;
-
+        
         editorRef.current.setAdjustments(mapAdjustmentStateToAdjustmentEditor(currentAdjustmentsState));
         updateCanvasEditor();
     }, [editorRef.current, currentAdjustmentsState, isImageLoaded]);
@@ -862,16 +869,13 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         // Cast navigator to our custom type to access the connection property safely
         const navigatorWithConnection = navigator as NavigatorWithConnection;
 
-        if (!navigatorWithConnection.connection) {
-            return;
-        }
+        if (!navigatorWithConnection.connection) return;
 
         const navigatorConnection = navigatorWithConnection.connection;
 
         const updateConnectionStatus = () => {
             const slowConnectionTypes = ['slow-2g', '2g', '3g'];
-            const isSlow = navigatorConnection.saveData ||
-                        slowConnectionTypes.includes(navigatorConnection.effectiveType);
+            const isSlow = navigatorConnection.saveData || slowConnectionTypes.includes(navigatorConnection.effectiveType);
             
             setIsConnectionSlow(isSlow);
         };
