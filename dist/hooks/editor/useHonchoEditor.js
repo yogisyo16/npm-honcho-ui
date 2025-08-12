@@ -298,14 +298,13 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
             const file = new File([blob], filename, { type: blob.type });
             await editorRef.current.loadImageFromFile(file);
             setIsImageLoaded(true);
-            updateCanvasEditor();
         }
         catch (error) {
             console.error(error);
             setEditorStatus("Error: Could not load image from URL.");
             setIsImageLoaded(false);
         }
-    }, [editorRef.current, updateCanvasEditor]);
+    }, [editorRef.current]);
     const handleScriptReady = useCallback(async () => {
         console.log("[Editor] Script tag is ready."); // Log entry
         if (typeof window.Module === 'function' && !editorRef.current) {
@@ -662,11 +661,11 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     }, [galleryImageData, editorRef.current]);
     useEffect(() => {
         // Render photo if adjustmentState change;
-        if (!editorRef.current)
+        if (!editorRef.current || !isImageLoaded)
             return;
         editorRef.current.setAdjustments(mapAdjustmentStateToAdjustmentEditor(currentAdjustmentsState));
         updateCanvasEditor();
-    }, [editorRef.current, currentAdjustmentsState]);
+    }, [editorRef.current, currentAdjustmentsState, isImageLoaded]);
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
         return () => {

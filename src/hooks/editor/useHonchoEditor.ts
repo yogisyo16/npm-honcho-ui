@@ -417,14 +417,12 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
             
             await editorRef.current.loadImageFromFile(file);
             setIsImageLoaded(true);
-
-            updateCanvasEditor();
         } catch (error) {
             console.error(error);
             setEditorStatus("Error: Could not load image from URL.");
             setIsImageLoaded(false);
         }
-    }, [editorRef.current, updateCanvasEditor]);
+    }, [editorRef.current]);
 
     const handleScriptReady = useCallback(async () => {
         console.log("[Editor] Script tag is ready."); // Log entry
@@ -830,11 +828,11 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
 
     useEffect(() => {
         // Render photo if adjustmentState change;
-        if (!editorRef.current) return;
+        if (!editorRef.current || !isImageLoaded) return;
 
         editorRef.current.setAdjustments(mapAdjustmentStateToAdjustmentEditor(currentAdjustmentsState));
         updateCanvasEditor();
-    }, [editorRef.current, currentAdjustmentsState]);
+    }, [editorRef.current, currentAdjustmentsState, isImageLoaded]);
 
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
