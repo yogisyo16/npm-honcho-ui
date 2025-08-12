@@ -40,6 +40,8 @@ export declare function useHonchoEditor(controller: Controller, initImageId: str
     canvasRef: import("react").MutableRefObject<HTMLCanvasElement | null>;
     canvasContainerRef: import("react").MutableRefObject<HTMLDivElement | null>;
     fileInputRef: import("react").MutableRefObject<HTMLInputElement | null>;
+    handleShowOriginal: () => void;
+    handleShowEdited: () => void;
     editorStatus: string;
     isEditorReady: boolean;
     isImageLoaded: boolean;

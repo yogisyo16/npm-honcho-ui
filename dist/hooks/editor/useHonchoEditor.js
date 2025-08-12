@@ -216,27 +216,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     //     });
     // };
     // const handleSelectBulkPreset = (event: SelectChangeEvent<string>) => setSelectedBulkPreset(event.target.value as string);
-    // MARK : Image original and canvas
-    // const handleShowOriginal = useCallback(() => {
-    //     if (!editorRef.current || !isImageLoaded) return;
-    //     console.log("Showing original image...");
-    //     // 1. Set the flag to true to pause history recording
-    //     setIsViewingOriginal(true);
-    //     // 2. Apply the initial state to the view
-    //     // applyAdjustmentState(initialAdjustments);
-    // }, [isImageLoaded]);
-    // const handleShowEdited = useCallback(() => {
-    //     if (!editorRef.current || !isImageLoaded) return;
-    //     console.log("Restoring edited image...");
-    //     const latestState = history[historyIndex];
-    //     if (latestState) {
-    //         // 3. Re-apply the latest state from history
-    //         // applyAdjustmentState(latestState);
-    //     }
-    //     // 4. Set the flag back to false AFTER the state has been restored.
-    //     // A small timeout ensures this runs after the re-render.
-    //     setTimeout(() => setIsViewingOriginal(false), 0);
-    // }, [isImageLoaded, history, historyIndex]);
     // Mobile Panel Drag Handlers
     const handleContentHeightChange = useCallback((height) => {
         if (height > 0 && height !== contentHeight)
@@ -357,6 +336,21 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     const handlePresetAccordionChange = (panel) => (_, isExpanded) => {
         setPresetExpandedPanels(prev => isExpanded ? [...new Set([...prev, panel])] : prev.filter(p => p !== panel));
     };
+    const handleShowOriginal = useCallback(() => {
+        if (!editorRef.current || !isImageLoaded || !canvasRef.current)
+            return;
+        console.log("Showing original image...");
+        editorRef.current.setAdjustments(mapAdjustmentStateToAdjustmentEditor(initialAdjustments));
+        editorRef.current.processImage();
+        editorRef.current.renderToCanvas(canvasRef.current);
+    }, [isImageLoaded, editorRef, canvasRef]);
+    const handleShowEdited = useCallback(() => {
+        if (!editorRef.current || !isImageLoaded || !canvasRef.current)
+            return;
+        editorRef.current.setAdjustments(mapAdjustmentStateToAdjustmentEditor(currentAdjustmentsState));
+        editorRef.current.processImage();
+        editorRef.current.renderToCanvas(canvasRef.current);
+    }, [isImageLoaded, editorRef, canvasRef, currentAdjustmentsState]);
     // MARK: - Preset Handlers
     // Also it calls for the backend endpoint
     const handleSelectMobilePreset = (presetId) => setSelectedMobilePreset(presetId);
@@ -714,6 +708,8 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         canvasRef,
         canvasContainerRef,
         fileInputRef,
+        handleShowOriginal,
+        handleShowEdited,
         // Status & State
         editorStatus,
         isEditorReady,
