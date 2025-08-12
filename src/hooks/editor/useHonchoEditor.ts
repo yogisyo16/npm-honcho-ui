@@ -796,7 +796,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         if (!galleryImageData) return;
         console.log("++ USEEFFECT FOR NEXT AND PREV");
         const init = async() => {
-            console.log("1. INIT EDITOR")
+            console.log("1. INIT EDITOR");
             if (editorRef.current?.getInitialized() === false) {
                 await editorRef.current?.initialize();
             }
