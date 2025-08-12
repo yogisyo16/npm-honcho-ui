@@ -795,13 +795,10 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
             }
 
             const adjustmentData = galleryImageData.editor_config?.color_adjustment;
-            console.log("2. ADJUSTMENT DATA: ", adjustmentData, galleryImageData);
+            console.log("2. ADJUSTMENT DATA: ", {...adjustmentData}, {...galleryImageData});
             // set event
             setEventId(galleryImageData.event_id);
             console.log("3. EVENTID: ", eventId);
-
-            // TODO get slideshow image list
-            // set to imageList
 
             const pathGallery = extractPathFromGallery(galleryImageData);
             // load image to editor

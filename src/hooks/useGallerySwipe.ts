@@ -258,7 +258,7 @@ export function useGallerySwipe(
             } else {
                 // Scenario 2: Navigate to next image in current list
                 const nextImage = currentImageList[currentIndex + 1];
-                console.log("[SCENARIO 2] Navigating to next image:", nextImage);
+                console.log("[SCENARIO 2] Navigating to next image:", nextImage.id);
                 setCurrentImageId(nextImage.id);
                 
                 // Fetch complete data for the next image
