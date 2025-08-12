@@ -424,7 +424,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
             setEditorStatus("Error: Could not load image from URL.");
             setIsImageLoaded(false);
         }
-    }, [editorRef.current]);
+    }, [editorRef.current, updateCanvasEditor]);
 
     const handleScriptReady = useCallback(async () => {
         console.log("[Editor] Script tag is ready."); // Log entry
