@@ -147,6 +147,7 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
             // Step 3: Get complete image list by searching through pages
             // This ensures we have navigation context for the current image
             const allImages = await getImageListUntilFound(initImageId, gallery.event_id);
+            console.log("Print all images Id: ", allImages.map(image => image.id).join(', '));
             setCurrentImageList(allImages);
             // Step 4: Update tracking refs to prevent unnecessary re-initialization
             prevFirebaseUid.current = firebaseUid;
@@ -207,7 +208,7 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
             else {
                 // Scenario 2: Navigate to next image in current list
                 const nextImage = currentImageList[currentIndex + 1];
-                console.log("[SCENARIO 2] Navigating to next image:", nextImage);
+                console.log("[SCENARIO 2] Navigating to next image:", nextImage.id);
                 setCurrentImageId(nextImage.id);
                 // Fetch complete data for the next image
                 const nextImageData = await controller.onGetImage(firebaseUid, nextImage.id);
