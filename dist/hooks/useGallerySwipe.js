@@ -239,6 +239,8 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
                 setCurrentImageId(nextImage.id);
                 // Immediately update the ref to prevent stale closure issues
                 currentImageIdRef.current = nextImage.id;
+                // Add a small delay to ensure state is fully updated
+                await new Promise(resolve => setTimeout(resolve, 100));
                 // Fetch complete data for the next image
                 const nextImageData = await controller.onGetImage(firebaseUid, nextImage.id);
                 if (nextImageData) {
