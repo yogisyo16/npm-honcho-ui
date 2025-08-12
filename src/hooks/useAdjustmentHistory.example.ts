@@ -74,6 +74,38 @@ export function useEditorWithHistory() {
         config.setBatchMode(false); // Commit batch
     };
 
+    // Example: Load saved history from storage or API
+    const loadSavedHistory = (savedStates: AdjustmentState[]) => {
+        // Load complete history and set to last state
+        actions.syncHistory(savedStates);
+    };
+
+    // Example: Load history and jump to specific point
+    const loadHistoryToSpecificPoint = (savedStates: AdjustmentState[], targetIndex: number) => {
+        // Load history and set current position to specific index
+        actions.syncHistory(savedStates, targetIndex);
+    };
+
+    // Example: Merge current history with new states
+    const mergeWithNewStates = (newStates: AdjustmentState[]) => {
+        const currentHistory = actions.getHistory();
+        const mergedHistory = [...currentHistory, ...newStates];
+        actions.syncHistory(mergedHistory);
+    };
+
+    // Example: Replace with preset variations
+    const loadPresetVariations = () => {
+        const variations: AdjustmentState[] = [
+            initialAdjustments, // Original
+            { ...initialAdjustments, tempScore: 25 }, // Warm
+            { ...initialAdjustments, tempScore: -25 }, // Cool
+            { ...initialAdjustments, exposureScore: 20 }, // Bright
+            { ...initialAdjustments, exposureScore: -20 }, // Dark
+        ];
+        
+        actions.syncHistory(variations, 0); // Load variations, start at original
+    };
+
     // Example: Reset to initial state
     const resetAdjustments = () => {
         actions.reset(initialAdjustments);
@@ -93,12 +125,17 @@ export function useEditorWithHistory() {
         updateTemperature,
         applyPresetWithSmoothUI,
         updateMultipleAdjustments,
+        loadSavedHistory,
+        loadHistoryToSpecificPoint,
+        mergeWithNewStates,
+        loadPresetVariations,
         resetAdjustments,
         
         // Advanced features
         jumpToIndex: actions.jumpToIndex,
         getHistory: actions.getHistory,
         clearHistory: actions.clearHistory,
+        syncHistory: actions.syncHistory,
         
         // Configuration
         setBatchMode: config.setBatchMode,
