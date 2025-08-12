@@ -8,7 +8,7 @@ const initialAdjustments = {
     tempScore: 0, tintScore: 0, vibranceScore: 0, exposureScore: 0, highlightsScore: 0, shadowsScore: 0,
     whitesScore: 0, blacksScore: 0, saturationScore: 0, contrastScore: 0, clarityScore: 0, sharpnessScore: 0,
 };
-const clamp = (value) => Math.max(-100, Math.min(100, value));
+// const clamp = (value: number) => Math.max(-100, Math.min(100, value));
 export function useHonchoEditor(controller, initImageId, firebaseUid) {
     // const [currentImageId, setCurrentImageId] = useState<string>(initImageId);
     // const [currentImageData, setCurrentImageData] = useState<Gallery | null>(null);
@@ -156,49 +156,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     // }, [activeSubPanel ]);
     // isBulkEditing
     // Effect for keyboard shortcuts
-    useEffect(() => {
-        window.addEventListener('keydown', handleKeyDown);
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [handleKeyDown]);
-    // Effect for drag listeners
-    useEffect(() => {
-        if (isDragging) {
-            window.addEventListener('mousemove', handleDragMove);
-            window.addEventListener('mouseup', handleDragEnd);
-            window.addEventListener('touchmove', handleDragMove);
-            window.addEventListener('touchend', handleDragEnd);
-        }
-        return () => {
-            window.removeEventListener('mousemove', handleDragMove);
-            window.removeEventListener('mouseup', handleDragEnd);
-            window.removeEventListener('touchmove', handleDragMove);
-            window.removeEventListener('touchend', handleDragEnd);
-        };
-    }, [isDragging, handleDragMove, handleDragEnd]);
-    useEffect(() => {
-        // Cast navigator to our custom type to access the connection property safely
-        const navigatorWithConnection = navigator;
-        if (!navigatorWithConnection.connection) {
-            return;
-        }
-        const navigatorConnection = navigatorWithConnection.connection;
-        const updateConnectionStatus = () => {
-            const slowConnectionTypes = ['slow-2g', '2g', '3g'];
-            const isSlow = navigatorConnection.saveData ||
-                slowConnectionTypes.includes(navigatorConnection.effectiveType);
-            setIsConnectionSlow(isSlow);
-        };
-        // Check status immediately
-        updateConnectionStatus();
-        // Add event listener for changes
-        navigatorConnection.addEventListener('change', updateConnectionStatus);
-        // Cleanup on unmount
-        return () => {
-            navigatorConnection.removeEventListener('change', updateConnectionStatus);
-        };
-    }, []);
     // MARK: - Core Editor Logic
     const updateCanvasEditor = useCallback(() => {
         if ((editorRef.current?.getInitialized() === true) && canvasRef.current) {
@@ -628,6 +585,23 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     const zoomLevelText = useMemo(() => {
         return `${Math.round(zoomLevel * 100)}%`;
     }, [zoomLevel]);
+    const updateAdjustments = useCallback((newValues) => {
+        const newState = { ...currentAdjustmentsState, ...newValues };
+        historyActions.pushState(newState);
+    }, [currentAdjustmentsState, historyActions]);
+    const setTempScore = (value) => updateAdjustments({ tempScore: value });
+    const setTintScore = (value) => updateAdjustments({ tintScore: value });
+    const setVibranceScore = (value) => updateAdjustments({ vibranceScore: value });
+    const setSaturationScore = (value) => updateAdjustments({ saturationScore: value });
+    const setExposureScore = (value) => updateAdjustments({ exposureScore: value });
+    const setHighlightsScore = (value) => updateAdjustments({ highlightsScore: value });
+    const setShadowsScore = (value) => updateAdjustments({ shadowsScore: value });
+    const setWhitesScore = (value) => updateAdjustments({ whitesScore: value });
+    const setBlacksScore = (value) => updateAdjustments({ blacksScore: value });
+    const setContrastScore = (value) => updateAdjustments({ contrastScore: value });
+    const setClarityScore = (value) => updateAdjustments({ clarityScore: value });
+    const setSharpnessScore = (value) => updateAdjustments({ sharpnessScore: value });
+    // MARK: useEffect HERE!
     useEffect(() => {
         if (showCopyAlert) {
             const timer = setTimeout(() => setShowCopyAlert(false), 2000);
@@ -686,7 +660,49 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         editorRef.current.setAdjustments(mapAdjustmentStateToAdjustmentEditor(currentAdjustmentsState));
         updateCanvasEditor();
     }, [editorRef.current, currentAdjustmentsState]);
-    //
+    useEffect(() => {
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [handleKeyDown]);
+    // Effect for drag listeners
+    useEffect(() => {
+        if (isDragging) {
+            window.addEventListener('mousemove', handleDragMove);
+            window.addEventListener('mouseup', handleDragEnd);
+            window.addEventListener('touchmove', handleDragMove);
+            window.addEventListener('touchend', handleDragEnd);
+        }
+        return () => {
+            window.removeEventListener('mousemove', handleDragMove);
+            window.removeEventListener('mouseup', handleDragEnd);
+            window.removeEventListener('touchmove', handleDragMove);
+            window.removeEventListener('touchend', handleDragEnd);
+        };
+    }, [isDragging, handleDragMove, handleDragEnd]);
+    useEffect(() => {
+        // Cast navigator to our custom type to access the connection property safely
+        const navigatorWithConnection = navigator;
+        if (!navigatorWithConnection.connection) {
+            return;
+        }
+        const navigatorConnection = navigatorWithConnection.connection;
+        const updateConnectionStatus = () => {
+            const slowConnectionTypes = ['slow-2g', '2g', '3g'];
+            const isSlow = navigatorConnection.saveData ||
+                slowConnectionTypes.includes(navigatorConnection.effectiveType);
+            setIsConnectionSlow(isSlow);
+        };
+        // Check status immediately
+        updateConnectionStatus();
+        // Add event listener for changes
+        navigatorConnection.addEventListener('change', updateConnectionStatus);
+        // Cleanup on unmount
+        return () => {
+            navigatorConnection.removeEventListener('change', updateConnectionStatus);
+        };
+    }, []);
     return {
         // Refs
         canvasRef,
@@ -703,8 +719,21 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         isGalleryLoading,
         galleryError,
         galleryImageData,
-        currentAdjustmentsState,
         historyActions,
+        handleBackCallback,
+        currentAdjustmentsState,
+        setTempScore,
+        setTintScore,
+        setVibranceScore,
+        setSaturationScore,
+        setExposureScore,
+        setHighlightsScore,
+        setShadowsScore,
+        setWhitesScore,
+        setBlacksScore,
+        setContrastScore,
+        setClarityScore,
+        setSharpnessScore,
         // History functions and state
         handleUndo: historyActions.undo,
         handleRedo: historyActions.redo,
