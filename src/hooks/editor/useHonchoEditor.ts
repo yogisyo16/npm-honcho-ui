@@ -185,17 +185,6 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     const initialHeight = useRef(0);
     const panelRef = useRef<HTMLDivElement | null>(null);
     const contentRef = useRef<HTMLDivElement | null>(null);
-    // Effect for measuring mobile panel content
-    // useEffect(() => {
-    //     const timeoutId = setTimeout(() => {
-    //         if (contentRef.current) {
-    //             const height = contentRef.current.scrollHeight;
-    //             setContentHeight(height);
-    //         }
-    //     }, 50);
-    //     return () => clearTimeout(timeoutId);
-    // }, [activeSubPanel ]);
-    // isBulkEditing
     // Effect for keyboard shortcuts
 
     // MARK: - Core Editor Logic
@@ -758,6 +747,16 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     const handleConfirmCopy = () => { handleCopyEdit(); handleCloseCopyDialog(); setShowCopyAlert(true); };
 
     // MARK: useEffect HERE!
+
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (contentRef.current) {
+                const height = contentRef.current.scrollHeight;
+                setContentHeight(height);
+            }
+        }, 50);
+        return () => clearTimeout(timeoutId);
+    }, [activePanel, activeSubPanel]);
 
     useEffect(() => {
         if (showCopyAlert) {

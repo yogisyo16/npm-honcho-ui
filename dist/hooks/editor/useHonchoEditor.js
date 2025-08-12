@@ -91,17 +91,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     const initialHeight = useRef(0);
     const panelRef = useRef(null);
     const contentRef = useRef(null);
-    // Effect for measuring mobile panel content
-    // useEffect(() => {
-    //     const timeoutId = setTimeout(() => {
-    //         if (contentRef.current) {
-    //             const height = contentRef.current.scrollHeight;
-    //             setContentHeight(height);
-    //         }
-    //     }, 50);
-    //     return () => clearTimeout(timeoutId);
-    // }, [activeSubPanel ]);
-    // isBulkEditing
     // Effect for keyboard shortcuts
     // MARK: - Core Editor Logic
     // MARK: Batch Edit logic
@@ -602,6 +591,15 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     const handleCloseCopyDialog = () => setCopyDialogOpen(false);
     const handleConfirmCopy = () => { handleCopyEdit(); handleCloseCopyDialog(); setShowCopyAlert(true); };
     // MARK: useEffect HERE!
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (contentRef.current) {
+                const height = contentRef.current.scrollHeight;
+                setContentHeight(height);
+            }
+        }, 50);
+        return () => clearTimeout(timeoutId);
+    }, [activePanel, activeSubPanel]);
     useEffect(() => {
         if (showCopyAlert) {
             const timer = setTimeout(() => setShowCopyAlert(false), 2000);
