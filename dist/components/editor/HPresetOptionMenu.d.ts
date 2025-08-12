@@ -2,7 +2,7 @@ interface Props {
     anchorEl: null | HTMLElement;
     isOpen: boolean;
     onClose: () => void;
-    isPresetSelected: boolean;
+    isPresetSelected?: boolean;
     onRemove: () => void;
     onRename: () => void;
     onDelete: () => void;
