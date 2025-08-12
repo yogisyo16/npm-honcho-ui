@@ -423,13 +423,6 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         }
     }, [/* handleOpenCopyDialog dependency */]);
 
-    const updateCanvasEditor = useCallback(() => {
-        if ((editorRef.current?.getInitialized() === true) && canvasRef.current) {
-            editorRef.current.processImage();
-            editorRef.current.renderToCanvas(canvasRef.current);
-        }
-    }, [canvasRef.current, editorRef.current]);
-
     const extractPathFromGallery = useCallback((data: Gallery) => {
         const imagePath =
             data?.raw_edited?.path
@@ -794,7 +787,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     useEffect(() => {
         // will trigger when currentImageId change
         if (!galleryImageData) return;
-        console.log("++ USEEFFECT FOR NEXT AND PREV");
+        console.log("++ USE EFFECT FOR NEXT AND PREV");
         const init = async() => {
             console.log("1. INIT EDITOR");
             if (editorRef.current?.getInitialized() === false) {
@@ -802,7 +795,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
             }
 
             const adjustmentData = galleryImageData.editor_config?.color_adjustment;
-            console.log("2. ADJUSTMENTDATA: ", adjustmentData, galleryImageData);
+            console.log("2. ADJUSTMENT DATA: ", adjustmentData, galleryImageData);
             // set event
             setEventId(galleryImageData.event_id);
             console.log("3. EVENTID: ", eventId);
@@ -812,35 +805,37 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
 
             const pathGallery = extractPathFromGallery(galleryImageData);
             // load image to editor
-            console.log("4. PATHGALLERY: ", pathGallery);
+            console.log("4. PATH GALLERY: ", pathGallery);
             await loadImageEditorFromUrl(pathGallery);
             console.log("5. LOAD IMAGE TO EDITOR");
-            
-            updateCanvasEditor();
-            console.log("6. UPDATE CANVAS EDITOR");
 
             // adjustment setup
             if (adjustmentData) {
-                console.log("7. ADJUSTMENTDATA FOUND");
+                console.log("7. ADJUSTMENT DATA FOUND");
                 const adjustmentState = mapColorAdjustmentToAdjustmentState(adjustmentData);
                 // set adjustment to editor to make adjustmentState change
                 console.log("8. SYNC HISTORY");
                 historyActions.syncHistory([adjustmentState]); 
             } else {
+                historyActions.syncHistory([initialAdjustments]);
                 console.log("no adjustment found, use default");
             }
         }
 
         init();
-    }, [galleryImageData, editorRef.current, updateCanvasEditor]);
+    }, [galleryImageData, editorRef.current]);
 
     useEffect(() => {
         // Render photo if adjustmentState change;
         if (!editorRef.current || !isImageLoaded) return;
         
-        editorRef.current.setAdjustments(mapAdjustmentStateToAdjustmentEditor(currentAdjustmentsState));
-        updateCanvasEditor();
-    }, [editorRef.current, currentAdjustmentsState, isImageLoaded]);
+        console.log("Rendering adjustments to editor...", currentAdjustmentsState);
+        if ((editorRef.current?.getInitialized() === true) && canvasRef.current) {
+            editorRef.current.setAdjustments(mapAdjustmentStateToAdjustmentEditor(currentAdjustmentsState));
+            editorRef.current.processImage();
+            editorRef.current.renderToCanvas(canvasRef.current);
+        }
+    }, [editorRef.current, currentAdjustmentsState, isImageLoaded, canvasRef.current]);
 
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
