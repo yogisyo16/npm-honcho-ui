@@ -61,15 +61,6 @@ export function useGallerySwipe(
     const prevInitImageId = useRef<string | null>(null);
 
     /**
-     * Get the index of the current image in the loaded image list
-     * Returns -1 if the current image is not found in the list
-     */
-    const getCurrentImageIndex = useCallback(() => {
-        if (!currentImageId || currentImageList.length === 0) return -1;
-        return currentImageList.findIndex(img => img.id === currentImageId);
-    }, [currentImageId, currentImageList]);
-
-    /**
      * Fetch image pages sequentially until the target image is found
      * This is necessary because we don't know which page contains the initial image
      * 
@@ -227,7 +218,8 @@ export function useGallerySwipe(
         setError(null);
 
         try {
-            const currentIndex = getCurrentImageIndex();
+            // Calculate current index directly to avoid stale closure issues
+            const currentIndex = currentImageList.findIndex(img => img.id === currentImageId);
             console.log("Current index: ", currentIndex);
             
             if (currentIndex === -1) {
@@ -276,7 +268,7 @@ export function useGallerySwipe(
         } finally {
             setIsLoading(false);
         }
-    }, [currentImageId, isLoading, getCurrentImageIndex, currentImageList, loadNextPage, controller, firebaseUid]);
+    }, [currentImageId, isLoading, currentImageList, loadNextPage, controller, firebaseUid]);
 
     /**
      * Navigate to the previous image in the gallery
@@ -293,7 +285,8 @@ export function useGallerySwipe(
         setError(null);
 
         try {
-            const currentIndex = getCurrentImageIndex();
+            // Calculate current index directly to avoid stale closure issues
+            const currentIndex = currentImageList.findIndex(img => img.id === currentImageId);
             
             if (currentIndex === -1) {
                 throw new Error('Current image not found in list');
@@ -320,7 +313,7 @@ export function useGallerySwipe(
         } finally {
             setIsLoading(false);
         }
-    }, [currentImageId, isLoading, getCurrentImageIndex, currentImageList, controller, firebaseUid]);
+    }, [currentImageId, isLoading, currentImageList, controller, firebaseUid]);
 
     /**
      * Calculate if next image navigation is available
@@ -331,9 +324,10 @@ export function useGallerySwipe(
      * @returns Boolean indicating if next navigation is possible
      */
     const isNextAvailable = useCallback(() => {
-        if (isLoading) return false;
+        if (isLoading || !currentImageId) return false;
         
-        const currentIndex = getCurrentImageIndex();
+        // Calculate current index directly to avoid stale closure issues
+        const currentIndex = currentImageList.findIndex(img => img.id === currentImageId);
         if (currentIndex === -1) return false;
         
         // If we're not at the last image, next is definitely available
@@ -341,7 +335,7 @@ export function useGallerySwipe(
         
         // If we're at the last image but there are more pages, next is still available
         return hasNextPage;
-    }, [isLoading, getCurrentImageIndex, currentImageList.length, hasNextPage]);
+    }, [isLoading, currentImageId, currentImageList, hasNextPage]);
 
     /**
      * Calculate if previous image navigation is available
@@ -350,11 +344,12 @@ export function useGallerySwipe(
      * @returns Boolean indicating if previous navigation is possible
      */
     const isPrevAvailable = useCallback(() => {
-        if (isLoading) return false;
+        if (isLoading || !currentImageId) return false;
         
-        const currentIndex = getCurrentImageIndex();
+        // Calculate current index directly to avoid stale closure issues
+        const currentIndex = currentImageList.findIndex(img => img.id === currentImageId);
         return currentIndex > 0;
-    }, [isLoading, getCurrentImageIndex]);
+    }, [isLoading, currentImageId, currentImageList]);
 
     // Initialize when dependencies change
     useEffect(() => {
