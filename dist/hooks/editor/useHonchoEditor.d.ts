@@ -152,6 +152,7 @@ export declare function useHonchoEditor(controller: Controller, initImageId: str
     handleToggleCopyDialogExpand: (section: "color" | "light" | "details") => void;
     handleConfirmCopy: () => void;
     handleCopyEdit: () => void;
+    handlePasteEdit: () => void;
     setActivePanel: import("react").Dispatch<import("react").SetStateAction<string>>;
     setActiveSubPanel: import("react").Dispatch<import("react").SetStateAction<string>>;
     setHeaderMenuAnchorEl: import("react").Dispatch<import("react").SetStateAction<HTMLElement | null>>;

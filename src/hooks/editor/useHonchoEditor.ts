@@ -185,59 +185,6 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     const initialHeight = useRef(0);
     const panelRef = useRef<HTMLDivElement | null>(null);
     const contentRef = useRef<HTMLDivElement | null>(null);
-
-    // Mobile Panel Drag Handlers
-    const handleContentHeightChange = useCallback((height: number) => {
-        if (height > 0 && height !== contentHeight) setContentHeight(height);
-    }, [contentHeight]);
-
-    const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-        setIsDragging(true);
-        const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-        dragStartPos.current = startY;
-        initialHeight.current = panelHeight;
-        if (panelRef.current) panelRef.current.style.transition = 'none';
-    }, [panelHeight]);
-
-    const handleDragMove = useCallback((e: MouseEvent | TouchEvent) => {
-        if (!isDragging) return;
-        const currentY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-        const deltaY = dragStartPos.current - currentY;
-        const newHeight = initialHeight.current + deltaY;
-        const dynamicPanelFullHeight = contentHeight + PANEL_CHROME_HEIGHT;
-        const clampedHeight = Math.max(PEEK_HEIGHT, Math.min(newHeight, dynamicPanelFullHeight));
-        setPanelHeight(clampedHeight);
-    }, [isDragging, contentHeight]);
-
-    const handleDragEnd = useCallback(() => {
-        if (!isDragging) return;
-        setIsDragging(false);
-        dragStartPos.current = 0;
-        if (panelRef.current) panelRef.current.style.transition = 'height 0.3s ease-in-out';
-        
-        const dynamicPanelFullHeight = contentHeight + PANEL_CHROME_HEIGHT;
-        const snapPointLow = (PEEK_HEIGHT + COLLAPSED_HEIGHT) / 2;
-        const snapPointHigh = (COLLAPSED_HEIGHT + dynamicPanelFullHeight) / 2;
-
-        if (panelHeight < snapPointLow) {
-            setPanelHeight(PEEK_HEIGHT);
-        } else if (panelHeight >= snapPointLow && panelHeight < snapPointHigh) {
-            setPanelHeight(COLLAPSED_HEIGHT);
-        } else {
-            setPanelHeight(dynamicPanelFullHeight);
-        }
-    }, [isDragging, panelHeight, contentHeight]);
-
-    // Keyboard Shortcut Handler
-    const handleKeyDown = useCallback((event: KeyboardEvent) => {
-        const target = event.target as HTMLElement;
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
-        if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
-            event.preventDefault();
-            handleOpenCopyDialog(); // Assumes handleOpenCopyDialog is defined in the hook
-        }
-    }, [/* handleOpenCopyDialog dependency */]);
-
     // Effect for measuring mobile panel content
     // useEffect(() => {
     //     const timeoutId = setTimeout(() => {
@@ -253,43 +200,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
 
     // MARK: - Core Editor Logic
 
-    const updateCanvasEditor = useCallback(() => {
-        if ((editorRef.current?.getInitialized() === true) && canvasRef.current) {
-            editorRef.current.processImage();
-            editorRef.current.renderToCanvas(canvasRef.current);
-        }
-    }, [canvasRef.current, editorRef.current]);
-
-    const extractPathFromGallery = useCallback((data: Gallery) => {
-        const imagePath =
-            data?.raw_edited?.path
-                ? data.raw_edited.path
-                : data?.download?.path;
-        console.log("[DEBUG] Extracted imagePath to load:", imagePath);
-        return imagePath;
-    }, []);
-
-    const loadImageEditorFromUrl = useCallback(async (url: string) => {
-        try {
-            if (!editorRef.current) return;
-
-            setEditorStatus("Downloading image...");
-            console.log(`[DEBUG] Attempting to fetch image from URL: ${url}`);
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`Failed to fetch image from URL: ${url}`);
-            
-            const blob = await response.blob();
-            const filename = url.substring(url.lastIndexOf('/') + 1) || 'image.jpg';
-            const file = new File([blob], filename, { type: blob.type });
-            
-            await editorRef.current.loadImageFromFile(file);
-            setIsImageLoaded(true);
-        } catch (error) {
-            console.error(error);
-            setEditorStatus("Error: Could not load image from URL.");
-            setIsImageLoaded(false);
-        }
-    }, [editorRef.current]);
+    
 
     // MARK: Batch Edit logic
     // const handleToggleImageSelection = useCallback((imageId: string) => {
@@ -423,6 +334,96 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     // const handleBulkSharpnessIncrease = createRelativeAdjuster('sharpnessScore', setSharpnessScore, 5);
     // const handleBulkSharpnessIncreaseMax = createRelativeAdjuster('sharpnessScore', setSharpnessScore, 20);
 
+    // Mobile Panel Drag Handlers
+    const handleContentHeightChange = useCallback((height: number) => {
+        if (height > 0 && height !== contentHeight) setContentHeight(height);
+    }, [contentHeight]);
+
+    const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+        setIsDragging(true);
+        const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        dragStartPos.current = startY;
+        initialHeight.current = panelHeight;
+        if (panelRef.current) panelRef.current.style.transition = 'none';
+    }, [panelHeight]);
+
+    const handleDragMove = useCallback((e: MouseEvent | TouchEvent) => {
+        if (!isDragging) return;
+        const currentY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        const deltaY = dragStartPos.current - currentY;
+        const newHeight = initialHeight.current + deltaY;
+        const dynamicPanelFullHeight = contentHeight + PANEL_CHROME_HEIGHT;
+        const clampedHeight = Math.max(PEEK_HEIGHT, Math.min(newHeight, dynamicPanelFullHeight));
+        setPanelHeight(clampedHeight);
+    }, [isDragging, contentHeight]);
+
+    const handleDragEnd = useCallback(() => {
+        if (!isDragging) return;
+        setIsDragging(false);
+        dragStartPos.current = 0;
+        if (panelRef.current) panelRef.current.style.transition = 'height 0.3s ease-in-out';
+        
+        const dynamicPanelFullHeight = contentHeight + PANEL_CHROME_HEIGHT;
+        const snapPointLow = (PEEK_HEIGHT + COLLAPSED_HEIGHT) / 2;
+        const snapPointHigh = (COLLAPSED_HEIGHT + dynamicPanelFullHeight) / 2;
+
+        if (panelHeight < snapPointLow) {
+            setPanelHeight(PEEK_HEIGHT);
+        } else if (panelHeight >= snapPointLow && panelHeight < snapPointHigh) {
+            setPanelHeight(COLLAPSED_HEIGHT);
+        } else {
+            setPanelHeight(dynamicPanelFullHeight);
+        }
+    }, [isDragging, panelHeight, contentHeight]);
+
+    // Keyboard Shortcut Handler
+    const handleKeyDown = useCallback((event: KeyboardEvent) => {
+        const target = event.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+        if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
+            event.preventDefault();
+            handleOpenCopyDialog(); // Assumes handleOpenCopyDialog is defined in the hook
+        }
+    }, [/* handleOpenCopyDialog dependency */]);
+
+    const updateCanvasEditor = useCallback(() => {
+        if ((editorRef.current?.getInitialized() === true) && canvasRef.current) {
+            editorRef.current.processImage();
+            editorRef.current.renderToCanvas(canvasRef.current);
+        }
+    }, [canvasRef.current, editorRef.current]);
+
+    const extractPathFromGallery = useCallback((data: Gallery) => {
+        const imagePath =
+            data?.raw_edited?.path
+                ? data.raw_edited.path
+                : data?.download?.path;
+        console.log("[DEBUG] Extracted imagePath to load:", imagePath);
+        return imagePath;
+    }, []);
+
+    const loadImageEditorFromUrl = useCallback(async (url: string) => {
+        try {
+            if (!editorRef.current) return;
+
+            setEditorStatus("Downloading image...");
+            console.log(`[DEBUG] Attempting to fetch image from URL: ${url}`);
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Failed to fetch image from URL: ${url}`);
+            
+            const blob = await response.blob();
+            const filename = url.substring(url.lastIndexOf('/') + 1) || 'image.jpg';
+            const file = new File([blob], filename, { type: blob.type });
+            
+            await editorRef.current.loadImageFromFile(file);
+            setIsImageLoaded(true);
+        } catch (error) {
+            console.error(error);
+            setEditorStatus("Error: Could not load image from URL.");
+            setIsImageLoaded(false);
+        }
+    }, [editorRef.current]);
+
     const handleScriptReady = useCallback(async () => {
         console.log("[Editor] Script tag is ready."); // Log entry
 
@@ -454,104 +455,6 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     }, [controller, firebaseUid, galleryImageData]);
 
     // MARK: - UI Handlers (Moved from page.tsx)
-    // Header and Dialog Handlers
-    const handleHeaderMenuClick = (event: React.MouseEvent<HTMLElement>) => setHeaderMenuAnchorEl(event.currentTarget);
-    const handleHeaderMenuClose = () => setHeaderMenuAnchorEl(null);
-
-    const handleAlertClose = () => {
-        setIsConnectionSlow(false);
-    };
-
-    const handleOpenCopyDialog = () => {
-        const newColorChecks = {
-            temperature: currentAdjustmentsState.tempScore !== 0,
-            tint: currentAdjustmentsState.tintScore !== 0,
-            vibrance: currentAdjustmentsState.vibranceScore !== 0,
-            saturation: currentAdjustmentsState.saturationScore !== 0,
-        };
-        const newLightChecks = {
-            exposure: currentAdjustmentsState.exposureScore !== 0,
-            contrast: currentAdjustmentsState.contrastScore !== 0,
-            highlights: currentAdjustmentsState.highlightsScore !== 0,
-            shadows: currentAdjustmentsState.shadowsScore !== 0,
-            whites: currentAdjustmentsState.whitesScore !== 0,
-            blacks: currentAdjustmentsState.blacksScore !== 0,
-        };
-        const newDetailsChecks = {
-            clarity: currentAdjustmentsState.clarityScore !== 0,
-            sharpness: currentAdjustmentsState.sharpnessScore !== 0,
-        };
-
-        setCopyColorChecks(newColorChecks);
-        setCopyLightChecks(newLightChecks);
-        setCopyDetailsChecks(newDetailsChecks);
-
-        setCopyDialogExpanded({
-            color: Object.values(newColorChecks).some(isChecked => isChecked),
-            light: Object.values(newLightChecks).some(isChecked => isChecked),
-            details: Object.values(newDetailsChecks).some(isChecked => isChecked),
-        });
-
-        setCopyDialogOpen(true);
-        handleHeaderMenuClose();
-    };
-
-    const handleCloseCopyDialog = () => setCopyDialogOpen(false);
-
-    const handleCopyParentChange = (
-        event: React.ChangeEvent<HTMLInputElement>,
-        setter: React.Dispatch<React.SetStateAction<any>>
-    ) => {
-        const isChecked = event.target.checked;
-        setter((prev: any) => {
-            const newState: any = {};
-            Object.keys(prev).forEach(key => { newState[key] = isChecked; });
-            return newState;
-        });
-    };
-    
-    const handleCopyChildChange = (
-        event: React.ChangeEvent<HTMLInputElement>,
-        setter: React.Dispatch<React.SetStateAction<any>>
-    ) => {
-        setter((prev: any) => ({
-            ...prev,
-            [event.target.name]: event.target.checked,
-        }));
-    };
-
-    const handleToggleCopyDialogExpand = (section: 'color' | 'light' | 'details') => {
-        setCopyDialogExpanded(prev => ({ ...prev, [section]: !prev[section] }));
-    };
-
-    const handleCopyEdit = useCallback(() => {
-        const adjustmentsToCopy: Partial<AdjustmentState> = {};
-
-        // Color Adjustments
-        if (copyColorChecks.temperature) adjustmentsToCopy.tempScore = currentAdjustmentsState.tempScore;
-        if (copyColorChecks.tint) adjustmentsToCopy.tintScore = currentAdjustmentsState.tintScore;
-        if (copyColorChecks.vibrance) adjustmentsToCopy.vibranceScore = currentAdjustmentsState.vibranceScore;
-        if (copyColorChecks.saturation) adjustmentsToCopy.saturationScore = currentAdjustmentsState.saturationScore;
-        
-        // Light Adjustments
-        if (copyLightChecks.exposure) adjustmentsToCopy.exposureScore = currentAdjustmentsState.exposureScore;
-        if (copyLightChecks.contrast) adjustmentsToCopy.contrastScore = currentAdjustmentsState.contrastScore;
-        if (copyLightChecks.highlights) adjustmentsToCopy.highlightsScore = currentAdjustmentsState.highlightsScore;
-        if (copyLightChecks.shadows) adjustmentsToCopy.shadowsScore = currentAdjustmentsState.shadowsScore;
-        if (copyLightChecks.whites) adjustmentsToCopy.whitesScore = currentAdjustmentsState.whitesScore;
-        if (copyLightChecks.blacks) adjustmentsToCopy.blacksScore = currentAdjustmentsState.blacksScore;
-
-        // Details Adjustments
-        if (copyDetailsChecks.clarity) adjustmentsToCopy.clarityScore = currentAdjustmentsState.clarityScore;
-        if (copyDetailsChecks.sharpness) adjustmentsToCopy.sharpnessScore = currentAdjustmentsState.sharpnessScore;
-
-        // Combine with existing copied adjustments to not lose unchecked values from a previous copy
-        setCopiedAdjustments(prev => ({ ...initialAdjustments, ...prev, ...adjustmentsToCopy }));
-        
-        console.log("Copied selected adjustments:", adjustmentsToCopy);
-    }, [ copyColorChecks, copyLightChecks, copyDetailsChecks,currentAdjustmentsState ]);
-
-    const handleConfirmCopy = () => { handleCopyEdit(); handleCloseCopyDialog(); setShowCopyAlert(true); };
 
     // MARK: - UI Handlers
     // Panel Handlers
@@ -755,6 +658,111 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     const setContrastScore = (value: number) => updateAdjustments({ contrastScore: value });
     const setClarityScore = (value: number) => updateAdjustments({ clarityScore: value });
     const setSharpnessScore = (value: number) => updateAdjustments({ sharpnessScore: value });
+
+    // MARK: Copied ClipBoard
+    const handleHeaderMenuClick = (event: React.MouseEvent<HTMLElement>) => setHeaderMenuAnchorEl(event.currentTarget);
+    const handleHeaderMenuClose = () => setHeaderMenuAnchorEl(null);
+
+    const handleAlertClose = () => {
+        setIsConnectionSlow(false);
+    };
+
+    const handleOpenCopyDialog = () => {
+        const newColorChecks = {
+            temperature: currentAdjustmentsState.tempScore !== 0,
+            tint: currentAdjustmentsState.tintScore !== 0,
+            vibrance: currentAdjustmentsState.vibranceScore !== 0,
+            saturation: currentAdjustmentsState.saturationScore !== 0,
+        };
+        const newLightChecks = {
+            exposure: currentAdjustmentsState.exposureScore !== 0,
+            contrast: currentAdjustmentsState.contrastScore !== 0,
+            highlights: currentAdjustmentsState.highlightsScore !== 0,
+            shadows: currentAdjustmentsState.shadowsScore !== 0,
+            whites: currentAdjustmentsState.whitesScore !== 0,
+            blacks: currentAdjustmentsState.blacksScore !== 0,
+        };
+        const newDetailsChecks = {
+            clarity: currentAdjustmentsState.clarityScore !== 0,
+            sharpness: currentAdjustmentsState.sharpnessScore !== 0,
+        };
+
+        setCopyColorChecks(newColorChecks);
+        setCopyLightChecks(newLightChecks);
+        setCopyDetailsChecks(newDetailsChecks);
+
+        setCopyDialogExpanded({
+            color: Object.values(newColorChecks).some(isChecked => isChecked),
+            light: Object.values(newLightChecks).some(isChecked => isChecked),
+            details: Object.values(newDetailsChecks).some(isChecked => isChecked),
+        });
+
+        setCopyDialogOpen(true);
+        handleHeaderMenuClose();
+    };
+
+    const handleCopyParentChange = (
+        event: React.ChangeEvent<HTMLInputElement>,
+        setter: React.Dispatch<React.SetStateAction<any>>
+    ) => {
+        const isChecked = event.target.checked;
+        setter((prev: any) => {
+            const newState: any = {};
+            Object.keys(prev).forEach(key => { newState[key] = isChecked; });
+            return newState;
+        });
+    };
+    
+    const handleCopyChildChange = (
+        event: React.ChangeEvent<HTMLInputElement>,
+        setter: React.Dispatch<React.SetStateAction<any>>
+    ) => {
+        setter((prev: any) => ({
+            ...prev,
+            [event.target.name]: event.target.checked,
+        }));
+    };
+
+    const handleToggleCopyDialogExpand = (section: 'color' | 'light' | 'details') => {
+        setCopyDialogExpanded(prev => ({ ...prev, [section]: !prev[section] }));
+    };
+
+    const handleCopyEdit = useCallback(() => {
+        const adjustmentsToCopy: Partial<AdjustmentState> = {};
+
+        // Color Adjustments
+        if (copyColorChecks.temperature) adjustmentsToCopy.tempScore = currentAdjustmentsState.tempScore;
+        if (copyColorChecks.tint) adjustmentsToCopy.tintScore = currentAdjustmentsState.tintScore;
+        if (copyColorChecks.vibrance) adjustmentsToCopy.vibranceScore = currentAdjustmentsState.vibranceScore;
+        if (copyColorChecks.saturation) adjustmentsToCopy.saturationScore = currentAdjustmentsState.saturationScore;
+        
+        // Light Adjustments
+        if (copyLightChecks.exposure) adjustmentsToCopy.exposureScore = currentAdjustmentsState.exposureScore;
+        if (copyLightChecks.contrast) adjustmentsToCopy.contrastScore = currentAdjustmentsState.contrastScore;
+        if (copyLightChecks.highlights) adjustmentsToCopy.highlightsScore = currentAdjustmentsState.highlightsScore;
+        if (copyLightChecks.shadows) adjustmentsToCopy.shadowsScore = currentAdjustmentsState.shadowsScore;
+        if (copyLightChecks.whites) adjustmentsToCopy.whitesScore = currentAdjustmentsState.whitesScore;
+        if (copyLightChecks.blacks) adjustmentsToCopy.blacksScore = currentAdjustmentsState.blacksScore;
+
+        // Details Adjustments
+        if (copyDetailsChecks.clarity) adjustmentsToCopy.clarityScore = currentAdjustmentsState.clarityScore;
+        if (copyDetailsChecks.sharpness) adjustmentsToCopy.sharpnessScore = currentAdjustmentsState.sharpnessScore;
+
+        // Combine with existing copied adjustments to not lose unchecked values from a previous copy
+        setCopiedAdjustments(prev => ({ ...initialAdjustments, ...prev, ...adjustmentsToCopy }));
+        
+        console.log("Copied selected adjustments:", adjustmentsToCopy);
+    }, [ copyColorChecks, copyLightChecks, copyDetailsChecks,currentAdjustmentsState ]);
+
+    const handlePasteEdit= useCallback(() => {
+        if (!copiedAdjustments) return;
+        updateAdjustments(copiedAdjustments);
+        handleHeaderMenuClose();
+    }, [copiedAdjustments, updateAdjustments]);
+
+    const handleCloseCopyDialog = () => setCopyDialogOpen(false);
+
+    const handleConfirmCopy = () => { handleCopyEdit(); handleCloseCopyDialog(); setShowCopyAlert(true); };
 
     // MARK: useEffect HERE!
 
@@ -974,6 +982,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         handleToggleCopyDialogExpand,
         handleConfirmCopy,
         handleCopyEdit,
+        handlePasteEdit,
         
         // adjustClarityBulk,
         // adjustSharpnessBulk,
