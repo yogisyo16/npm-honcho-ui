@@ -212,10 +212,14 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
                     // Extend current list with new images
                     const updatedList = [...currentImageListRef.current, ...newImages];
                     setCurrentImageList(updatedList);
+                    // Immediately update the ref to prevent stale closure issues
+                    currentImageListRef.current = updatedList;
                     // Navigate to first image of the new page
                     const nextImage = newImages[0];
                     console.log("Setting currentImageId to:", nextImage.id);
                     setCurrentImageId(nextImage.id);
+                    // Immediately update the ref to prevent stale closure issues
+                    currentImageIdRef.current = nextImage.id;
                     // Fetch complete data for the new current image
                     const nextImageData = await controller.onGetImage(firebaseUid, nextImage.id);
                     if (nextImageData) {
@@ -233,6 +237,8 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
                 console.log("[SCENARIO 2] Navigating to next image:", nextImage.id);
                 console.log("Setting currentImageId from", currentImageIdRef.current, "to", nextImage.id);
                 setCurrentImageId(nextImage.id);
+                // Immediately update the ref to prevent stale closure issues
+                currentImageIdRef.current = nextImage.id;
                 // Fetch complete data for the next image
                 const nextImageData = await controller.onGetImage(firebaseUid, nextImage.id);
                 if (nextImageData) {
@@ -272,6 +278,8 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
                 // Navigate to previous image in the current list
                 const prevImage = currentImageListRef.current[currentIndex - 1];
                 setCurrentImageId(prevImage.id);
+                // Immediately update the ref to prevent stale closure issues
+                currentImageIdRef.current = prevImage.id;
                 // Fetch complete data for the previous image
                 const prevImageData = await controller.onGetImage(firebaseUid, prevImage.id);
                 if (prevImageData) {
