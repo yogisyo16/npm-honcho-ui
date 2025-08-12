@@ -417,6 +417,8 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
             
             await editorRef.current.loadImageFromFile(file);
             setIsImageLoaded(true);
+
+            updateCanvasEditor();
         } catch (error) {
             console.error(error);
             setEditorStatus("Error: Could not load image from URL.");

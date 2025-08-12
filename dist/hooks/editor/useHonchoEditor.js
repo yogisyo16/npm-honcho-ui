@@ -298,6 +298,7 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
             const file = new File([blob], filename, { type: blob.type });
             await editorRef.current.loadImageFromFile(file);
             setIsImageLoaded(true);
+            updateCanvasEditor();
         }
         catch (error) {
             console.error(error);
