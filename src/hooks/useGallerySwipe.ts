@@ -194,6 +194,7 @@ export function useGallerySwipe(
             // Step 3: Get complete image list by searching through pages
             // This ensures we have navigation context for the current image
             const allImages = await getImageListUntilFound(initImageId, gallery.event_id);
+            console.log("Print all images Id: ", allImages.map(image => image.id).join(', '));
             setCurrentImageList(allImages);
 
             // Step 4: Update tracking refs to prevent unnecessary re-initialization
