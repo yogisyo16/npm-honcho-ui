@@ -188,6 +188,18 @@ export declare function useHonchoEditor(controller: Controller, initImageId: str
     toggleBulkEditing: () => void;
     handleSelectBulkPreset: (event: SelectChangeEvent<string>) => void;
     currentAdjustmentsState: AdjustmentState;
+    setTempScore: (value: number | ((prev: number) => number)) => void;
+    setTintScore: (value: number | ((prev: number) => number)) => void;
+    setVibranceScore: (value: number | ((prev: number) => number)) => void;
+    setSaturationScore: (value: number | ((prev: number) => number)) => void;
+    setExposureScore: (value: number | ((prev: number) => number)) => void;
+    setHighlightsScore: (value: number | ((prev: number) => number)) => void;
+    setShadowsScore: (value: number | ((prev: number) => number)) => void;
+    setWhitesScore: (value: number | ((prev: number) => number)) => void;
+    setBlacksScore: (value: number | ((prev: number) => number)) => void;
+    setContrastScore: (value: number | ((prev: number) => number)) => void;
+    setClarityScore: (value: number | ((prev: number) => number)) => void;
+    setSharpnessScore: (value: number | ((prev: number) => number)) => void;
     setCurrentAdjustmentsState: import("react").Dispatch<import("react").SetStateAction<AdjustmentState>>;
     imageList: ImageItem[];
     adjustmentsMap: Map<string, AdjustmentState>;

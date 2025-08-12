@@ -996,6 +996,55 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
             canvasRef.current.style.transform = `scale(${zoomLevel})`;
         }
     }, [zoomLevel]);
+    const setTempScore = (value) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.tempScore) : value;
+        updateAdjustments({ tempScore: newValue });
+    };
+    const setTintScore = (value) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.tintScore) : value;
+        updateAdjustments({ tintScore: newValue });
+    };
+    // ...and so on for all 12 adjustments. Here are the rest:
+    const setVibranceScore = (value) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.vibranceScore) : value;
+        updateAdjustments({ vibranceScore: newValue });
+    };
+    const setSaturationScore = (value) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.saturationScore) : value;
+        updateAdjustments({ saturationScore: newValue });
+    };
+    const setExposureScore = (value) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.exposureScore) : value;
+        updateAdjustments({ exposureScore: newValue });
+    };
+    const setHighlightsScore = (value) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.highlightsScore) : value;
+        updateAdjustments({ highlightsScore: newValue });
+    };
+    const setShadowsScore = (value) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.shadowsScore) : value;
+        updateAdjustments({ shadowsScore: newValue });
+    };
+    const setWhitesScore = (value) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.whitesScore) : value;
+        updateAdjustments({ whitesScore: newValue });
+    };
+    const setBlacksScore = (value) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.blacksScore) : value;
+        updateAdjustments({ blacksScore: newValue });
+    };
+    const setContrastScore = (value) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.contrastScore) : value;
+        updateAdjustments({ contrastScore: newValue });
+    };
+    const setClarityScore = (value) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.clarityScore) : value;
+        updateAdjustments({ clarityScore: newValue });
+    };
+    const setSharpnessScore = (value) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.sharpnessScore) : value;
+        updateAdjustments({ sharpnessScore: newValue });
+    };
     // Undo, Redo, Revert
     const handleRevert = useCallback(() => {
         setCurrentAdjustmentsState(initialAdjustments);
@@ -1198,6 +1247,18 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         handleSelectBulkPreset,
         // Adjustment State & Setters
         currentAdjustmentsState,
+        setTempScore,
+        setTintScore,
+        setVibranceScore,
+        setSaturationScore,
+        setExposureScore,
+        setHighlightsScore,
+        setShadowsScore,
+        setWhitesScore,
+        setBlacksScore,
+        setContrastScore,
+        setClarityScore,
+        setSharpnessScore,
         setCurrentAdjustmentsState,
         // Bulk Adjustment Handlers
         // Note: These handlers are for image list

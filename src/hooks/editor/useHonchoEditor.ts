@@ -1201,6 +1201,56 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         }
     }, [zoomLevel]);
 
+    const setTempScore = (value: number | ((prev: number) => number)) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.tempScore) : value;
+        updateAdjustments({ tempScore: newValue });
+    };
+    const setTintScore = (value: number | ((prev: number) => number)) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.tintScore) : value;
+        updateAdjustments({ tintScore: newValue });
+    };
+    // ...and so on for all 12 adjustments. Here are the rest:
+    const setVibranceScore = (value: number | ((prev: number) => number)) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.vibranceScore) : value;
+        updateAdjustments({ vibranceScore: newValue });
+    };
+    const setSaturationScore = (value: number | ((prev: number) => number)) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.saturationScore) : value;
+        updateAdjustments({ saturationScore: newValue });
+    };
+    const setExposureScore = (value: number | ((prev: number) => number)) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.exposureScore) : value;
+        updateAdjustments({ exposureScore: newValue });
+    };
+    const setHighlightsScore = (value: number | ((prev: number) => number)) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.highlightsScore) : value;
+        updateAdjustments({ highlightsScore: newValue });
+    };
+    const setShadowsScore = (value: number | ((prev: number) => number)) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.shadowsScore) : value;
+        updateAdjustments({ shadowsScore: newValue });
+    };
+    const setWhitesScore = (value: number | ((prev: number) => number)) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.whitesScore) : value;
+        updateAdjustments({ whitesScore: newValue });
+    };
+    const setBlacksScore = (value: number | ((prev: number) => number)) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.blacksScore) : value;
+        updateAdjustments({ blacksScore: newValue });
+    };
+    const setContrastScore = (value: number | ((prev: number) => number)) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.contrastScore) : value;
+        updateAdjustments({ contrastScore: newValue });
+    };
+    const setClarityScore = (value: number | ((prev: number) => number)) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.clarityScore) : value;
+        updateAdjustments({ clarityScore: newValue });
+    };
+    const setSharpnessScore = (value: number | ((prev: number) => number)) => {
+        const newValue = typeof value === 'function' ? value(currentAdjustmentsState.sharpnessScore) : value;
+        updateAdjustments({ sharpnessScore: newValue });
+    };
+
     // Undo, Redo, Revert
     const handleRevert = useCallback(() => {
         setCurrentAdjustmentsState(initialAdjustments);
@@ -1427,7 +1477,19 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         handleSelectBulkPreset,
 
         // Adjustment State & Setters
-        currentAdjustmentsState, 
+        currentAdjustmentsState,
+        setTempScore,
+        setTintScore,
+        setVibranceScore,
+        setSaturationScore,
+        setExposureScore,
+        setHighlightsScore,
+        setShadowsScore,
+        setWhitesScore,
+        setBlacksScore,
+        setContrastScore,
+        setClarityScore,
+        setSharpnessScore,
         setCurrentAdjustmentsState,
 
         // Bulk Adjustment Handlers
