@@ -1,6 +1,9 @@
 'use client';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { HonchoEditor } from '../../lib/editor/honcho-editor';
+import { mapAdjustmentStateToAdjustmentEditor, mapColorAdjustmentToAdjustmentState } from '../../utils/adjustment';
+import { useAdjustmentHistory } from '../useAdjustmentHistory';
+import { useGallerySwipe } from '../useGallerySwipe';
 const initialAdjustments = {
     tempScore: 0, tintScore: 0, vibranceScore: 0, exposureScore: 0, highlightsScore: 0, shadowsScore: 0,
     whitesScore: 0, blacksScore: 0, saturationScore: 0, contrastScore: 0, clarityScore: 0, sharpnessScore: 0,
@@ -8,6 +11,11 @@ const initialAdjustments = {
 const clamp = (value) => Math.max(-100, Math.min(100, value));
 export function useHonchoEditor(controller, initImageId, firebaseUid) {
     const [currentImageId, setCurrentImageId] = useState(initImageId);
+    const [currentImageData, setCurrentImageData] = useState(null);
+    const [currentAdjustmentsState, setCurrentAdjustmentsState] = useState(initialAdjustments);
+    const { onSwipeNext, onSwipePrev, isNextAvailable, isPrevAvailable, isLoading: isGalleryLoading, error: galleryError, } = useGallerySwipe(firebaseUid, initImageId, controller);
+    // The useAdjustmentHistory hook now manages all undo/redo and adjustment state logic.
+    const { currentState: currentAdjustmentState, actions: historyActions, historyInfo, config: historyConfig, } = useAdjustmentHistory(initialAdjustments);
     const [currentPage, setCurrentPage] = useState(1);
     const [hasNextPage, setHasNextPage] = useState(true);
     const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
@@ -33,18 +41,18 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     const [copyDialogExpanded, setCopyDialogExpanded] = useState({ color: true, light: true, details: true });
     const [adjustmentsMap, setAdjustmentsMap] = useState(new Map());
     // Individual Adjustment State
-    const [tempScore, setTempScore] = useState(0);
-    const [tintScore, setTintScore] = useState(0);
-    const [vibranceScore, setVibranceScore] = useState(0);
-    const [saturationScore, setSaturationScore] = useState(0);
-    const [exposureScore, setExposureScore] = useState(0);
-    const [highlightsScore, setHighlightsScore] = useState(0);
-    const [shadowsScore, setShadowsScore] = useState(0);
-    const [whitesScore, setWhitesScore] = useState(0);
-    const [blacksScore, setBlacksScore] = useState(0);
-    const [contrastScore, setContrastScore] = useState(0);
-    const [clarityScore, setClarityScore] = useState(0);
-    const [sharpnessScore, setSharpnessScore] = useState(0);
+    // const [tempScore, setTempScore] = useState(0);
+    // const [tintScore, setTintScore] = useState(0);
+    // const [vibranceScore, setVibranceScore] = useState(0);
+    // const [saturationScore, setSaturationScore] = useState(0);
+    // const [exposureScore, setExposureScore] = useState(0);
+    // const [highlightsScore, setHighlightsScore] = useState(0);
+    // const [shadowsScore, setShadowsScore] = useState(0);
+    // const [whitesScore, setWhitesScore] = useState(0);
+    // const [blacksScore, setBlacksScore] = useState(0);
+    // const [contrastScore, setContrastScore] = useState(0);
+    // const [clarityScore, setClarityScore] = useState(0);
+    // const [sharpnessScore, setSharpnessScore] = useState(0);
     // MARK: - UI & App State (Moved from page.tsx)
     // General UI State
     const [isOnline, setIsOnline] = useState(true);
@@ -162,9 +170,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         }
     }, [ /* handleOpenCopyDialog dependency */]);
     useEffect(() => {
-        if (editorRef.current?.getInitialized() === false) {
-            editorRef.current?.initialize();
-        }
     }, [editorRef]);
     // Effect for measuring mobile panel content
     useEffect(() => {
@@ -221,22 +226,24 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         };
     }, []);
     // MARK: - Core Editor Logic
-    const updateCanvas = useCallback(() => {
-        if (editorRef.current?.getInitialized() && canvasRef.current) {
+    const { tempScore, tintScore, vibranceScore, saturationScore, exposureScore, highlightsScore, shadowsScore, whitesScore, blacksScore, contrastScore, clarityScore, sharpnessScore } = currentAdjustmentsState;
+    const updateCanvasEditor = useCallback(() => {
+        if ((editorRef.current?.getInitialized() === true) && canvasRef.current) {
             editorRef.current.processImage();
             editorRef.current.renderToCanvas(canvasRef.current);
         }
-    }, []);
+    }, [canvasRef.current, editorRef.current]);
     const loadImage = useCallback(async (file) => {
         if (!editorRef.current) {
             setEditorStatus("Editor not ready.");
             return;
         }
         setEditorStatus("Loading image...");
+        // TODO move
         try {
             await editorRef.current.loadImageFromFile(file);
             setIsImageLoaded(true);
-            updateCanvas();
+            updateCanvasEditor();
         }
         catch (e) {
             console.error("Error loading image:", e);
@@ -293,6 +300,62 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
             setEditorStatus("Error: Could not fetch the image.");
         }
     }, [controller, loadImageFromUrl]);
+    const updateAdjustments = useCallback((newValues) => {
+        // In batch mode (like dragging a slider), this only updates the UI.
+        // When not in batch mode (or when the slider drag ends), it creates a history entry.
+        const newState = { ...currentAdjustmentsState, ...newValues };
+        historyActions.pushState(newState);
+    }, [currentAdjustmentsState, historyActions]);
+    const getImageFromId = useCallback(async (firebaseUid, imageId) => {
+        if (!controller)
+            return;
+        setEditorStatus("Fetching image...");
+        try {
+            const gallery = await controller.onGetImage(firebaseUid, imageId);
+            const imagePath = gallery?.raw_edited?.path
+                ? gallery.raw_edited.path
+                : gallery?.download?.path;
+            console.log("[DEBUG] Extracted imagePath to load:", imagePath);
+            if (imagePath) {
+                return gallery; // ✅ RETURN the gallery object on success
+            }
+            else {
+                throw new Error("Controller did not return a valid image object with path.");
+            }
+        }
+        catch (error) {
+            console.error("Failed to fetch or load image via controller:", error);
+            setEditorStatus("Error: Could not fetch the image.");
+        }
+    }, [controller]);
+    const extractPathFromGallery = useCallback((data) => {
+        const imagePath = data?.raw_edited?.path
+            ? data.raw_edited.path
+            : data?.download?.path;
+        console.log("[DEBUG] Extracted imagePath to load:", imagePath);
+        return imagePath;
+    }, []);
+    const loadImageEditorFromUrl = useCallback(async (url) => {
+        try {
+            if (!editorRef.current)
+                return;
+            setEditorStatus("Downloading image...");
+            console.log(`[DEBUG] Attempting to fetch image from URL: ${url}`);
+            const response = await fetch(url);
+            if (!response.ok)
+                throw new Error(`Failed to fetch image from URL: ${url}`);
+            const blob = await response.blob();
+            const filename = url.substring(url.lastIndexOf('/') + 1) || 'image.jpg';
+            const file = new File([blob], filename, { type: blob.type });
+            await editorRef.current.loadImageFromFile(file);
+            setIsImageLoaded(true);
+        }
+        catch (error) {
+            console.error(error);
+            setEditorStatus("Error: Could not load image from URL.");
+            setIsImageLoaded(false);
+        }
+    }, [editorRef.current]);
     const handlePrev = useCallback(async (firebaseUid) => {
         console.log("[DEBUG] handlePrev function was called.");
         // Find the current image index
@@ -358,9 +421,9 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     ]);
     useEffect(() => {
         const initialize = async () => {
-            if (initImageId && firebaseUid && controller && isEditorReady) {
-                console.log(`[INIT] Starting sequence for image: ${initImageId}`);
-                const initialGallery = await loadImageFromId(firebaseUid, initImageId);
+            if (currentImageId && firebaseUid && controller && isEditorReady) {
+                console.log(`[INIT] Starting sequence for image: ${currentImageId}`);
+                const initialGallery = await loadImageFromId(firebaseUid, currentImageId);
                 // ✅ ADD THIS BLOCK TO CHECK THE DATA
                 console.group("[DEBUG] Checking Initial Gallery Data");
                 if (initialGallery) {
@@ -394,7 +457,7 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
             }
         };
         initialize();
-    }, [initImageId, firebaseUid, controller, isEditorReady, loadImageFromId]);
+    }, [currentImageId, firebaseUid, controller, isEditorReady, loadImageFromId]);
     // useEffect(() => {
     //     // Ensure we have everything needed before trying to load.
     //     if (currentImageId && firebaseUid && controller && isEditorReady) {
@@ -407,7 +470,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         const files = event.target?.files;
         if (!files || files.length === 0)
             return;
-        applyAdjustmentState(initialAdjustments);
         setHistory([initialAdjustments]);
         setHistoryIndex(0);
         if (files.length === 1) {
@@ -435,47 +497,47 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
             setSelectedImageIds(new Set(newImageList.map(img => img.id)));
         }
     };
-    const applyAdjustmentState = useCallback((state) => {
-        // Always update the UI controls
-        setTempScore(state.tempScore);
-        setTintScore(state.tintScore);
-        setVibranceScore(state.vibranceScore);
-        setExposureScore(state.exposureScore);
-        setHighlightsScore(state.highlightsScore);
-        setShadowsScore(state.shadowsScore);
-        setWhitesScore(state.whitesScore);
-        setBlacksScore(state.blacksScore);
-        setSaturationScore(state.saturationScore);
-        setContrastScore(state.contrastScore);
-        setClarityScore(state.clarityScore);
-        setSharpnessScore(state.sharpnessScore);
-        // If in bulk mode, apply this state to all selected images
-        if (isBulkEditing) {
-            applyUiStateToSelectedImages(state);
-        }
-    }, [isBulkEditing, applyUiStateToSelectedImages]);
-    const handleRevert = useCallback(() => {
-        // This will reset the UI controls and, if in bulk mode, the selected images
-        applyAdjustmentState(initialAdjustments);
-        // For single image mode, also reset the underlying canvas engine
-        if (!isBulkEditing && editorRef.current) {
-            editorRef.current.resetAdjustments();
-        }
-    }, [applyAdjustmentState, isBulkEditing]);
-    const handleUndo = useCallback(() => {
-        if (historyIndex > 0) {
-            const prevIndex = historyIndex - 1;
-            applyAdjustmentState(history[prevIndex]);
-            setHistoryIndex(prevIndex);
-        }
-    }, [history, historyIndex, applyAdjustmentState]);
-    const handleRedo = useCallback(() => {
-        if (historyIndex < history.length - 1) {
-            const nextIndex = historyIndex + 1;
-            applyAdjustmentState(history[nextIndex]);
-            setHistoryIndex(nextIndex);
-        }
-    }, [history, historyIndex, applyAdjustmentState]);
+    // const applyAdjustmentState = useCallback((state: AdjustmentState) => {
+    //     // Always update the UI controls
+    //     setTempScore(state.tempScore);
+    //     setTintScore(state.tintScore);
+    //     setVibranceScore(state.vibranceScore);
+    //     setExposureScore(state.exposureScore);
+    //     setHighlightsScore(state.highlightsScore);
+    //     setShadowsScore(state.shadowsScore);
+    //     setWhitesScore(state.whitesScore);
+    //     setBlacksScore(state.blacksScore);
+    //     setSaturationScore(state.saturationScore);
+    //     setContrastScore(state.contrastScore);
+    //     setClarityScore(state.clarityScore);
+    //     setSharpnessScore(state.sharpnessScore);
+    //     // If in bulk mode, apply this state to all selected images
+    //     if (isBulkEditing) {
+    //         applyUiStateToSelectedImages(state);
+    //     }
+    // }, [isBulkEditing, applyUiStateToSelectedImages]);
+    // const handleRevert = useCallback(() => {
+    //     // This will reset the UI controls and, if in bulk mode, the selected images
+    //     applyAdjustmentState(initialAdjustments);
+    //     // For single image mode, also reset the underlying canvas engine
+    //     if (!isBulkEditing && editorRef.current) {
+    //         editorRef.current.resetAdjustments();
+    //     }
+    // }, [applyAdjustmentState, isBulkEditing]);
+    // const handleUndo = useCallback(() => {
+    //     if (historyIndex > 0) {
+    //         const prevIndex = historyIndex - 1;
+    //         applyAdjustmentState(history[prevIndex]);
+    //         setHistoryIndex(prevIndex);
+    //     }
+    // }, [history, historyIndex, applyAdjustmentState]);
+    // const handleRedo = useCallback(() => {
+    //     if (historyIndex < history.length - 1) {
+    //         const nextIndex = historyIndex + 1;
+    //         applyAdjustmentState(history[nextIndex]);
+    //         setHistoryIndex(nextIndex);
+    //     }
+    // }, [history, historyIndex, applyAdjustmentState]);
     const handleToggleImageSelection = useCallback((imageId) => {
         const newSelectedIds = new Set(selectedImageIds);
         const isCurrentlySelected = newSelectedIds.has(imageId);
@@ -529,67 +591,67 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
             });
         }
     };
-    const setTempScoreAbs = createAbsoluteSetter('tempScore', setTempScore);
-    const setTintScoreAbs = createAbsoluteSetter('tintScore', setTintScore);
-    const setVibranceScoreAbs = createAbsoluteSetter('vibranceScore', setVibranceScore);
-    const setSaturationScoreAbs = createAbsoluteSetter('saturationScore', setSaturationScore);
-    const setExposureScoreAbs = createAbsoluteSetter('exposureScore', setExposureScore);
-    const setHighlightsScoreAbs = createAbsoluteSetter('highlightsScore', setHighlightsScore);
-    const setShadowsScoreAbs = createAbsoluteSetter('shadowsScore', setShadowsScore);
-    const setWhitesScoreAbs = createAbsoluteSetter('whitesScore', setWhitesScore);
-    const setBlacksScoreAbs = createAbsoluteSetter('blacksScore', setBlacksScore);
-    const setContrastScoreAbs = createAbsoluteSetter('contrastScore', setContrastScore);
-    const setClarityScoreAbs = createAbsoluteSetter('clarityScore', setClarityScore);
-    const setSharpnessScoreAbs = createAbsoluteSetter('sharpnessScore', setSharpnessScore);
-    // MARK: - Bulk Editor Handlers
-    const handleBulkTempDecreaseMax = createRelativeAdjuster('tempScore', setTempScore, -20);
-    const handleBulkTempDecrease = createRelativeAdjuster('tempScore', setTempScore, -5);
-    const handleBulkTempIncrease = createRelativeAdjuster('tempScore', setTempScore, 5);
-    const handleBulkTempIncreaseMax = createRelativeAdjuster('tempScore', setTempScore, 20);
-    const handleBulkTintDecreaseMax = createRelativeAdjuster('tintScore', setTintScore, -20);
-    const handleBulkTintDecrease = createRelativeAdjuster('tintScore', setTintScore, -5);
-    const handleBulkTintIncrease = createRelativeAdjuster('tintScore', setTintScore, 5);
-    const handleBulkTintIncreaseMax = createRelativeAdjuster('tintScore', setTintScore, 20);
-    const handleBulkVibranceDecreaseMax = createRelativeAdjuster('vibranceScore', setVibranceScore, -20);
-    const handleBulkVibranceDecrease = createRelativeAdjuster('vibranceScore', setVibranceScore, -5);
-    const handleBulkVibranceIncrease = createRelativeAdjuster('vibranceScore', setVibranceScore, 5);
-    const handleBulkVibranceIncreaseMax = createRelativeAdjuster('vibranceScore', setVibranceScore, 20);
-    const handleBulkSaturationDecreaseMax = createRelativeAdjuster('saturationScore', setSaturationScore, -20);
-    const handleBulkSaturationDecrease = createRelativeAdjuster('saturationScore', setSaturationScore, -5);
-    const handleBulkSaturationIncrease = createRelativeAdjuster('saturationScore', setSaturationScore, 5);
-    const handleBulkSaturationIncreaseMax = createRelativeAdjuster('saturationScore', setSaturationScore, 20);
-    const handleBulkExposureDecreaseMax = createRelativeAdjuster('exposureScore', setExposureScore, -20);
-    const handleBulkExposureDecrease = createRelativeAdjuster('exposureScore', setExposureScore, -5);
-    const handleBulkExposureIncrease = createRelativeAdjuster('exposureScore', setExposureScore, 5);
-    const handleBulkExposureIncreaseMax = createRelativeAdjuster('exposureScore', setExposureScore, 20);
-    const handleBulkContrastDecreaseMax = createRelativeAdjuster('contrastScore', setContrastScore, -20);
-    const handleBulkContrastDecrease = createRelativeAdjuster('contrastScore', setContrastScore, -5);
-    const handleBulkContrastIncrease = createRelativeAdjuster('contrastScore', setContrastScore, 5);
-    const handleBulkContrastIncreaseMax = createRelativeAdjuster('contrastScore', setContrastScore, 20);
-    const handleBulkHighlightsDecreaseMax = createRelativeAdjuster('highlightsScore', setHighlightsScore, -20);
-    const handleBulkHighlightsDecrease = createRelativeAdjuster('highlightsScore', setHighlightsScore, -5);
-    const handleBulkHighlightsIncrease = createRelativeAdjuster('highlightsScore', setHighlightsScore, 5);
-    const handleBulkHighlightsIncreaseMax = createRelativeAdjuster('highlightsScore', setHighlightsScore, 20);
-    const handleBulkShadowsDecreaseMax = createRelativeAdjuster('shadowsScore', setShadowsScore, -20);
-    const handleBulkShadowsDecrease = createRelativeAdjuster('shadowsScore', setShadowsScore, -5);
-    const handleBulkShadowsIncrease = createRelativeAdjuster('shadowsScore', setShadowsScore, 5);
-    const handleBulkShadowsIncreaseMax = createRelativeAdjuster('shadowsScore', setShadowsScore, 20);
-    const handleBulkWhitesDecreaseMax = createRelativeAdjuster('whitesScore', setWhitesScore, -20);
-    const handleBulkWhitesDecrease = createRelativeAdjuster('whitesScore', setWhitesScore, -5);
-    const handleBulkWhitesIncrease = createRelativeAdjuster('whitesScore', setWhitesScore, 5);
-    const handleBulkWhitesIncreaseMax = createRelativeAdjuster('whitesScore', setWhitesScore, 20);
-    const handleBulkBlacksDecreaseMax = createRelativeAdjuster('blacksScore', setBlacksScore, -20);
-    const handleBulkBlacksDecrease = createRelativeAdjuster('blacksScore', setBlacksScore, -5);
-    const handleBulkBlacksIncrease = createRelativeAdjuster('blacksScore', setBlacksScore, 5);
-    const handleBulkBlacksIncreaseMax = createRelativeAdjuster('blacksScore', setBlacksScore, 20);
-    const handleBulkClarityDecreaseMax = createRelativeAdjuster('clarityScore', setClarityScore, -20);
-    const handleBulkClarityDecrease = createRelativeAdjuster('clarityScore', setClarityScore, -5);
-    const handleBulkClarityIncrease = createRelativeAdjuster('clarityScore', setClarityScore, 5);
-    const handleBulkClarityIncreaseMax = createRelativeAdjuster('clarityScore', setClarityScore, 20);
-    const handleBulkSharpnessDecreaseMax = createRelativeAdjuster('sharpnessScore', setSharpnessScore, -20);
-    const handleBulkSharpnessDecrease = createRelativeAdjuster('sharpnessScore', setSharpnessScore, -5);
-    const handleBulkSharpnessIncrease = createRelativeAdjuster('sharpnessScore', setSharpnessScore, 5);
-    const handleBulkSharpnessIncreaseMax = createRelativeAdjuster('sharpnessScore', setSharpnessScore, 20);
+    // const setTempScoreAbs = createAbsoluteSetter('tempScore', setTempScore);
+    // const setTintScoreAbs = createAbsoluteSetter('tintScore', setTintScore);
+    // const setVibranceScoreAbs = createAbsoluteSetter('vibranceScore', setVibranceScore);
+    // const setSaturationScoreAbs = createAbsoluteSetter('saturationScore', setSaturationScore);
+    // const setExposureScoreAbs = createAbsoluteSetter('exposureScore', setExposureScore);
+    // const setHighlightsScoreAbs = createAbsoluteSetter('highlightsScore', setHighlightsScore);
+    // const setShadowsScoreAbs = createAbsoluteSetter('shadowsScore', setShadowsScore);
+    // const setWhitesScoreAbs = createAbsoluteSetter('whitesScore', setWhitesScore);
+    // const setBlacksScoreAbs = createAbsoluteSetter('blacksScore', setBlacksScore);
+    // const setContrastScoreAbs = createAbsoluteSetter('contrastScore', setContrastScore);
+    // const setClarityScoreAbs = createAbsoluteSetter('clarityScore', setClarityScore);
+    // const setSharpnessScoreAbs = createAbsoluteSetter('sharpnessScore', setSharpnessScore);
+    // // MARK: - Bulk Editor Handlers
+    // const handleBulkTempDecreaseMax = createRelativeAdjuster('tempScore', setTempScore, -20);
+    // const handleBulkTempDecrease = createRelativeAdjuster('tempScore', setTempScore, -5);
+    // const handleBulkTempIncrease = createRelativeAdjuster('tempScore', setTempScore, 5);
+    // const handleBulkTempIncreaseMax = createRelativeAdjuster('tempScore', setTempScore, 20);
+    // const handleBulkTintDecreaseMax = createRelativeAdjuster('tintScore', setTintScore, -20);
+    // const handleBulkTintDecrease = createRelativeAdjuster('tintScore', setTintScore, -5);
+    // const handleBulkTintIncrease = createRelativeAdjuster('tintScore', setTintScore, 5);
+    // const handleBulkTintIncreaseMax = createRelativeAdjuster('tintScore', setTintScore, 20);
+    // const handleBulkVibranceDecreaseMax = createRelativeAdjuster('vibranceScore', setVibranceScore, -20);
+    // const handleBulkVibranceDecrease = createRelativeAdjuster('vibranceScore', setVibranceScore, -5);
+    // const handleBulkVibranceIncrease = createRelativeAdjuster('vibranceScore', setVibranceScore, 5);
+    // const handleBulkVibranceIncreaseMax = createRelativeAdjuster('vibranceScore', setVibranceScore, 20);
+    // const handleBulkSaturationDecreaseMax = createRelativeAdjuster('saturationScore', setSaturationScore, -20);
+    // const handleBulkSaturationDecrease = createRelativeAdjuster('saturationScore', setSaturationScore, -5);
+    // const handleBulkSaturationIncrease = createRelativeAdjuster('saturationScore', setSaturationScore, 5);
+    // const handleBulkSaturationIncreaseMax = createRelativeAdjuster('saturationScore', setSaturationScore, 20);
+    // const handleBulkExposureDecreaseMax = createRelativeAdjuster('exposureScore', setExposureScore, -20);
+    // const handleBulkExposureDecrease = createRelativeAdjuster('exposureScore', setExposureScore, -5);
+    // const handleBulkExposureIncrease = createRelativeAdjuster('exposureScore', setExposureScore, 5);
+    // const handleBulkExposureIncreaseMax = createRelativeAdjuster('exposureScore', setExposureScore, 20);
+    // const handleBulkContrastDecreaseMax = createRelativeAdjuster('contrastScore', setContrastScore, -20);
+    // const handleBulkContrastDecrease = createRelativeAdjuster('contrastScore', setContrastScore, -5);
+    // const handleBulkContrastIncrease = createRelativeAdjuster('contrastScore', setContrastScore, 5);
+    // const handleBulkContrastIncreaseMax = createRelativeAdjuster('contrastScore', setContrastScore, 20);
+    // const handleBulkHighlightsDecreaseMax = createRelativeAdjuster('highlightsScore', setHighlightsScore, -20);
+    // const handleBulkHighlightsDecrease = createRelativeAdjuster('highlightsScore', setHighlightsScore, -5);
+    // const handleBulkHighlightsIncrease = createRelativeAdjuster('highlightsScore', setHighlightsScore, 5);
+    // const handleBulkHighlightsIncreaseMax = createRelativeAdjuster('highlightsScore', setHighlightsScore, 20);
+    // const handleBulkShadowsDecreaseMax = createRelativeAdjuster('shadowsScore', setShadowsScore, -20);
+    // const handleBulkShadowsDecrease = createRelativeAdjuster('shadowsScore', setShadowsScore, -5);
+    // const handleBulkShadowsIncrease = createRelativeAdjuster('shadowsScore', setShadowsScore, 5);
+    // const handleBulkShadowsIncreaseMax = createRelativeAdjuster('shadowsScore', setShadowsScore, 20);
+    // const handleBulkWhitesDecreaseMax = createRelativeAdjuster('whitesScore', setWhitesScore, -20);
+    // const handleBulkWhitesDecrease = createRelativeAdjuster('whitesScore', setWhitesScore, -5);
+    // const handleBulkWhitesIncrease = createRelativeAdjuster('whitesScore', setWhitesScore, 5);
+    // const handleBulkWhitesIncreaseMax = createRelativeAdjuster('whitesScore', setWhitesScore, 20);
+    // const handleBulkBlacksDecreaseMax = createRelativeAdjuster('blacksScore', setBlacksScore, -20);
+    // const handleBulkBlacksDecrease = createRelativeAdjuster('blacksScore', setBlacksScore, -5);
+    // const handleBulkBlacksIncrease = createRelativeAdjuster('blacksScore', setBlacksScore, 5);
+    // const handleBulkBlacksIncreaseMax = createRelativeAdjuster('blacksScore', setBlacksScore, 20);
+    // const handleBulkClarityDecreaseMax = createRelativeAdjuster('clarityScore', setClarityScore, -20);
+    // const handleBulkClarityDecrease = createRelativeAdjuster('clarityScore', setClarityScore, -5);
+    // const handleBulkClarityIncrease = createRelativeAdjuster('clarityScore', setClarityScore, 5);
+    // const handleBulkClarityIncreaseMax = createRelativeAdjuster('clarityScore', setClarityScore, 20);
+    // const handleBulkSharpnessDecreaseMax = createRelativeAdjuster('sharpnessScore', setSharpnessScore, -20);
+    // const handleBulkSharpnessDecrease = createRelativeAdjuster('sharpnessScore', setSharpnessScore, -5);
+    // const handleBulkSharpnessIncrease = createRelativeAdjuster('sharpnessScore', setSharpnessScore, 5);
+    // const handleBulkSharpnessIncreaseMax = createRelativeAdjuster('sharpnessScore', setSharpnessScore, 20);
     const handleScriptReady = useCallback(async () => {
         console.log("[Editor] Script tag is ready."); // Log entry
         if (typeof window.Module === 'function' && !editorRef.current) {
@@ -711,11 +773,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         highlightsScore, shadowsScore, whitesScore, blacksScore, clarityScore, sharpnessScore
     ]);
     const handleConfirmCopy = () => { handleCopyEdit(); handleCloseCopyDialog(); setShowCopyAlert(true); };
-    const handlePasteEdit = useCallback(() => {
-        if (copiedAdjustments) {
-            applyAdjustmentState(copiedAdjustments);
-        }
-    }, [copiedAdjustments, applyAdjustmentState]);
     // Panel Handlers
     const handleColorAccordionChange = (panel) => (_, isExpanded) => {
         setColorAdjustmentExpandedPanels(prev => isExpanded ? [...new Set([...prev, panel])] : prev.filter(p => p !== panel));
@@ -725,17 +782,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     };
     // MARK: - Preset Handlers
     // Also it calls for the backend endpoint
-    const fetchPresets = useCallback(async () => {
-        if (!controller)
-            return;
-        try {
-            const fetchedPresets = await controller.getPresets(firebaseUid);
-            setPresets(fetchedPresets);
-        }
-        catch (error) {
-            console.error("Failed to fetch presets:", error);
-        }
-    }, [controller]);
     const handleSelectMobilePreset = (presetId) => setSelectedMobilePreset(presetId);
     const handleSelectDesktopPreset = (presetId) => setSelectedDesktopPreset(presetId);
     const handlePresetMenuClick = (event, presetId) => {
@@ -830,8 +876,8 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         // 1. Set the flag to true to pause history recording
         setIsViewingOriginal(true);
         // 2. Apply the initial state to the view
-        applyAdjustmentState(initialAdjustments);
-    }, [isImageLoaded, applyAdjustmentState]);
+        // applyAdjustmentState(initialAdjustments);
+    }, [isImageLoaded]);
     const handleShowEdited = useCallback(() => {
         if (!editorRef.current || !isImageLoaded)
             return;
@@ -839,12 +885,12 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         const latestState = history[historyIndex];
         if (latestState) {
             // 3. Re-apply the latest state from history
-            applyAdjustmentState(latestState);
+            // applyAdjustmentState(latestState);
         }
         // 4. Set the flag back to false AFTER the state has been restored.
         // A small timeout ensures this runs after the re-render.
         setTimeout(() => setIsViewingOriginal(false), 0);
-    }, [isImageLoaded, history, historyIndex, applyAdjustmentState]);
+    }, [isImageLoaded, history, historyIndex]);
     // MARK: - Zoom Handlers
     const handleZoomAction = useCallback((action) => {
         let newZoom = zoomLevel;
@@ -885,76 +931,19 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         }
         setZoomLevel(Math.max(0.1, Math.min(newZoom, 8)));
     }, [zoomLevel, isImageLoaded]);
-    useEffect(() => {
-        if (canvasRef.current) {
-            canvasRef.current.style.transition = 'transform 0.1s ease-out';
-            canvasRef.current.style.transform = `scale(${zoomLevel})`;
-        }
-    }, [zoomLevel]);
-    // MARK: - Effects
-    // Preset Image List
-    useEffect(() => {
-        fetchPresets();
-    }, [controller, fetchPresets]);
-    // Image Load
-    useEffect(() => {
-        if (isImageLoaded && editorRef.current && canvasRef.current) {
-            const { width, height } = editorRef.current.getImageSize();
-            canvasRef.current.width = width;
-            canvasRef.current.height = height;
-            updateCanvas();
-            setEditorStatus("Image loaded successfully!");
-        }
-    }, [isImageLoaded, updateCanvas]);
     // Adjustment USE EFFECTS
-    useEffect(() => { if (isImageLoaded) {
-        editorRef.current?.setExposure(exposureScore);
-        updateCanvas();
-    } }, [exposureScore, isImageLoaded, updateCanvas]);
-    useEffect(() => { if (isImageLoaded) {
-        editorRef.current?.setVibrance(vibranceScore);
-        updateCanvas();
-    } }, [vibranceScore, isImageLoaded, updateCanvas]);
-    useEffect(() => { if (isImageLoaded) {
-        editorRef.current?.setContrast(contrastScore);
-        updateCanvas();
-    } }, [contrastScore, isImageLoaded, updateCanvas]);
-    useEffect(() => { if (isImageLoaded) {
-        editorRef.current?.setHighlights(highlightsScore);
-        updateCanvas();
-    } }, [highlightsScore, isImageLoaded, updateCanvas]);
-    useEffect(() => { if (isImageLoaded) {
-        editorRef.current?.setShadows(shadowsScore);
-        updateCanvas();
-    } }, [shadowsScore, isImageLoaded, updateCanvas]);
-    useEffect(() => { if (isImageLoaded) {
-        editorRef.current?.setSaturation(saturationScore);
-        updateCanvas();
-    } }, [saturationScore, isImageLoaded, updateCanvas]);
-    useEffect(() => { if (isImageLoaded) {
-        editorRef.current?.setTemperature(tempScore);
-        updateCanvas();
-    } }, [tempScore, isImageLoaded, updateCanvas]);
-    useEffect(() => { if (isImageLoaded) {
-        editorRef.current?.setTint(tintScore);
-        updateCanvas();
-    } }, [tintScore, isImageLoaded, updateCanvas]);
-    useEffect(() => { if (isImageLoaded) {
-        editorRef.current?.setBlacks(blacksScore);
-        updateCanvas();
-    } }, [blacksScore, isImageLoaded, updateCanvas]);
-    useEffect(() => { if (isImageLoaded) {
-        editorRef.current?.setWhites(whitesScore);
-        updateCanvas();
-    } }, [whitesScore, isImageLoaded, updateCanvas]);
-    useEffect(() => { if (isImageLoaded) {
-        editorRef.current?.setClarity(clarityScore);
-        updateCanvas();
-    } }, [clarityScore, isImageLoaded, updateCanvas]);
-    useEffect(() => { if (isImageLoaded) {
-        editorRef.current?.setSharpness(sharpnessScore);
-        updateCanvas();
-    } }, [sharpnessScore, isImageLoaded, updateCanvas]);
+    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setExposure(exposureScore); updateCanvas(); } }, [exposureScore, isImageLoaded, updateCanvas]);
+    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setVibrance(vibranceScore); updateCanvas(); } }, [vibranceScore, isImageLoaded, updateCanvas]);
+    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setContrast(contrastScore); updateCanvas(); } }, [contrastScore, isImageLoaded, updateCanvas]);
+    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setHighlights(highlightsScore); updateCanvas(); } }, [highlightsScore, isImageLoaded, updateCanvas]);
+    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setShadows(shadowsScore); updateCanvas(); } }, [shadowsScore, isImageLoaded, updateCanvas]);
+    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setSaturation(saturationScore); updateCanvas(); } }, [saturationScore, isImageLoaded, updateCanvas]);
+    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setTemperature(tempScore); updateCanvas(); } }, [tempScore, isImageLoaded, updateCanvas]);
+    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setTint(tintScore); updateCanvas(); } }, [tintScore, isImageLoaded, updateCanvas]);
+    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setBlacks(blacksScore); updateCanvas(); } }, [blacksScore, isImageLoaded, updateCanvas]);
+    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setWhites(whitesScore); updateCanvas(); } }, [whitesScore, isImageLoaded, updateCanvas]);
+    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setClarity(clarityScore); updateCanvas(); } }, [clarityScore, isImageLoaded, updateCanvas]);
+    // useEffect(() => { if (isImageLoaded) { editorRef.current?.setSharpness(sharpnessScore); updateCanvas(); } }, [sharpnessScore, isImageLoaded, updateCanvas]);
     useEffect(() => {
         // 5. Add a check to ignore state changes while viewing the original
         if (!isImageLoaded || isViewingOriginal)
@@ -997,15 +986,109 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
             }
         };
     }, []);
+    // MARK: DEBUG (NEW LOGIC)
+    // const { width, height } = editorRef.current.getImageSize();
+    // canvasRef.current.width = width;
+    // canvasRef.current.height = height;
+    useEffect(() => {
+        if (canvasRef.current) {
+            canvasRef.current.style.transition = 'transform 0.1s ease-out';
+            canvasRef.current.style.transform = `scale(${zoomLevel})`;
+        }
+    }, [zoomLevel]);
+    // Undo, Redo, Revert
+    const handleRevert = useCallback(() => {
+        setCurrentAdjustmentsState(initialAdjustments);
+    }, [updateCanvasEditor]);
+    const handleUndo = useCallback(() => {
+        if (historyIndex > 0) {
+            const prevIndex = historyIndex - 1;
+            setCurrentAdjustmentsState(history[prevIndex]);
+            setHistoryIndex(prevIndex);
+        }
+    }, [history, historyIndex, updateCanvasEditor]);
+    const handleRedo = useCallback(() => {
+        if (historyIndex < history.length - 1) {
+            const nextIndex = historyIndex + 1;
+            setCurrentAdjustmentsState(history[nextIndex]);
+            setHistoryIndex(nextIndex);
+        }
+    }, [history, historyIndex, updateCanvasEditor]);
+    // Undo, Redo, Revert [END]
+    // Swipe
+    const swipeNext = useCallback(() => {
+        // find next imageId
+        // setCurrentImageId()
+    }, []);
+    const swipePrev = useCallback(() => {
+        // find next imageId
+        // setCurrentImageId()
+    }, []);
+    // Swipe [END]
+    useEffect(() => {
+        // will trigger when currentImageId change
+        if (!currentImageId)
+            return;
+        const init = async () => {
+            if (editorRef.current?.getInitialized() === false) {
+                await editorRef.current?.initialize();
+            }
+            const imageData = await getImageFromId(firebaseUid, currentImageId);
+            if (!imageData) {
+                // TODO please check to make sure not crash
+                throw new Error("can't load image data");
+            }
+            setCurrentImageData(imageData);
+            const adjustmentData = imageData.editor_config?.color_adjustment;
+            // set event
+            setEventId(imageData.event_id);
+            // TODO get slideshow image list
+            // set to imageList
+            const pathGallery = extractPathFromGallery(imageData);
+            // load image to editor
+            await loadImageEditorFromUrl(pathGallery);
+            console.log("Image loaded to editor");
+            // adjustment setup
+            if (adjustmentData) {
+                const adjustmentState = mapColorAdjustmentToAdjustmentState(adjustmentData);
+                // set adjustment to editor to make adjustmentState change
+                setCurrentAdjustmentsState(adjustmentState);
+            }
+            else {
+                console.log("no adjustment found, use default");
+            }
+        };
+        init();
+    }, [currentImageId, editorRef.current]);
+    useEffect(() => {
+        // Render photo if adjustmentState change;
+        if (!editorRef.current)
+            return;
+        editorRef.current.setAdjustments(mapAdjustmentStateToAdjustmentEditor(currentAdjustmentsState));
+        updateCanvasEditor();
+    }, [editorRef.current, currentAdjustmentsState]);
+    //
     return {
         // Refs
         canvasRef,
         canvasContainerRef,
         fileInputRef,
-        displayedToken,
-        handleBackCallback,
-        handlePrev,
-        handleNext,
+        // Status & State
+        editorStatus,
+        isEditorReady,
+        isImageLoaded: isImageLoaded && !isGalleryLoading, // Combine loading states
+        galleryError,
+        // Gallery Swipe functions and state
+        handlePrev: onSwipePrev,
+        handleNext: onSwipeNext,
+        isPrevAvailable,
+        isNextAvailable,
+        // History functions and state
+        handleUndo: historyActions.undo,
+        handleRedo: historyActions.redo,
+        handleRevert: () => historyActions.reset(initialAdjustments),
+        canUndo: historyInfo.canUndo,
+        canRedo: historyInfo.canRedo,
         // Refs for mobile panel
         panelRef,
         contentRef,
@@ -1015,9 +1098,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         handleDragStart,
         handleContentHeightChange,
         // Status & State
-        editorStatus,
-        isEditorReady,
-        isImageLoaded,
         isPasteAvailable: copiedAdjustments !== null,
         isOnline,
         isConnectionSlow,
@@ -1063,9 +1143,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         handleAlertClose,
         loadImageFromId,
         loadImageFromUrl,
-        handleRevert,
-        handleUndo,
-        handleRedo,
         handleOpenCopyDialog,
         handleCloseCopyDialog,
         copyColorChecks,
@@ -1080,7 +1157,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         handleToggleCopyDialogExpand,
         handleConfirmCopy,
         handleCopyEdit,
-        handlePasteEdit,
         // adjustClarityBulk,
         // adjustSharpnessBulk,
         // Setters & Handlers
@@ -1121,18 +1197,8 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         toggleBulkEditing,
         handleSelectBulkPreset,
         // Adjustment State & Setters
-        tempScore, setTempScore: setTempScoreAbs,
-        tintScore, setTintScore: setTintScoreAbs,
-        vibranceScore, setVibranceScore: setVibranceScoreAbs,
-        saturationScore, setSaturationScore: setSaturationScoreAbs,
-        exposureScore, setExposureScore: setExposureScoreAbs,
-        highlightsScore, setHighlightsScore: setHighlightsScoreAbs,
-        shadowsScore, setShadowsScore: setShadowsScoreAbs,
-        whitesScore, setWhitesScore: setWhitesScoreAbs,
-        blacksScore, setBlacksScore: setBlacksScoreAbs,
-        contrastScore, setContrastScore: setContrastScoreAbs,
-        clarityScore, setClarityScore: setClarityScoreAbs,
-        sharpnessScore, setSharpnessScore: setSharpnessScoreAbs,
+        currentAdjustmentsState,
+        setCurrentAdjustmentsState,
         // Bulk Adjustment Handlers
         // Note: These handlers are for image list
         imageList,
@@ -1141,55 +1207,55 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         handleToggleImageSelection,
         // Note: These handlers are for bulk adjustments
         // Adjustment Colors
-        handleBulkTempDecreaseMax,
-        handleBulkTempDecrease,
-        handleBulkTempIncrease,
-        handleBulkTempIncreaseMax,
-        handleBulkTintDecreaseMax,
-        handleBulkTintDecrease,
-        handleBulkTintIncrease,
-        handleBulkTintIncreaseMax,
-        handleBulkVibranceDecreaseMax,
-        handleBulkVibranceDecrease,
-        handleBulkVibranceIncrease,
-        handleBulkVibranceIncreaseMax,
-        handleBulkSaturationDecreaseMax,
-        handleBulkSaturationDecrease,
-        handleBulkSaturationIncrease,
-        handleBulkSaturationIncreaseMax,
-        // Adjustment Light
-        handleBulkExposureDecreaseMax,
-        handleBulkExposureDecrease,
-        handleBulkExposureIncrease,
-        handleBulkExposureIncreaseMax,
-        handleBulkContrastDecreaseMax,
-        handleBulkContrastDecrease,
-        handleBulkContrastIncrease,
-        handleBulkContrastIncreaseMax,
-        handleBulkHighlightsDecreaseMax,
-        handleBulkHighlightsDecrease,
-        handleBulkHighlightsIncrease,
-        handleBulkHighlightsIncreaseMax,
-        handleBulkShadowsDecreaseMax,
-        handleBulkShadowsDecrease,
-        handleBulkShadowsIncrease,
-        handleBulkShadowsIncreaseMax,
-        handleBulkWhitesDecreaseMax,
-        handleBulkWhitesDecrease,
-        handleBulkWhitesIncrease,
-        handleBulkWhitesIncreaseMax,
-        handleBulkBlacksDecreaseMax,
-        handleBulkBlacksDecrease,
-        handleBulkBlacksIncrease,
-        handleBulkBlacksIncreaseMax,
-        // Adjustment Details
-        handleBulkClarityDecreaseMax,
-        handleBulkClarityDecrease,
-        handleBulkClarityIncrease,
-        handleBulkClarityIncreaseMax,
-        handleBulkSharpnessDecreaseMax,
-        handleBulkSharpnessDecrease,
-        handleBulkSharpnessIncrease,
-        handleBulkSharpnessIncreaseMax,
+        // handleBulkTempDecreaseMax,
+        // handleBulkTempDecrease,
+        // handleBulkTempIncrease,
+        // handleBulkTempIncreaseMax,
+        // handleBulkTintDecreaseMax,
+        // handleBulkTintDecrease,
+        // handleBulkTintIncrease,
+        // handleBulkTintIncreaseMax,
+        // handleBulkVibranceDecreaseMax,
+        // handleBulkVibranceDecrease,
+        // handleBulkVibranceIncrease,
+        // handleBulkVibranceIncreaseMax,
+        // handleBulkSaturationDecreaseMax,
+        // handleBulkSaturationDecrease,
+        // handleBulkSaturationIncrease,
+        // handleBulkSaturationIncreaseMax,
+        // // Adjustment Light
+        // handleBulkExposureDecreaseMax,
+        // handleBulkExposureDecrease,
+        // handleBulkExposureIncrease,
+        // handleBulkExposureIncreaseMax,
+        // handleBulkContrastDecreaseMax,
+        // handleBulkContrastDecrease,
+        // handleBulkContrastIncrease,
+        // handleBulkContrastIncreaseMax,
+        // handleBulkHighlightsDecreaseMax,
+        // handleBulkHighlightsDecrease,
+        // handleBulkHighlightsIncrease,
+        // handleBulkHighlightsIncreaseMax,
+        // handleBulkShadowsDecreaseMax,
+        // handleBulkShadowsDecrease,
+        // handleBulkShadowsIncrease,
+        // handleBulkShadowsIncreaseMax,
+        // handleBulkWhitesDecreaseMax,
+        // handleBulkWhitesDecrease,
+        // handleBulkWhitesIncrease,
+        // handleBulkWhitesIncreaseMax,
+        // handleBulkBlacksDecreaseMax,
+        // handleBulkBlacksDecrease,
+        // handleBulkBlacksIncrease,
+        // handleBulkBlacksIncreaseMax,
+        // // Adjustment Details
+        // handleBulkClarityDecreaseMax,
+        // handleBulkClarityDecrease,
+        // handleBulkClarityIncrease,
+        // handleBulkClarityIncreaseMax,
+        // handleBulkSharpnessDecreaseMax,
+        // handleBulkSharpnessDecrease,
+        // handleBulkSharpnessIncrease,
+        // handleBulkSharpnessIncreaseMax,
     };
 }
