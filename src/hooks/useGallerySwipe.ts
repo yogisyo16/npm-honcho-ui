@@ -218,6 +218,12 @@ export function useGallerySwipe(
         setError(null);
 
         try {
+            // Debug logging
+            console.log("=== SWIPE NEXT DEBUG ===");
+            console.log("currentImageId:", currentImageId);
+            console.log("currentImageList length:", currentImageList.length);
+            console.log("currentImageList IDs:", currentImageList.map(img => img.id).join(", "));
+            
             // Calculate current index directly to avoid stale closure issues
             const currentIndex = currentImageList.findIndex(img => img.id === currentImageId);
             console.log("Current index: ", currentIndex);
@@ -238,6 +244,7 @@ export function useGallerySwipe(
                     
                     // Navigate to first image of the new page
                     const nextImage = newImages[0];
+                    console.log("Setting currentImageId to:", nextImage.id);
                     setCurrentImageId(nextImage.id);
                     
                     // Fetch complete data for the new current image
@@ -253,6 +260,7 @@ export function useGallerySwipe(
                 // Scenario 2: Navigate to next image in current list
                 const nextImage = currentImageList[currentIndex + 1];
                 console.log("[SCENARIO 2] Navigating to next image:", nextImage.id);
+                console.log("Setting currentImageId from", currentImageId, "to", nextImage.id);
                 setCurrentImageId(nextImage.id);
                 
                 // Fetch complete data for the next image
