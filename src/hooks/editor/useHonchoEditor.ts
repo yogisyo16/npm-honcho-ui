@@ -811,7 +811,8 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
             const pathGallery = extractPathFromGallery(galleryImageData);
             // load image to editor
             await loadImageEditorFromUrl(pathGallery);
-            console.log("Image loaded to editor");
+            
+            updateCanvasEditor();
 
             // adjustment setup
             if (adjustmentData) {
@@ -824,7 +825,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         }
 
         init();
-    }, [galleryImageData, editorRef.current]);
+    }, [galleryImageData, editorRef.current, updateCanvasEditor]);
 
     useEffect(() => {
         // Render photo if adjustmentState change;

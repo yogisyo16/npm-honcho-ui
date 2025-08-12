@@ -646,7 +646,7 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
             const pathGallery = extractPathFromGallery(galleryImageData);
             // load image to editor
             await loadImageEditorFromUrl(pathGallery);
-            console.log("Image loaded to editor");
+            updateCanvasEditor();
             // adjustment setup
             if (adjustmentData) {
                 const adjustmentState = mapColorAdjustmentToAdjustmentState(adjustmentData);
@@ -658,7 +658,7 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
             }
         };
         init();
-    }, [galleryImageData, editorRef.current]);
+    }, [galleryImageData, editorRef.current, updateCanvasEditor]);
     useEffect(() => {
         // Render photo if adjustmentState change;
         if (!editorRef.current || !isImageLoaded)
