@@ -28,6 +28,29 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
     // This prevents the hook from re-initializing when the same values are passed
     const prevFirebaseUid = useRef(null);
     const prevInitImageId = useRef(null);
+    // Refs to track current state values for use in callbacks
+    // This prevents stale closure issues with useCallback
+    const currentImageIdRef = useRef(currentImageId);
+    const currentImageListRef = useRef(currentImageList);
+    const currentEventIdRef = useRef(currentEventId);
+    const currentPageRef = useRef(currentPage);
+    const hasNextPageRef = useRef(hasNextPage);
+    // Update refs whenever state changes
+    useEffect(() => {
+        currentImageIdRef.current = currentImageId;
+    }, [currentImageId]);
+    useEffect(() => {
+        currentImageListRef.current = currentImageList;
+    }, [currentImageList]);
+    useEffect(() => {
+        currentEventIdRef.current = currentEventId;
+    }, [currentEventId]);
+    useEffect(() => {
+        currentPageRef.current = currentPage;
+    }, [currentPage]);
+    useEffect(() => {
+        hasNextPageRef.current = hasNextPage;
+    }, [hasNextPage]);
     /**
      * Fetch image pages sequentially until the target image is found
      * This is necessary because we don't know which page contains the initial image
@@ -81,12 +104,12 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
      */
     const loadNextPage = useCallback(async () => {
         // Check prerequisites before attempting to load next page
-        if (!hasNextPage || !currentEventId || !controller || !firebaseUid) {
+        if (!hasNextPageRef.current || !currentEventIdRef.current || !controller || !firebaseUid) {
             return [];
         }
         try {
-            const nextPageNum = currentPage + 1;
-            const response = await controller.getImageList(firebaseUid, currentEventId, nextPageNum);
+            const nextPageNum = currentPageRef.current + 1;
+            const response = await controller.getImageList(firebaseUid, currentEventIdRef.current, nextPageNum);
             if (response.gallery && response.gallery.length > 0) {
                 // Update pagination state with new page information
                 setCurrentPage(nextPageNum);
@@ -98,7 +121,7 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
             console.error('Error loading next page:', err);
         }
         return [];
-    }, [hasNextPage, currentEventId, controller, firebaseUid, currentPage]);
+    }, [controller, firebaseUid]);
     /**
      * Initialize or re-initialize the gallery when parameters change
      * This function:
@@ -164,30 +187,30 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
      */
     const onSwipeNext = useCallback(async () => {
         // Prevent action if no current image or already loading
-        if (!currentImageId || isLoading)
+        if (!currentImageIdRef.current || isLoading)
             return;
         setIsLoading(true);
         setError(null);
         try {
-            // Debug logging
+            // Debug logging using ref values
             console.log("=== SWIPE NEXT DEBUG ===");
-            console.log("currentImageId:", currentImageId);
-            console.log("currentImageList length:", currentImageList.length);
-            console.log("currentImageList IDs:", currentImageList.map(img => img.id).join(", "));
-            // Calculate current index directly to avoid stale closure issues
-            const currentIndex = currentImageList.findIndex(img => img.id === currentImageId);
+            console.log("currentImageId (ref):", currentImageIdRef.current);
+            console.log("currentImageList length (ref):", currentImageListRef.current.length);
+            console.log("currentImageList IDs (ref):", currentImageListRef.current.map(img => img.id).join(", "));
+            // Calculate current index using ref values
+            const currentIndex = currentImageListRef.current.findIndex(img => img.id === currentImageIdRef.current);
             console.log("Current index: ", currentIndex);
             if (currentIndex === -1) {
                 throw new Error('Current image not found in list');
             }
             // Scenario 1: At the last image of current list
-            if (currentIndex === currentImageList.length - 1) {
-                console.log("[SCENARIO 1] if last image: " + currentImageList.length);
+            if (currentIndex === currentImageListRef.current.length - 1) {
+                console.log("[SCENARIO 1] if last image: " + currentImageListRef.current.length);
                 // Try to load next page for more images
                 const newImages = await loadNextPage();
                 if (newImages.length > 0) {
                     // Extend current list with new images
-                    const updatedList = [...currentImageList, ...newImages];
+                    const updatedList = [...currentImageListRef.current, ...newImages];
                     setCurrentImageList(updatedList);
                     // Navigate to first image of the new page
                     const nextImage = newImages[0];
@@ -206,9 +229,9 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
             }
             else {
                 // Scenario 2: Navigate to next image in current list
-                const nextImage = currentImageList[currentIndex + 1];
+                const nextImage = currentImageListRef.current[currentIndex + 1];
                 console.log("[SCENARIO 2] Navigating to next image:", nextImage.id);
-                console.log("Setting currentImageId from", currentImageId, "to", nextImage.id);
+                console.log("Setting currentImageId from", currentImageIdRef.current, "to", nextImage.id);
                 setCurrentImageId(nextImage.id);
                 // Fetch complete data for the next image
                 const nextImageData = await controller.onGetImage(firebaseUid, nextImage.id);
@@ -225,7 +248,7 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
         finally {
             setIsLoading(false);
         }
-    }, [currentImageId, isLoading, currentImageList, loadNextPage, controller, firebaseUid]);
+    }, [isLoading, loadNextPage, controller, firebaseUid]);
     /**
      * Navigate to the previous image in the gallery
      * Only works within the currently loaded image list
@@ -235,19 +258,19 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
      */
     const onSwipePrev = useCallback(async () => {
         // Prevent action if no current image or already loading
-        if (!currentImageId || isLoading)
+        if (!currentImageIdRef.current || isLoading)
             return;
         setIsLoading(true);
         setError(null);
         try {
-            // Calculate current index directly to avoid stale closure issues
-            const currentIndex = currentImageList.findIndex(img => img.id === currentImageId);
+            // Calculate current index using ref values
+            const currentIndex = currentImageListRef.current.findIndex(img => img.id === currentImageIdRef.current);
             if (currentIndex === -1) {
                 throw new Error('Current image not found in list');
             }
             if (currentIndex > 0) {
                 // Navigate to previous image in the current list
-                const prevImage = currentImageList[currentIndex - 1];
+                const prevImage = currentImageListRef.current[currentIndex - 1];
                 setCurrentImageId(prevImage.id);
                 // Fetch complete data for the previous image
                 const prevImageData = await controller.onGetImage(firebaseUid, prevImage.id);
@@ -268,7 +291,7 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
         finally {
             setIsLoading(false);
         }
-    }, [currentImageId, isLoading, currentImageList, controller, firebaseUid]);
+    }, [isLoading, controller, firebaseUid]);
     /**
      * Calculate if next image navigation is available
      * Returns true if:
@@ -278,18 +301,18 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
      * @returns Boolean indicating if next navigation is possible
      */
     const isNextAvailable = useCallback(() => {
-        if (isLoading || !currentImageId)
+        if (isLoading || !currentImageIdRef.current)
             return false;
-        // Calculate current index directly to avoid stale closure issues
-        const currentIndex = currentImageList.findIndex(img => img.id === currentImageId);
+        // Calculate current index using ref values
+        const currentIndex = currentImageListRef.current.findIndex(img => img.id === currentImageIdRef.current);
         if (currentIndex === -1)
             return false;
         // If we're not at the last image, next is definitely available
-        if (currentIndex < currentImageList.length - 1)
+        if (currentIndex < currentImageListRef.current.length - 1)
             return true;
         // If we're at the last image but there are more pages, next is still available
-        return hasNextPage;
-    }, [isLoading, currentImageId, currentImageList, hasNextPage]);
+        return hasNextPageRef.current;
+    }, [isLoading]);
     /**
      * Calculate if previous image navigation is available
      * Returns true if there's a previous image in the currently loaded list
@@ -297,12 +320,12 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
      * @returns Boolean indicating if previous navigation is possible
      */
     const isPrevAvailable = useCallback(() => {
-        if (isLoading || !currentImageId)
+        if (isLoading || !currentImageIdRef.current)
             return false;
-        // Calculate current index directly to avoid stale closure issues
-        const currentIndex = currentImageList.findIndex(img => img.id === currentImageId);
+        // Calculate current index using ref values
+        const currentIndex = currentImageListRef.current.findIndex(img => img.id === currentImageIdRef.current);
         return currentIndex > 0;
-    }, [isLoading, currentImageId, currentImageList]);
+    }, [isLoading]);
     // Initialize when dependencies change
     useEffect(() => {
         initializeGallery();
