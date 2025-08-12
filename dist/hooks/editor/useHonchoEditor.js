@@ -641,7 +641,7 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
                 await editorRef.current?.initialize();
             }
             const adjustmentData = galleryImageData.editor_config?.color_adjustment;
-            console.log("2. ADJUSTMENTDATA: ", adjustmentData);
+            console.log("2. ADJUSTMENTDATA: ", adjustmentData, galleryImageData);
             // set event
             setEventId(galleryImageData.event_id);
             console.log("3. EVENTID: ", eventId);
