@@ -228,6 +228,7 @@ export function useGallerySwipe(
 
         try {
             const currentIndex = getCurrentImageIndex();
+            console.log("Current index: ", currentIndex);
             
             if (currentIndex === -1) {
                 throw new Error('Current image not found in list');
