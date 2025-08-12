@@ -183,6 +183,7 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
             }
             // Scenario 1: At the last image of current list
             if (currentIndex === currentImageList.length - 1) {
+                console.log("[SCENARIO 1] if last image: " + currentImageList.length);
                 // Try to load next page for more images
                 const newImages = await loadNextPage();
                 if (newImages.length > 0) {
@@ -206,6 +207,7 @@ export function useGallerySwipe(firebaseUid, initImageId, controller) {
             else {
                 // Scenario 2: Navigate to next image in current list
                 const nextImage = currentImageList[currentIndex + 1];
+                console.log("[SCENARIO 2] Navigating to next image:", nextImage);
                 setCurrentImageId(nextImage.id);
                 // Fetch complete data for the next image
                 const nextImageData = await controller.onGetImage(firebaseUid, nextImage.id);
