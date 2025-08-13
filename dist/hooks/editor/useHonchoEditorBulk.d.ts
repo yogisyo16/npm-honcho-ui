@@ -1,6 +1,6 @@
 import { SelectChangeEvent } from "@mui/material";
-import { AdjustmentState, ImageItem } from './useHonchoEditor';
-export declare function useHonchoEditorBulk(): {
+import { AdjustmentState, ImageItem, Controller } from './useHonchoEditor';
+export declare function useHonchoEditorBulk(controller: Controller, initImageId: string, firebaseUid: string): {
     isBulkEditing: boolean;
     selectedImages: string;
     imageList: ImageItem[];

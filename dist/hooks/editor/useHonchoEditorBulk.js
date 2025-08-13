@@ -6,7 +6,7 @@ const initialAdjustments = {
     whitesScore: 0, blacksScore: 0, saturationScore: 0, contrastScore: 0, clarityScore: 0, sharpnessScore: 0,
 };
 const clamp = (value) => Math.max(-100, Math.min(100, value));
-export function useHonchoEditorBulk() {
+export function useHonchoEditorBulk(controller, initImageId, firebaseUid) {
     const { currentState, actions: historyActions, historyInfo } = useAdjustmentHistory(initialAdjustments);
     // State for Bulk Editing
     const [isBulkEditing, setIsBulkEditing] = useState(false);

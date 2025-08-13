@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { SelectChangeEvent } from "@mui/material";
-import { AdjustmentState, ImageItem } from './useHonchoEditor';
+import { AdjustmentState, ImageItem, Controller, Preset } from './useHonchoEditor';
 import { useAdjustmentHistory } from '../useAdjustmentHistory';
 
 const initialAdjustments: AdjustmentState = {
@@ -10,9 +10,19 @@ const initialAdjustments: AdjustmentState = {
     whitesScore: 0, blacksScore: 0, saturationScore: 0, contrastScore: 0, clarityScore: 0, sharpnessScore: 0,
 };
 
+interface NetworkInformation extends EventTarget {
+  readonly effectiveType: 'slow-2g' | '2g' | '3g' | '4g';
+  readonly saveData: boolean;
+  readonly downlink: number;
+}
+
+interface NavigatorWithConnection extends Navigator {
+  readonly connection: NetworkInformation;
+}
+
 const clamp = (value: number) => Math.max(-100, Math.min(100, value));
 
-export function useHonchoEditorBulk() {
+export function useHonchoEditorBulk(controller: Controller, initImageId: string, firebaseUid: string) {
      const {
         currentState,
         actions: historyActions,
