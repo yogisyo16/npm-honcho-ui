@@ -1,6 +1,16 @@
 import { SelectChangeEvent } from "@mui/material";
-import { AdjustmentState, ImageItem, Controller } from './useHonchoEditor';
-export declare function useHonchoEditorBulk(controller: Controller, initImageId: string, firebaseUid: string): {
+import { AdjustmentState, ImageItem, Controller, Preset } from './useHonchoEditor';
+import { Gallery, ResponseGalleryPaging } from '../../hooks/editor/type';
+export interface ControllerBulk {
+    onGetImage(firebaseUid: string, imageID: string): Promise<Gallery>;
+    getImageList(firebaseUid: string, eventID: string, page: number): Promise<ResponseGalleryPaging>;
+    syncConfig(firebaseUid: string): Promise<void>;
+    handleBack(firebaseUid: string, eventID: string): void;
+    getPresets(firebaseUid: string): Promise<Preset[]>;
+    createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset>;
+    deletePreset(firebaseUid: string, presetId: string): Promise<void>;
+}
+export declare function useHonchoEditorBulk(controllerBulk: Controller, eventID: string, firebaseUid: string): {
     isBulkEditing: boolean;
     selectedImages: string;
     imageList: ImageItem[];
@@ -11,6 +21,7 @@ export declare function useHonchoEditorBulk(controller: Controller, initImageId:
     handleToggleImageSelection: (imageId: string) => void;
     toggleBulkEditing: () => void;
     handleSelectBulkPreset: (event: SelectChangeEvent<string>) => void;
+    handleBackCallbackBulk: () => void;
     setTempScore: (value: number) => void;
     setTintScore: (value: number) => void;
     setVibranceScore: (value: number) => void;

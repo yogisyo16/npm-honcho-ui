@@ -1,13 +1,18 @@
 'use client';
 import { useState, useCallback, useEffect } from 'react';
 import { useAdjustmentHistory } from '../useAdjustmentHistory';
+import { useAdjustmentHistoryBatch } from '../useAdjustmentHistoryBatch';
 const initialAdjustments = {
     tempScore: 0, tintScore: 0, vibranceScore: 0, exposureScore: 0, highlightsScore: 0, shadowsScore: 0,
     whitesScore: 0, blacksScore: 0, saturationScore: 0, contrastScore: 0, clarityScore: 0, sharpnessScore: 0,
 };
 const clamp = (value) => Math.max(-100, Math.min(100, value));
-export function useHonchoEditorBulk(controller, initImageId, firebaseUid) {
+export function useHonchoEditorBulk(controllerBulk, eventID, firebaseUid) {
     const { currentState, actions: historyActions, historyInfo } = useAdjustmentHistory(initialAdjustments);
+    const { currentBatch, selectedIds, allImageIds, actions: batchActions, } = useAdjustmentHistoryBatch({
+        maxSize: historyInfo.historySize,
+        defaultAdjustmentState: currentState,
+    });
     // State for Bulk Editing
     const [isBulkEditing, setIsBulkEditing] = useState(false);
     const [selectedImages, setSelectedImages] = useState('Select');
@@ -15,6 +20,11 @@ export function useHonchoEditorBulk(controller, initImageId, firebaseUid) {
     const [selectedImageIds, setSelectedImageIds] = useState(new Set());
     const [adjustmentsMap, setAdjustmentsMap] = useState(new Map());
     const [selectedBulkPreset, setSelectedBulkPreset] = useState('preset1');
+    const handleBackCallbackBulk = useCallback(() => {
+        if (!eventID)
+            return;
+        controllerBulk.handleBack(firebaseUid, eventID);
+    }, [controllerBulk, firebaseUid, eventID]);
     const handleFileChangeBulk = (event) => {
         const files = event.target?.files;
         if (!files || files.length <= 1) {
@@ -168,6 +178,7 @@ export function useHonchoEditorBulk(controller, initImageId, firebaseUid) {
         handleToggleImageSelection,
         toggleBulkEditing,
         handleSelectBulkPreset,
+        handleBackCallbackBulk,
         // Bulk Adjustment Handlers
         setTempScore,
         setTintScore,

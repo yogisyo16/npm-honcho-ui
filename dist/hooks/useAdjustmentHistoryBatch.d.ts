@@ -1,9 +1,28 @@
 import { AdjustmentState } from './editor/useHonchoEditor';
 /**
+ * Configuration for image with adjustment state
+ */
+export interface ImageAdjustmentConfig {
+    imageId: string;
+    /** Adjustment state for this image. If not provided, uses default (all zeros) */
+    adjustment?: AdjustmentState;
+}
+/**
  * Batch adjustment state - maps image IDs to their adjustment states
  */
 export interface BatchAdjustmentState {
-    [imageId: string]: AdjustmentState;
+    /** Currently selected images that are being actively adjusted */
+    currentSelection: {
+        [imageId: string]: AdjustmentState;
+    };
+    /** All images that have been selected/adjusted before (persistent state) */
+    allImages: {
+        [imageId: string]: AdjustmentState;
+    };
+    /** Track initial/baseline state for each image */
+    initialStates: {
+        [imageId: string]: AdjustmentState;
+    };
 }
 /**
  * Configuration options for the batch adjustment history hook
@@ -41,16 +60,16 @@ export interface BatchHistoryInfo {
 export interface BatchHistoryActions {
     /** Apply adjustment deltas to selected images */
     adjustSelected: (delta: Partial<AdjustmentState>) => void;
-    /** Set specific adjustment states for specified images */
-    setAdjustments: (adjustments: Partial<BatchAdjustmentState>) => void;
     /** Undo last changes to selected images */
     undo: () => void;
     /** Redo next changes to selected images */
     redo: () => void;
     /** Reset selected images to default state */
     reset: (imageIds?: string[]) => void;
-    /** Set which images are selected */
-    setSelection: (imageIds: string[]) => void;
+    /** Set selection with optional initial adjustments per image */
+    setSelection: (configs: ImageAdjustmentConfig[]) => void;
+    /** Sync/replace adjustment for images (clears their history) */
+    syncAdjustment: (configs: ImageAdjustmentConfig[]) => void;
     /** Add or remove image from selection */
     toggleSelection: (imageId: string) => void;
     /** Select all images */
@@ -74,10 +93,6 @@ export interface BatchHistoryConfig {
     setMaxSize: (size: number | 'unlimited') => void;
     /** Get current memory usage estimate */
     getMemoryUsage: () => number;
-    /** Add new images to the batch */
-    addImages: (imageIds: string[], selectNew?: boolean) => void;
-    /** Remove images from the batch */
-    removeImages: (imageIds: string[]) => void;
 }
 /**
  * Return type for the useAdjustmentHistoryBatch hook
@@ -99,16 +114,45 @@ export interface UseAdjustmentHistoryBatchReturn {
 /**
  * Advanced hook for managing batch AdjustmentState history with selective undo/redo functionality.
  *
- * Features:
- * - Manages multiple images with individual adjustment states
- * - Selective operations that only affect selected images
- * - Proper history tracking for batch operations
- * - Memory usage monitoring and optimization
- * - Flexible selection management
+ * **Pure State Management Design:**
+ * - Starts empty, no image loading functionality
+ * - Focus on state management and history tracking only
+ * - Selection-based operations with persistent state
+ * - Manual selection via `actions.setSelection()`
  *
- * @param imageIds - Array of image IDs to manage
+ * **Key Features:**
+ * - **Current Selection**: Images actively being adjusted
+ * - **All Images**: Persistent state for every image touched
+ * - **Selective Operations**: Undo/redo only affects selected images
+ * - **Automatic State Persistence**: Images remain in allImages even when deselected
+ *
+ * **Typical Usage Flow:**
+ * ```typescript
+ * const { actions, currentBatch, selectedIds } = useAdjustmentHistoryBatch();
+ *
+ * // Select images (new images get default state automatically)
+ * actions.setSelection(['img1', 'img2', 'img3']);
+ *
+ * // Apply adjustments to selected images
+ * actions.adjustSelected({ exposureScore: 10 });
+ *
+ * // Change selection (img1, img2 state persists in allImages)
+ * actions.setSelection(['img3']);
+ *
+ * // Adjust only img3
+ * actions.adjustSelected({ contrastScore: 5 });
+ *
+ * // Undo affects only currently selected (img3)
+ * actions.undo();
+ * ```
+ *
+ * **State Structure:**
+ * - `currentBatch.currentSelection`: Currently selected images and their states
+ * - `currentBatch.allImages`: All images that have been selected/adjusted (persistent)
+ * - `selectedIds`: Array of currently selected image IDs
+ *
  * @param options - Configuration options for history behavior
  * @returns Object with current batch, selection, history info, actions, and config
  */
-export declare function useAdjustmentHistoryBatch(imageIds: string[], options?: BatchHistoryOptions): UseAdjustmentHistoryBatchReturn;
+export declare function useAdjustmentHistoryBatch(options?: BatchHistoryOptions): UseAdjustmentHistoryBatchReturn;
 export {};

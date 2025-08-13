@@ -4,7 +4,23 @@ import { useState, useCallback, useEffect } from 'react';
 import { SelectChangeEvent } from "@mui/material";
 import { AdjustmentState, ImageItem, Controller, Preset } from './useHonchoEditor';
 import { useAdjustmentHistory } from '../useAdjustmentHistory';
-import { BatchHistoryActions } from '../useAdjustmentHistoryBatch';
+import { Gallery, ResponseGalleryPaging } from '../../hooks/editor/type'
+import { BatchHistoryActions, useAdjustmentHistoryBatch } from '../useAdjustmentHistoryBatch';
+
+export interface ControllerBulk {
+    // Image Handling
+    onGetImage(firebaseUid: string, imageID: string): Promise<Gallery>;
+    getImageList(firebaseUid: string, eventID: string, page: number): Promise<ResponseGalleryPaging>;
+
+    // syncConfig
+    syncConfig(firebaseUid: string): Promise<void>;
+    handleBack(firebaseUid: string, eventID: string):void;
+
+    // Preset
+    getPresets(firebaseUid: string): Promise<Preset[]>;
+    createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset>;
+    deletePreset(firebaseUid: string, presetId: string): Promise<void>;
+}
 
 const initialAdjustments: AdjustmentState = {
     tempScore: 0, tintScore: 0, vibranceScore: 0, exposureScore: 0, highlightsScore: 0, shadowsScore: 0,
@@ -13,12 +29,22 @@ const initialAdjustments: AdjustmentState = {
 
 const clamp = (value: number) => Math.max(-100, Math.min(100, value));
 
-export function useHonchoEditorBulk(controller: Controller, initImageId: string, firebaseUid: string) {
+export function useHonchoEditorBulk(controllerBulk: Controller, eventID: string, firebaseUid: string) {
      const {
         currentState,
         actions: historyActions,
         historyInfo
     } = useAdjustmentHistory(initialAdjustments);
+
+    const {
+        currentBatch,
+        selectedIds,
+        allImageIds,
+        actions: batchActions,
+    } = useAdjustmentHistoryBatch({
+        maxSize: historyInfo.historySize,
+        defaultAdjustmentState: currentState,
+    });
 
     // State for Bulk Editing
     const [isBulkEditing, setIsBulkEditing] = useState(false);
@@ -27,6 +53,11 @@ export function useHonchoEditorBulk(controller: Controller, initImageId: string,
     const [selectedImageIds, setSelectedImageIds] = useState<Set<string>>(new Set());
     const [adjustmentsMap, setAdjustmentsMap] = useState<Map<string, AdjustmentState>>(new Map());
     const [selectedBulkPreset, setSelectedBulkPreset] = useState<string>('preset1');
+
+    const handleBackCallbackBulk = useCallback(() => {
+        if (!eventID) return;
+        controllerBulk.handleBack(firebaseUid, eventID);
+    }, [controllerBulk, firebaseUid, eventID]);
 
     const handleFileChangeBulk = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target?.files;
@@ -208,6 +239,7 @@ export function useHonchoEditorBulk(controller: Controller, initImageId: string,
         handleToggleImageSelection,
         toggleBulkEditing,
         handleSelectBulkPreset,
+        handleBackCallbackBulk,
         // Bulk Adjustment Handlers
         setTempScore,
         setTintScore,

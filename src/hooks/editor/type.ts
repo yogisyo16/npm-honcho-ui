@@ -50,6 +50,19 @@ export interface EditorConfig {
 	watermarks: Watermark[];
 }
 
+export interface GallerySetup {
+  src: string;
+  original: string;
+  srcSet?: string | string[] | undefined;
+  sizes?: string | string[] | undefined;
+  width: number;
+  height: number;
+  alt: string | undefined;
+  key: string | undefined;
+  frame?: string | undefined;
+  isSelected?: boolean | undefined;
+}
+
 export interface Gallery {
 	id: string;
 	uid: string;
