@@ -2,10 +2,30 @@ import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { AdjustmentState } from './editor/useHonchoEditor';
 
 /**
+ * Configuration for image with adjustment state
+ */
+export interface ImageAdjustmentConfig {
+  imageId: string;
+  /** Adjustment state for this image. If not provided, uses default (all zeros) */
+  adjustment?: AdjustmentState;
+}
+
+/**
  * Batch adjustment state - maps image IDs to their adjustment states
  */
 export interface BatchAdjustmentState {
-  [imageId: string]: AdjustmentState;
+  /** Currently selected images that are being actively adjusted */
+  currentSelection: {
+    [imageId: string]: AdjustmentState;
+  };
+  /** All images that have been selected/adjusted before (persistent state) */
+  allImages: {
+    [imageId: string]: AdjustmentState;
+  };
+  /** Track initial/baseline state for each image */
+  initialStates: {
+    [imageId: string]: AdjustmentState;
+  };
 }
 
 /**
@@ -46,16 +66,16 @@ export interface BatchHistoryInfo {
 export interface BatchHistoryActions {
   /** Apply adjustment deltas to selected images */
   adjustSelected: (delta: Partial<AdjustmentState>) => void;
-  /** Set specific adjustment states for specified images */
-  setAdjustments: (adjustments: Partial<BatchAdjustmentState>) => void;
   /** Undo last changes to selected images */
   undo: () => void;
   /** Redo next changes to selected images */
   redo: () => void;
   /** Reset selected images to default state */
   reset: (imageIds?: string[]) => void;
-  /** Set which images are selected */
-  setSelection: (imageIds: string[]) => void;
+  /** Set selection with optional initial adjustments per image */
+  setSelection: (configs: ImageAdjustmentConfig[]) => void;
+  /** Sync/replace adjustment for images (clears their history) */
+  syncAdjustment: (configs: ImageAdjustmentConfig[]) => void;
   /** Add or remove image from selection */
   toggleSelection: (imageId: string) => void;
   /** Select all images */
@@ -80,10 +100,6 @@ export interface BatchHistoryConfig {
   setMaxSize: (size: number | 'unlimited') => void;
   /** Get current memory usage estimate */
   getMemoryUsage: () => number;
-  /** Add new images to the batch */
-  addImages: (imageIds: string[], selectNew?: boolean) => void;
-  /** Remove images from the batch */
-  removeImages: (imageIds: string[]) => void;
 }
 
 /**
@@ -127,65 +143,69 @@ const createDefaultAdjustmentState = (overrides?: Partial<AdjustmentState>): Adj
  * Compare two BatchAdjustmentState objects for equality
  */
 const compareBatchStates = (a: BatchAdjustmentState, b: BatchAdjustmentState): boolean => {
-  const aKeys = Object.keys(a);
-  const bKeys = Object.keys(b);
-  
-  if (aKeys.length !== bKeys.length) return false;
-  
-  for (const key of aKeys) {
-    if (!b[key]) return false;
-    try {
-      if (JSON.stringify(a[key]) !== JSON.stringify(b[key])) return false;
-    } catch (error) {
-      // Fallback comparison
-      const stateA = a[key];
-      const stateB = b[key];
-      if (
-        stateA.tempScore !== stateB.tempScore ||
-        stateA.tintScore !== stateB.tintScore ||
-        stateA.vibranceScore !== stateB.vibranceScore ||
-        stateA.saturationScore !== stateB.saturationScore ||
-        stateA.exposureScore !== stateB.exposureScore ||
-        stateA.highlightsScore !== stateB.highlightsScore ||
-        stateA.shadowsScore !== stateB.shadowsScore ||
-        stateA.whitesScore !== stateB.whitesScore ||
-        stateA.blacksScore !== stateB.blacksScore ||
-        stateA.contrastScore !== stateB.contrastScore ||
-        stateA.clarityScore !== stateB.clarityScore ||
-        stateA.sharpnessScore !== stateB.sharpnessScore
-      ) {
-        return false;
-      }
-    }
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch (error) {
+    console.warn('Failed to compare batch states with JSON.stringify:', error);
+    return false;
   }
-  
-  return true;
 };
+
+/**
+ * Create empty batch state
+ */
+const createEmptyBatchState = (): BatchAdjustmentState => ({
+  currentSelection: {},
+  allImages: {},
+  initialStates: {}
+});
 
 /**
  * Advanced hook for managing batch AdjustmentState history with selective undo/redo functionality.
  * 
- * Features:
- * - Manages multiple images with individual adjustment states
- * - Selective operations that only affect selected images
- * - Proper history tracking for batch operations
- * - Memory usage monitoring and optimization
- * - Flexible selection management
+ * **Pure State Management Design:**
+ * - Starts empty, no image loading functionality
+ * - Focus on state management and history tracking only
+ * - Selection-based operations with persistent state
+ * - Manual selection via `actions.setSelection()`
  * 
- * @param imageIds - Array of image IDs to manage
+ * **Key Features:**
+ * - **Current Selection**: Images actively being adjusted
+ * - **All Images**: Persistent state for every image touched
+ * - **Selective Operations**: Undo/redo only affects selected images
+ * - **Automatic State Persistence**: Images remain in allImages even when deselected
+ * 
+ * **Typical Usage Flow:**
+ * ```typescript
+ * const { actions, currentBatch, selectedIds } = useAdjustmentHistoryBatch();
+ * 
+ * // Select images (new images get default state automatically)
+ * actions.setSelection(['img1', 'img2', 'img3']);
+ * 
+ * // Apply adjustments to selected images
+ * actions.adjustSelected({ exposureScore: 10 });
+ * 
+ * // Change selection (img1, img2 state persists in allImages)
+ * actions.setSelection(['img3']); 
+ * 
+ * // Adjust only img3
+ * actions.adjustSelected({ contrastScore: 5 });
+ * 
+ * // Undo affects only currently selected (img3)
+ * actions.undo();
+ * ```
+ * 
+ * **State Structure:**
+ * - `currentBatch.currentSelection`: Currently selected images and their states
+ * - `currentBatch.allImages`: All images that have been selected/adjusted (persistent)
+ * - `selectedIds`: Array of currently selected image IDs
+ * 
  * @param options - Configuration options for history behavior
  * @returns Object with current batch, selection, history info, actions, and config
  */
 export function useAdjustmentHistoryBatch(
-  imageIds: string[],
   options: BatchHistoryOptions = {}
 ): UseAdjustmentHistoryBatchReturn {
-  // Stabilize imageIds to prevent unnecessary re-renders
-  const stableImageIds = useMemo(() => {
-    // Return same reference if content is identical
-    return imageIds;
-  }, [imageIds.join(',')]); // Only re-memoize if actual content changes
-
   // Internal stabilization
   const internalOptions = useMemo(() => ({
     maxSize: options.maxSize ?? 'unlimited' as const,
@@ -197,21 +217,12 @@ export function useAdjustmentHistoryBatch(
     options.defaultAdjustmentState
   ]);
 
-  // Initialize batch state with all images
-  const createInitialBatch = useCallback((ids: string[]): BatchAdjustmentState => {
-    const batch: BatchAdjustmentState = {};
-    for (const id of ids) {
-      batch[id] = createDefaultAdjustmentState(internalOptions.defaultAdjustmentState);
-    }
-    return batch;
-  }, [internalOptions.defaultAdjustmentState]);
-
-  // Core state management - use stable imageIds for initialization
-  const [allImageIds, setAllImageIds] = useState<string[]>(stableImageIds);
-  const [selectedIds, setSelectedIds] = useState<string[]>(stableImageIds); // Default select all
-  const [history, setHistory] = useState<BatchAdjustmentState[]>(() => [createInitialBatch(stableImageIds)]);
+  // Core state management - start empty for plain mode
+  const [allImageIds, setAllImageIds] = useState<string[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [history, setHistory] = useState<BatchAdjustmentState[]>([createEmptyBatchState()]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentBatch, setCurrentBatch] = useState<BatchAdjustmentState>(() => createInitialBatch(stableImageIds));
+  const [currentBatch, setCurrentBatch] = useState<BatchAdjustmentState>(createEmptyBatchState());
   
   // Configuration refs
   const maxSizeRef = useRef(internalOptions.maxSize);
@@ -221,29 +232,6 @@ export function useAdjustmentHistoryBatch(
   useEffect(() => {
     setCurrentBatch(history[currentIndex]);
   }, [history, currentIndex]);
-
-  // Update when stableImageIds actually changes (content-wise)
-  useEffect(() => {
-    // Only update if the actual content is different, not just reference
-    const currentIdString = allImageIds.join(',');
-    const newIdString = stableImageIds.join(',');
-    
-    if (currentIdString !== newIdString) {
-      const newBatch = createInitialBatch(stableImageIds);
-      setAllImageIds([...stableImageIds]); // Create new array to avoid reference issues
-      setSelectedIds([...stableImageIds]); // Default select all new images
-      setHistory([newBatch]);
-      setCurrentIndex(0);
-      setCurrentBatch(newBatch);
-      
-      if (internalOptions.devWarnings) {
-        console.log('useAdjustmentHistoryBatch: ImageIds updated', {
-          from: allImageIds,
-          to: stableImageIds
-        });
-      }
-    }
-  }, [stableImageIds, allImageIds, createInitialBatch, internalOptions.devWarnings]);
 
   // Memory usage calculation
   const getMemoryUsage = useCallback(() => {
@@ -309,48 +297,52 @@ export function useAdjustmentHistoryBatch(
   const adjustSelected = useCallback((delta: Partial<AdjustmentState>) => {
     if (selectedIds.length === 0) return;
 
-    const newBatch: BatchAdjustmentState = { ...currentBatch };
+    const newBatch: BatchAdjustmentState = {
+      currentSelection: { ...currentBatch.currentSelection },
+      allImages: { ...currentBatch.allImages },
+      initialStates: { ...currentBatch.initialStates }
+    };
     
+    // Apply adjustments to selected images in both currentSelection and allImages
     for (const imageId of selectedIds) {
-      if (newBatch[imageId]) {
-        newBatch[imageId] = {
-          ...newBatch[imageId],
+      if (newBatch.currentSelection[imageId]) {
+        // Update current selection
+        newBatch.currentSelection[imageId] = {
+          ...newBatch.currentSelection[imageId],
           ...Object.fromEntries(
             Object.entries(delta).map(([key, value]) => [
               key,
-              (newBatch[imageId][key as keyof AdjustmentState] as number) + (value as number)
+              (newBatch.currentSelection[imageId][key as keyof AdjustmentState] as number) + (value as number)
             ])
           )
         };
+        
+        // Also update in allImages to persist the changes
+        newBatch.allImages[imageId] = { ...newBatch.currentSelection[imageId] };
       }
     }
 
     pushBatchState(newBatch);
   }, [selectedIds, currentBatch, pushBatchState]);
 
-  // Set specific adjustment states for specified images
-  const setAdjustments = useCallback((adjustments: Partial<BatchAdjustmentState>) => {
-    const newBatch: BatchAdjustmentState = { ...currentBatch };
-    
-    for (const [imageId, adjustment] of Object.entries(adjustments)) {
-      if (newBatch[imageId]) {
-        newBatch[imageId] = { ...newBatch[imageId], ...adjustment };
-      }
-    }
-
-    pushBatchState(newBatch);
-  }, [currentBatch, pushBatchState]);
+  // Set specific adjustment states for specified images (removed since not needed)
 
   // Undo last changes to selected images
   const undo = useCallback(() => {
     if (currentIndex > 0 && selectedIds.length > 0) {
       const previousBatch = history[currentIndex - 1];
-      const newBatch: BatchAdjustmentState = { ...currentBatch };
+      const newBatch: BatchAdjustmentState = {
+        currentSelection: { ...currentBatch.currentSelection },
+        allImages: { ...currentBatch.allImages },
+        initialStates: { ...currentBatch.initialStates }
+      };
       
-      // Only restore selected images from previous state
+      // Only restore adjustments for currently selected images
       for (const imageId of selectedIds) {
-        if (previousBatch[imageId] && newBatch[imageId]) {
-          newBatch[imageId] = { ...previousBatch[imageId] };
+        if (previousBatch.allImages[imageId] && newBatch.currentSelection[imageId]) {
+          // Restore from previous allImages state (not currentSelection)
+          newBatch.currentSelection[imageId] = { ...previousBatch.allImages[imageId] };
+          newBatch.allImages[imageId] = { ...previousBatch.allImages[imageId] };
         }
       }
       
@@ -364,19 +356,32 @@ export function useAdjustmentHistoryBatch(
         newHistory[currentIndex] = newBatch;
         return newHistory;
       });
+      
+      if (internalOptions.devWarnings) {
+        console.log('useAdjustmentHistoryBatch: Undo completed for selected images only', {
+          selectedImages: selectedIds,
+          currentIndex: currentIndex - 1
+        });
+      }
     }
-  }, [currentIndex, selectedIds, history, currentBatch]);
+  }, [currentIndex, selectedIds, history, currentBatch, internalOptions.devWarnings]);
 
   // Redo next changes to selected images
   const redo = useCallback(() => {
     if (currentIndex < history.length - 1 && selectedIds.length > 0) {
       const nextBatch = history[currentIndex + 1];
-      const newBatch: BatchAdjustmentState = { ...currentBatch };
+      const newBatch: BatchAdjustmentState = {
+        currentSelection: { ...currentBatch.currentSelection },
+        allImages: { ...currentBatch.allImages },
+        initialStates: { ...currentBatch.initialStates }
+      };
       
-      // Only restore selected images from next state
+      // Only restore adjustments for currently selected images
       for (const imageId of selectedIds) {
-        if (nextBatch[imageId] && newBatch[imageId]) {
-          newBatch[imageId] = { ...nextBatch[imageId] };
+        if (nextBatch.allImages[imageId] && newBatch.currentSelection[imageId]) {
+          // Restore from next allImages state (not currentSelection)
+          newBatch.currentSelection[imageId] = { ...nextBatch.allImages[imageId] };
+          newBatch.allImages[imageId] = { ...nextBatch.allImages[imageId] };
         }
       }
       
@@ -390,52 +395,152 @@ export function useAdjustmentHistoryBatch(
         newHistory[currentIndex + 1] = newBatch;
         return newHistory;
       });
+      
+      if (internalOptions.devWarnings) {
+        console.log('useAdjustmentHistoryBatch: Redo completed for selected images only', {
+          selectedImages: selectedIds,
+          currentIndex: currentIndex + 1
+        });
+      }
     }
-  }, [currentIndex, selectedIds, history, currentBatch]);
+  }, [currentIndex, selectedIds, history, currentBatch, internalOptions.devWarnings]);
 
   // Reset selected images to default state
   const reset = useCallback((imageIds?: string[]) => {
     const idsToReset = imageIds || selectedIds;
     if (idsToReset.length === 0) return;
 
-    const newBatch: BatchAdjustmentState = { ...currentBatch };
+    const newBatch: BatchAdjustmentState = {
+      currentSelection: { ...currentBatch.currentSelection },
+      allImages: { ...currentBatch.allImages },
+      initialStates: { ...currentBatch.initialStates }
+    };
     const defaultState = createDefaultAdjustmentState(internalOptions.defaultAdjustmentState);
     
     for (const imageId of idsToReset) {
-      if (newBatch[imageId]) {
-        newBatch[imageId] = { ...defaultState };
+      if (newBatch.currentSelection[imageId]) {
+        newBatch.currentSelection[imageId] = { ...defaultState };
+        newBatch.allImages[imageId] = { ...defaultState };
       }
     }
 
     pushBatchState(newBatch);
   }, [selectedIds, currentBatch, pushBatchState, internalOptions.defaultAdjustmentState]);
 
-  // Selection management
-  const setSelection = useCallback((imageIds: string[]) => {
-    // Validate that all imageIds exist
-    const validIds = imageIds.filter(id => allImageIds.includes(id));
-    setSelectedIds(validIds);
+  // Selection management with initial adjustments - single state update
+  const setSelection = useCallback((configs: ImageAdjustmentConfig[]) => {
+    const imageIds = configs.map(config => config.imageId);
     
-    if (devWarningsRef.current && validIds.length !== imageIds.length) {
-      console.warn('Some image IDs in setSelection do not exist:', 
-        imageIds.filter(id => !allImageIds.includes(id)));
+    // Update selectedIds state
+    setSelectedIds(imageIds);
+    
+    // Build new batch state with initial adjustments
+    const newBatch: BatchAdjustmentState = {
+      currentSelection: {},
+      allImages: { ...currentBatch.allImages },
+      initialStates: { ...currentBatch.initialStates }
+    };
+    
+    // Process each image config
+    for (const config of configs) {
+      const { imageId, adjustment } = config;
+      
+      // If image exists in allImages, use its state
+      if (currentBatch.allImages[imageId]) {
+        newBatch.currentSelection[imageId] = { ...currentBatch.allImages[imageId] };
+      } else {
+        // New image - determine initial state
+        let initialState: AdjustmentState;
+        
+        if (adjustment) {
+          // Use provided adjustment as initial state
+          initialState = {
+            ...createDefaultAdjustmentState(internalOptions.defaultAdjustmentState),
+            ...adjustment
+          };
+        } else {
+          // Use default state
+          initialState = createDefaultAdjustmentState(internalOptions.defaultAdjustmentState);
+        }
+        
+        // Set initial state for new image
+        newBatch.currentSelection[imageId] = { ...initialState };
+        newBatch.allImages[imageId] = { ...initialState };
+        newBatch.initialStates[imageId] = { ...initialState };
+      }
     }
-  }, [allImageIds]);
+    
+    // Update allImageIds to include any new images
+    const newAllImageIds = Array.from(new Set([...allImageIds, ...imageIds]));
+    setAllImageIds(newAllImageIds);
+    
+    // Single state update to prevent multiple re-renders
+    setCurrentBatch(newBatch);
+    
+    if (internalOptions.devWarnings) {
+      console.log('useAdjustmentHistoryBatch: Selection updated with initial adjustments', {
+        selected: imageIds,
+        totalImages: newAllImageIds.length,
+        newImages: imageIds.filter(id => !allImageIds.includes(id)),
+        withInitialAdjustments: configs.filter(c => c.adjustment).length
+      });
+    }
+  }, [allImageIds, currentBatch, internalOptions.defaultAdjustmentState, internalOptions.devWarnings]);
+
+  // Sync adjustments for specific images (clears their history) - single state update
+  const syncAdjustment = useCallback((configs: ImageAdjustmentConfig[]) => {
+    if (configs.length === 0) return;
+    
+    // Build new batch state
+    const newBatch: BatchAdjustmentState = {
+      currentSelection: { ...currentBatch.currentSelection },
+      allImages: { ...currentBatch.allImages },
+      initialStates: { ...currentBatch.initialStates }
+    };
+    
+    // Process each sync config
+    for (const config of configs) {
+      const { imageId, adjustment } = config;
+      
+      if (adjustment) {
+        const fullAdjustment = {
+          ...createDefaultAdjustmentState(internalOptions.defaultAdjustmentState),
+          ...adjustment
+        };
+        
+        // Update all states for this image
+        newBatch.allImages[imageId] = { ...fullAdjustment };
+        newBatch.initialStates[imageId] = { ...fullAdjustment };
+        
+        // If image is currently selected, update current selection too
+        if (newBatch.currentSelection[imageId]) {
+          newBatch.currentSelection[imageId] = { ...fullAdjustment };
+        }
+      }
+    }
+    
+    // Clear history and start fresh with synced state
+    const freshHistory = [newBatch];
+    setHistory(freshHistory);
+    setCurrentIndex(0);
+    setCurrentBatch(newBatch);
+    
+    if (internalOptions.devWarnings) {
+      const syncedImageIds = configs.map(c => c.imageId);
+      console.log('useAdjustmentHistoryBatch: Synced adjustments (history cleared)', {
+        syncedImages: syncedImageIds,
+        historyCleared: true
+      });
+    }
+  }, [currentBatch, internalOptions.defaultAdjustmentState, internalOptions.devWarnings]);
 
   const toggleSelection = useCallback((imageId: string) => {
-    if (!allImageIds.includes(imageId)) {
-      if (devWarningsRef.current) {
-        console.warn('toggleSelection: Image ID does not exist:', imageId);
-      }
-      return;
-    }
-    
     setSelectedIds(prev => 
       prev.includes(imageId) 
         ? prev.filter(id => id !== imageId)
         : [...prev, imageId]
     );
-  }, [allImageIds]);
+  }, []);
 
   const selectAll = useCallback(() => {
     setSelectedIds([...allImageIds]);
@@ -443,7 +548,14 @@ export function useAdjustmentHistoryBatch(
 
   const clearSelection = useCallback(() => {
     setSelectedIds([]);
-  }, []);
+    // Clear currentSelection but keep allImages and initialStates
+    const newBatch: BatchAdjustmentState = {
+      currentSelection: {},
+      allImages: { ...currentBatch.allImages },
+      initialStates: { ...currentBatch.initialStates }
+    };
+    setCurrentBatch(newBatch);
+  }, [currentBatch]);
 
   // Other history actions
   const jumpToIndex = useCallback((index: number) => {
@@ -454,54 +566,55 @@ export function useAdjustmentHistoryBatch(
   }, [history]);
 
   const clearHistory = useCallback(() => {
-    const freshBatch = createInitialBatch(allImageIds);
+    const freshBatch = createEmptyBatchState();
     setHistory([freshBatch]);
     setCurrentIndex(0);
     setCurrentBatch(freshBatch);
-  }, [allImageIds, createInitialBatch]);
+    setAllImageIds([]);
+    setSelectedIds([]);
+  }, []);
 
   const getCurrentBatch = useCallback(() => {
-    return { ...currentBatch };
+    return { 
+      currentSelection: { ...currentBatch.currentSelection },
+      allImages: { ...currentBatch.allImages },
+      initialStates: { ...currentBatch.initialStates }
+    };
   }, [currentBatch]);
 
   const syncBatch = useCallback((newBatch: BatchAdjustmentState, targetIndex?: number) => {
     // Validate input
-    if (!newBatch || typeof newBatch !== 'object') {
-      console.warn('syncBatch: newBatch must be a valid BatchAdjustmentState object');
-      return;
-    }
-
-    // Validate all items are AdjustmentState objects
-    const isValidBatch = Object.values(newBatch).every(state => 
-      state && typeof state === 'object' &&
-      typeof state.tempScore === 'number' &&
-      typeof state.tintScore === 'number' &&
-      typeof state.vibranceScore === 'number' &&
-      typeof state.saturationScore === 'number' &&
-      typeof state.exposureScore === 'number' &&
-      typeof state.highlightsScore === 'number' &&
-      typeof state.shadowsScore === 'number' &&
-      typeof state.whitesScore === 'number' &&
-      typeof state.blacksScore === 'number' &&
-      typeof state.contrastScore === 'number' &&
-      typeof state.clarityScore === 'number' &&
-      typeof state.sharpnessScore === 'number'
-    );
-
-    if (!isValidBatch) {
-      console.warn('syncBatch: All values in newBatch must be valid AdjustmentState objects');
+    if (!newBatch || typeof newBatch !== 'object' || !newBatch.currentSelection || !newBatch.allImages || !newBatch.initialStates) {
+      console.warn('syncBatch: newBatch must be a valid BatchAdjustmentState object with currentSelection, allImages, and initialStates');
       return;
     }
 
     // Update current state
-    setCurrentBatch({ ...newBatch });
+    setCurrentBatch({ 
+      currentSelection: { ...newBatch.currentSelection },
+      allImages: { ...newBatch.allImages },
+      initialStates: { ...newBatch.initialStates }
+    });
     
     // Replace history with single entry
-    setHistory([{ ...newBatch }]);
+    setHistory([{ 
+      currentSelection: { ...newBatch.currentSelection },
+      allImages: { ...newBatch.allImages },
+      initialStates: { ...newBatch.initialStates }
+    }]);
     setCurrentIndex(0);
     
+    // Update image tracking
+    const allImageIds = Object.keys(newBatch.allImages);
+    const selectedImageIds = Object.keys(newBatch.currentSelection);
+    setAllImageIds(allImageIds);
+    setSelectedIds(selectedImageIds);
+    
     if (devWarningsRef.current) {
-      console.log('syncBatch: Synchronized batch state with', Object.keys(newBatch).length, 'images');
+      console.log('syncBatch: Synchronized batch state', {
+        totalImages: allImageIds.length,
+        selectedImages: selectedImageIds.length
+      });
     }
   }, []);
 
@@ -512,61 +625,6 @@ export function useAdjustmentHistoryBatch(
       enforceMaxSize();
     }
   }, [enforceMaxSize]);
-
-  const addImages = useCallback((imageIds: string[], selectNew: boolean = true) => {
-    const newIds = imageIds.filter(id => !allImageIds.includes(id));
-    if (newIds.length === 0) return;
-
-    const updatedAllIds = [...allImageIds, ...newIds];
-    const newBatch = { ...currentBatch };
-    
-    // Add default states for new images
-    for (const id of newIds) {
-      newBatch[id] = createDefaultAdjustmentState(internalOptions.defaultAdjustmentState);
-    }
-
-    setAllImageIds(updatedAllIds);
-    setCurrentBatch(newBatch);
-    
-    // Update history
-    setHistory(prevHistory => {
-      const newHistory = [...prevHistory];
-      newHistory[currentIndex] = newBatch;
-      return newHistory;
-    });
-    
-    // Optionally select new images
-    if (selectNew) {
-      setSelectedIds(prev => [...prev, ...newIds]);
-    }
-  }, [allImageIds, currentBatch, currentIndex, internalOptions.defaultAdjustmentState]);
-
-  const removeImages = useCallback((imageIds: string[]) => {
-    const updatedAllIds = allImageIds.filter(id => !imageIds.includes(id));
-    const updatedSelectedIds = selectedIds.filter(id => !imageIds.includes(id));
-    const newBatch = { ...currentBatch };
-    
-    // Remove images from batch
-    for (const id of imageIds) {
-      delete newBatch[id];
-    }
-
-    setAllImageIds(updatedAllIds);
-    setSelectedIds(updatedSelectedIds);
-    setCurrentBatch(newBatch);
-    
-    // Update history
-    setHistory(prevHistory => {
-      const newHistory = prevHistory.map(batch => {
-        const cleanedBatch = { ...batch };
-        for (const id of imageIds) {
-          delete cleanedBatch[id];
-        }
-        return cleanedBatch;
-      });
-      return newHistory;
-    });
-  }, [allImageIds, selectedIds, currentBatch]);
 
   // History info object
   const historyInfo: BatchHistoryInfo = useMemo(() => ({
@@ -582,11 +640,11 @@ export function useAdjustmentHistoryBatch(
   // Actions object - stabilized with useMemo
   const actions: BatchHistoryActions = useMemo(() => ({
     adjustSelected,
-    setAdjustments,
     undo,
     redo,
     reset,
     setSelection,
+    syncAdjustment,
     toggleSelection,
     selectAll,
     clearSelection,
@@ -595,18 +653,16 @@ export function useAdjustmentHistoryBatch(
     getCurrentBatch,
     syncBatch
   }), [
-    adjustSelected, setAdjustments, undo, redo, reset,
-    setSelection, toggleSelection, selectAll, clearSelection,
+    adjustSelected, undo, redo, reset,
+    setSelection, syncAdjustment, toggleSelection, selectAll, clearSelection,
     jumpToIndex, clearHistory, getCurrentBatch, syncBatch
   ]);
 
   // Config object - stabilized with useMemo
   const config: BatchHistoryConfig = useMemo(() => ({
     setMaxSize,
-    getMemoryUsage,
-    addImages,
-    removeImages
-  }), [setMaxSize, getMemoryUsage, addImages, removeImages]);
+    getMemoryUsage
+  }), [setMaxSize, getMemoryUsage]);
 
   // Apply max size enforcement when history changes
   useEffect(() => {

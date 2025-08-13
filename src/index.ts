@@ -38,6 +38,7 @@ export {
   useAdjustmentHistoryBatch,
   type UseAdjustmentHistoryBatchReturn,
   type BatchAdjustmentState,
+  type ImageAdjustmentConfig,
   type BatchHistoryInfo,
   type BatchHistoryActions,
   type BatchHistoryConfig
