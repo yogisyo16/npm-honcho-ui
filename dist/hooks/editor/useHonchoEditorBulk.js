@@ -78,6 +78,7 @@ export function useHonchoEditorBulk(controller, initImageId, firebaseUid) {
     const updateAdjustments = useCallback((newValues) => {
         const newState = { ...currentState, ...newValues };
         historyActions.pushState(newState);
+        console.log('Updated adjustments:', newState);
     }, [currentState, historyActions]);
     const createRelativeAdjuster = (key, amount) => () => {
         const currentValue = currentState[key];

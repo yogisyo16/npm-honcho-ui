@@ -109,6 +109,7 @@ export function useHonchoEditorBulk(controller: Controller, initImageId: string,
     const updateAdjustments = useCallback((newValues: Partial<AdjustmentState>) => {
         const newState = { ...currentState, ...newValues };
         historyActions.pushState(newState);
+        console.log('Updated adjustments:', newState);
     }, [currentState, historyActions]);
 
     

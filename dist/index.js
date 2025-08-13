@@ -18,6 +18,9 @@ export { default as HModalMobile } from './components/editor/HModalMobile';
 export { default as HPresetOptionsMenu } from './components/editor/HPresetOptionMenu';
 export { HAlertInternetBox, HAlertCopyBox, HAlertInternetConnectionBox, HAlertPresetSave } from './components/editor/HAlertBox';
 export { useHonchoEditorBulk } from './hooks/editor/useHonchoEditorBulk';
+// --- History Hooks ---
+export { useAdjustmentHistory } from './hooks/useAdjustmentHistory';
+export { useAdjustmentHistoryBatch } from './hooks/useAdjustmentHistoryBatch';
 // --- Theme & Utils ---
 export { default as useColors } from './themes/colors';
 export { default as useHonchoTypography } from './themes/honchoTheme';
