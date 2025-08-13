@@ -24,6 +24,7 @@ export { default as HWatermarkView } from './components/editor/HWatermarkView';
 export { default as HModalMobile } from './components/editor/HModalMobile';
 export { default as HPresetOptionsMenu } from './components/editor/HPresetOptionMenu';
 export { HAlertInternetBox, HAlertCopyBox, HAlertInternetConnectionBox, HAlertPresetSave } from './components/editor/HAlertBox';
+export { useHonchoEditorBulk } from './hooks/editor/useHonchoEditorBulk';
 
 // --- Theme & Utils ---
 export { default as useColors } from './themes/colors';
