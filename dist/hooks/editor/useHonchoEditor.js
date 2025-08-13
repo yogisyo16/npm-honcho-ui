@@ -40,7 +40,7 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     const [headerMenuAnchorEl, setHeaderMenuAnchorEl] = useState(null);
     const [anchorMenuZoom, setAnchorMenuZoom] = useState(null);
     // Panel Expansion State
-    const [colorAdjustmentExpandedPanels, setColorAdjustmentExpandedPanels] = useState(['whiteBalance']);
+    const [colorAdjustmentExpandedPanels, setColorAdjustmentExpandedPanels] = useState(['whiteBalance', 'light', 'details']);
     const [presetExpandedPanels, setPresetExpandedPanels] = useState(['preset']);
     // Watermark State
     const [isCreatingWatermark, setIsCreatingWatermark] = useState(false);

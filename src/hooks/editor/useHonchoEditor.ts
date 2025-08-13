@@ -124,7 +124,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     const [anchorMenuZoom, setAnchorMenuZoom] = useState<null | HTMLElement>(null);
 
     // Panel Expansion State
-    const [colorAdjustmentExpandedPanels, setColorAdjustmentExpandedPanels] = useState<string[]>(['whiteBalance']);
+    const [colorAdjustmentExpandedPanels, setColorAdjustmentExpandedPanels] = useState<string[]>(['whiteBalance', 'light', 'details']);
     const [presetExpandedPanels, setPresetExpandedPanels] = useState<string[]>(['preset']);
 
     // Watermark State

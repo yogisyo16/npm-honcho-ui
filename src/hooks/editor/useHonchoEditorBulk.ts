@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { SelectChangeEvent } from "@mui/material";
 import { AdjustmentState, ImageItem, Controller, Preset } from './useHonchoEditor';
 import { useAdjustmentHistory } from '../useAdjustmentHistory';
+import { BatchHistoryActions } from '../useAdjustmentHistoryBatch';
 
 const initialAdjustments: AdjustmentState = {
     tempScore: 0, tintScore: 0, vibranceScore: 0, exposureScore: 0, highlightsScore: 0, shadowsScore: 0,
