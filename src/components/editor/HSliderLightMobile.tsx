@@ -99,6 +99,7 @@ export default function HSliderLightMobile (props: Props){
                         },
                         '& .MuiSlider-thumb': {
                             background: colors.surface,
+                            boxShadow: 'none', 
                             opacity: 1,
                         },
                         '& .MuiSlider-thumb:hover': {
@@ -108,8 +109,8 @@ export default function HSliderLightMobile (props: Props){
                     size="small"
                     value={props.exposureScore}
                     step={0.1}
-                    min={-5}
-                    max={5}
+                    min={-100}
+                    max={100}
                     onChange={(_event, newValue) => props.onExposureChange(newValue as number)}
                 />
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: '10px', pb: '0px' }}>
@@ -119,7 +120,7 @@ export default function HSliderLightMobile (props: Props){
                         id="filled-hidden-label-small"
                         value={formatValue(props.contrastScore)}
                         variant="filled"
-                        onChange={(e) => handleInputChange(e, -5, 5, props.onContrastChange)}
+                        onChange={(e) => handleInputChange(e, -100, 100, props.onContrastChange)}
                         sx={{
                             width: "40px", 
                             alignItems: "center", 
@@ -171,6 +172,7 @@ export default function HSliderLightMobile (props: Props){
                         },
                         '& .MuiSlider-thumb': {
                             background: colors.surface,
+                            boxShadow: 'none', 
                             opacity: 1,
                         },
                         '& .MuiSlider-thumb:hover': {
@@ -243,6 +245,7 @@ export default function HSliderLightMobile (props: Props){
                         },
                         '& .MuiSlider-thumb': {
                             background: colors.surface,
+                            boxShadow: 'none', 
                             opacity: 1,
                         },
                         '& .MuiSlider-thumb:hover': {
@@ -315,6 +318,7 @@ export default function HSliderLightMobile (props: Props){
                         },
                         '& .MuiSlider-thumb': {
                             background: colors.surface,
+                            boxShadow: 'none', 
                             opacity: 1,
                         },
                         '& .MuiSlider-thumb:hover': {
@@ -387,6 +391,7 @@ export default function HSliderLightMobile (props: Props){
                         },
                         '& .MuiSlider-thumb': {
                             background: colors.surface,
+                            boxShadow: 'none', 
                             opacity: 1,
                         },
                         '& .MuiSlider-thumb:hover': {
@@ -459,6 +464,7 @@ export default function HSliderLightMobile (props: Props){
                         },
                         '& .MuiSlider-thumb': {
                             background: colors.surface,
+                            boxShadow: 'none', 
                             opacity: 1,
                         },
                         '& .MuiSlider-thumb:hover': {

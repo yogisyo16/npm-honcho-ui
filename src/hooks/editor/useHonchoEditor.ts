@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { SelectChangeEvent } from "@mui/material";
 import { HonchoEditor } from '../../lib/editor/honcho-editor';
 import { Gallery, ResponseGalleryPaging } from '../../hooks/editor/type'
 import { mapAdjustmentStateToAdjustmentEditor, mapColorAdjustmentToAdjustmentState } from '../../utils/adjustment';
@@ -76,9 +75,6 @@ const initialAdjustments: AdjustmentState = {
 // const clamp = (value: number) => Math.max(-100, Math.min(100, value));
 
 export function useHonchoEditor(controller: Controller, initImageId: string, firebaseUid: string) {
-    // const [currentImageId, setCurrentImageId] = useState<string>(initImageId);
-    // const [currentImageData, setCurrentImageData] = useState<Gallery | null>(null);
-    // const [currentAdjustmentsState, setCurrentAdjustmentsState] = useState<AdjustmentState>(initialAdjustments);
     const {
         onSwipeNext,
         onSwipePrev,
@@ -217,123 +213,6 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     //     setSelectedImageIds(newSelectedIds);
     // }, [selectedImageIds, tempScore, tintScore, vibranceScore, saturationScore, exposureScore, highlightsScore, shadowsScore, whitesScore, blacksScore, contrastScore, clarityScore, sharpnessScore]);
 
-    // const createAbsoluteSetter = (key: keyof AdjustmentState, setter: React.Dispatch<React.SetStateAction<number>>) => (value: number) => {
-    //     setter(value); // Update UI slider
-        
-    //     if(isBulkEditing) {
-    //         setAdjustmentsMap(prevMap => {
-    //             const newMap = new Map(prevMap);
-    //             selectedImageIds.forEach(id => {
-    //                 const currentState = newMap.get(id) || initialAdjustments;
-    //                 newMap.set(id, { ...currentState, [key]: value });
-    //             });
-    //             return newMap;
-    //         });
-    //     }
-    // };
-    
-    // const createRelativeAdjuster = (key: keyof AdjustmentState, uiSetter: React.Dispatch<React.SetStateAction<number>>, amount: number) => () => {
-    //     uiSetter(prev => clamp(prev + amount));
-    //     if (isBulkEditing) {
-    //         setAdjustmentsMap(prevMap => {
-    //             const newMap = new Map(prevMap);
-    //             selectedImageIds.forEach(id => {
-    //                 const currentState = newMap.get(id) || initialAdjustments;
-    //                 const currentValue = currentState[key];
-    //                 const newValue = clamp(currentValue + amount);
-    //                 newMap.set(id, { ...currentState, [key]: newValue });
-    //             });
-    //             console.log("this is UI Setter: ", uiSetter);
-    //             return newMap;
-    //         });
-    //     }
-    // };
-
-    // const setTempScoreAbs = createAbsoluteSetter('tempScore', setTempScore);
-    // const setTintScoreAbs = createAbsoluteSetter('tintScore', setTintScore);
-    // const setVibranceScoreAbs = createAbsoluteSetter('vibranceScore', setVibranceScore);
-    // const setSaturationScoreAbs = createAbsoluteSetter('saturationScore', setSaturationScore);
-    // const setExposureScoreAbs = createAbsoluteSetter('exposureScore', setExposureScore);
-    // const setHighlightsScoreAbs = createAbsoluteSetter('highlightsScore', setHighlightsScore);
-    // const setShadowsScoreAbs = createAbsoluteSetter('shadowsScore', setShadowsScore);
-    // const setWhitesScoreAbs = createAbsoluteSetter('whitesScore', setWhitesScore);
-    // const setBlacksScoreAbs = createAbsoluteSetter('blacksScore', setBlacksScore);
-    // const setContrastScoreAbs = createAbsoluteSetter('contrastScore', setContrastScore);
-    // const setClarityScoreAbs = createAbsoluteSetter('clarityScore', setClarityScore);
-    // const setSharpnessScoreAbs = createAbsoluteSetter('sharpnessScore', setSharpnessScore);
-
-    // // MARK: - Bulk Editor Handlers
-    // const handleBulkTempDecreaseMax = createRelativeAdjuster('tempScore', setTempScore, -20);
-    // const handleBulkTempDecrease = createRelativeAdjuster('tempScore', setTempScore, -5);
-    // const handleBulkTempIncrease = createRelativeAdjuster('tempScore', setTempScore, 5);
-    // const handleBulkTempIncreaseMax = createRelativeAdjuster('tempScore', setTempScore, 20);
-
-    // const handleBulkTintDecreaseMax = createRelativeAdjuster('tintScore', setTintScore, -20);
-    // const handleBulkTintDecrease = createRelativeAdjuster('tintScore', setTintScore, -5);
-    // const handleBulkTintIncrease = createRelativeAdjuster('tintScore', setTintScore, 5);
-    // const handleBulkTintIncreaseMax = createRelativeAdjuster('tintScore', setTintScore, 20);
-    
-    // const handleBulkVibranceDecreaseMax = createRelativeAdjuster('vibranceScore', setVibranceScore, -20);
-    // const handleBulkVibranceDecrease = createRelativeAdjuster('vibranceScore', setVibranceScore, -5);
-    // const handleBulkVibranceIncrease = createRelativeAdjuster('vibranceScore', setVibranceScore, 5);
-    // const handleBulkVibranceIncreaseMax = createRelativeAdjuster('vibranceScore', setVibranceScore, 20);
-    
-    // const handleBulkSaturationDecreaseMax = createRelativeAdjuster('saturationScore', setSaturationScore, -20);
-    // const handleBulkSaturationDecrease = createRelativeAdjuster('saturationScore', setSaturationScore, -5);
-    // const handleBulkSaturationIncrease = createRelativeAdjuster('saturationScore', setSaturationScore, 5);
-    // const handleBulkSaturationIncreaseMax = createRelativeAdjuster('saturationScore', setSaturationScore, 20);
-    
-    // const handleBulkExposureDecreaseMax = createRelativeAdjuster('exposureScore', setExposureScore, -20);
-    // const handleBulkExposureDecrease = createRelativeAdjuster('exposureScore', setExposureScore, -5);
-    // const handleBulkExposureIncrease = createRelativeAdjuster('exposureScore', setExposureScore, 5);
-    // const handleBulkExposureIncreaseMax = createRelativeAdjuster('exposureScore', setExposureScore, 20);
-
-    // const handleBulkContrastDecreaseMax = createRelativeAdjuster('contrastScore', setContrastScore, -20);
-    // const handleBulkContrastDecrease = createRelativeAdjuster('contrastScore', setContrastScore, -5);
-    // const handleBulkContrastIncrease = createRelativeAdjuster('contrastScore', setContrastScore, 5);
-    // const handleBulkContrastIncreaseMax = createRelativeAdjuster('contrastScore', setContrastScore, 20);
-
-    // const handleBulkHighlightsDecreaseMax = createRelativeAdjuster('highlightsScore', setHighlightsScore, -20);
-    // const handleBulkHighlightsDecrease = createRelativeAdjuster('highlightsScore', setHighlightsScore, -5);
-    // const handleBulkHighlightsIncrease = createRelativeAdjuster('highlightsScore', setHighlightsScore, 5);
-    // const handleBulkHighlightsIncreaseMax = createRelativeAdjuster('highlightsScore', setHighlightsScore, 20);
-    
-    // const handleBulkShadowsDecreaseMax = createRelativeAdjuster('shadowsScore', setShadowsScore, -20);
-    // const handleBulkShadowsDecrease = createRelativeAdjuster('shadowsScore', setShadowsScore, -5);
-    // const handleBulkShadowsIncrease = createRelativeAdjuster('shadowsScore', setShadowsScore, 5);
-    // const handleBulkShadowsIncreaseMax = createRelativeAdjuster('shadowsScore', setShadowsScore, 20);
-
-    // const handleBulkWhitesDecreaseMax = createRelativeAdjuster('whitesScore', setWhitesScore, -20);
-    // const handleBulkWhitesDecrease = createRelativeAdjuster('whitesScore', setWhitesScore, -5);
-    // const handleBulkWhitesIncrease = createRelativeAdjuster('whitesScore', setWhitesScore, 5);
-    // const handleBulkWhitesIncreaseMax = createRelativeAdjuster('whitesScore', setWhitesScore, 20);
-    
-    // const handleBulkBlacksDecreaseMax = createRelativeAdjuster('blacksScore', setBlacksScore, -20);
-    // const handleBulkBlacksDecrease = createRelativeAdjuster('blacksScore', setBlacksScore, -5);
-    // const handleBulkBlacksIncrease = createRelativeAdjuster('blacksScore', setBlacksScore, 5);
-    // const handleBulkBlacksIncreaseMax = createRelativeAdjuster('blacksScore', setBlacksScore, 20);
-    
-    // const handleBulkClarityDecreaseMax = createRelativeAdjuster('clarityScore', setClarityScore, -20);
-    // const handleBulkClarityDecrease = createRelativeAdjuster('clarityScore', setClarityScore, -5);
-    // const handleBulkClarityIncrease = createRelativeAdjuster('clarityScore', setClarityScore, 5);
-    // const handleBulkClarityIncreaseMax = createRelativeAdjuster('clarityScore', setClarityScore, 20);
-    
-    // const handleBulkSharpnessDecreaseMax = createRelativeAdjuster('sharpnessScore', setSharpnessScore, -20);
-    // const handleBulkSharpnessDecrease = createRelativeAdjuster('sharpnessScore', setSharpnessScore, -5);
-    // const handleBulkSharpnessIncrease = createRelativeAdjuster('sharpnessScore', setSharpnessScore, 5);
-    // const handleBulkSharpnessIncreaseMax = createRelativeAdjuster('sharpnessScore', setSharpnessScore, 20);
-
-    // // Bulk Editing Handlers
-    // const toggleBulkEditing = () => {
-    //     setIsBulkEditing(prev => {
-    //         const isNowBulk = !prev;
-    //         setSelectedImages(isNowBulk ? 'Selected' : 'Select');
-    //         return isNowBulk;
-    //     });
-    // };
-
-    // const handleSelectBulkPreset = (event: SelectChangeEvent<string>) => setSelectedBulkPreset(event.target.value as string);
-
     // Mobile Panel Drag Handlers
     const handleContentHeightChange = useCallback((height: number) => {
         if (height > 0 && height !== contentHeight) setContentHeight(height);
@@ -429,7 +308,6 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
                 editorRef.current = editor;
                 setIsEditorReady(true);
                 setEditorStatus("Ready! Select an image to start.");
-                console.log("[Editor] Initialization successful."); // Log entry
             } catch (error) {
                 console.error("[Editor] CRITICAL: Editor initialization failed:", error); // Critical error log
                 setEditorStatus(`Error: Could not load editor. See device logs.`);

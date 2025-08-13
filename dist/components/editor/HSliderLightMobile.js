@@ -68,12 +68,13 @@ export default function HSliderLightMobile(props) {
                         },
                         '& .MuiSlider-thumb': {
                             background: colors.surface,
+                            boxShadow: 'none',
                             opacity: 1,
                         },
                         '& .MuiSlider-thumb:hover': {
                             boxShadow: 'none',
                         }
-                    }, size: "small", value: props.exposureScore, step: 0.1, min: -5, max: 5, onChange: (_event, newValue) => props.onExposureChange(newValue) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px' }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Contrast" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.contrastScore), variant: "filled", onChange: (e) => handleInputChange(e, -5, 5, props.onContrastChange), sx: {
+                    }, size: "small", value: props.exposureScore, step: 0.1, min: -100, max: 100, onChange: (_event, newValue) => props.onExposureChange(newValue) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px' }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Contrast" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.contrastScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onContrastChange), sx: {
                                 width: "40px",
                                 alignItems: "center",
                                 textAlign: "right",
@@ -121,6 +122,7 @@ export default function HSliderLightMobile(props) {
                         },
                         '& .MuiSlider-thumb': {
                             background: colors.surface,
+                            boxShadow: 'none',
                             opacity: 1,
                         },
                         '& .MuiSlider-thumb:hover': {
@@ -174,6 +176,7 @@ export default function HSliderLightMobile(props) {
                         },
                         '& .MuiSlider-thumb': {
                             background: colors.surface,
+                            boxShadow: 'none',
                             opacity: 1,
                         },
                         '& .MuiSlider-thumb:hover': {
@@ -227,6 +230,7 @@ export default function HSliderLightMobile(props) {
                         },
                         '& .MuiSlider-thumb': {
                             background: colors.surface,
+                            boxShadow: 'none',
                             opacity: 1,
                         },
                         '& .MuiSlider-thumb:hover': {
@@ -280,6 +284,7 @@ export default function HSliderLightMobile(props) {
                         },
                         '& .MuiSlider-thumb': {
                             background: colors.surface,
+                            boxShadow: 'none',
                             opacity: 1,
                         },
                         '& .MuiSlider-thumb:hover': {
@@ -333,6 +338,7 @@ export default function HSliderLightMobile(props) {
                         },
                         '& .MuiSlider-thumb': {
                             background: colors.surface,
+                            boxShadow: 'none',
                             opacity: 1,
                         },
                         '& .MuiSlider-thumb:hover': {
