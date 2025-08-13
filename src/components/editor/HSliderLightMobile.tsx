@@ -108,7 +108,7 @@ export default function HSliderLightMobile (props: Props){
                     }}
                     size="small"
                     value={props.exposureScore}
-                    step={0.1}
+                    step={1}
                     min={-100}
                     max={100}
                     onChange={(_event, newValue) => props.onExposureChange(newValue as number)}
