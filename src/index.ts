@@ -26,6 +26,23 @@ export { default as HPresetOptionsMenu } from './components/editor/HPresetOption
 export { HAlertInternetBox, HAlertCopyBox, HAlertInternetConnectionBox, HAlertPresetSave } from './components/editor/HAlertBox';
 export { useHonchoEditorBulk } from './hooks/editor/useHonchoEditorBulk';
 
+// --- History Hooks ---
+export { 
+  useAdjustmentHistory,
+  type UseAdjustmentHistoryReturn,
+  type HistoryInfo,
+  type HistoryActions,
+  type HistoryConfig
+} from './hooks/useAdjustmentHistory';
+export { 
+  useAdjustmentHistoryBatch,
+  type UseAdjustmentHistoryBatchReturn,
+  type BatchAdjustmentState,
+  type BatchHistoryInfo,
+  type BatchHistoryActions,
+  type BatchHistoryConfig
+} from './hooks/useAdjustmentHistoryBatch';
+
 // --- Theme & Utils ---
 export { default as useColors } from './themes/colors';
 export { default as useHonchoTypography } from './themes/honchoTheme';
