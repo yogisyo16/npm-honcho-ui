@@ -8,7 +8,6 @@ const initialAdjustments = {
     tempScore: 0, tintScore: 0, vibranceScore: 0, exposureScore: 0, highlightsScore: 0, shadowsScore: 0,
     whitesScore: 0, blacksScore: 0, saturationScore: 0, contrastScore: 0, clarityScore: 0, sharpnessScore: 0,
 };
-// const clamp = (value: number) => Math.max(-100, Math.min(100, value));
 export function useHonchoEditor(controller, initImageId, firebaseUid) {
     const { onSwipeNext, onSwipePrev, isNextAvailable, isPrevAvailable, isLoading: isGalleryLoading, error: galleryError, currentImageData: galleryImageData } = useGallerySwipe(firebaseUid, initImageId, controller);
     // The useAdjustmentHistory hook now manages all undo/redo and adjustment state logic.
@@ -52,7 +51,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     const [isPresetCreated, setIsPresetCreated] = useState(false);
     const [selectedMobilePreset, setSelectedMobilePreset] = useState('preset1');
     const [selectedDesktopPreset, setSelectedDesktopPreset] = useState('preset1');
-    // const [selectedBulkPreset, setSelectedBulkPreset] = useState<string>('preset1');
     const [presetMenuAnchorEl, setPresetMenuAnchorEl] = useState(null);
     const [activePresetMenuId, setActivePresetMenuId] = useState(null);
     const [isRenameModalOpen, setRenameModalOpen] = useState(false);
@@ -90,30 +88,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     const contentRef = useRef(null);
     // Effect for keyboard shortcuts
     // MARK: - Core Editor Logic
-    // MARK: Batch Edit logic
-    // const handleToggleImageSelection = useCallback((imageId: string) => {
-    //     const newSelectedIds = new Set(selectedImageIds);
-    //     const isCurrentlySelected = newSelectedIds.has(imageId);
-    //     if (isCurrentlySelected) {
-    //         if (newSelectedIds.size > 1) {
-    //             newSelectedIds.delete(imageId);
-    //         }
-    //     } else {
-    //         newSelectedIds.add(imageId);
-    //         // Apply the current UI's adjustments to the newly selected image.
-    //         setAdjustmentsMap(prevMap => {
-    //             const newMap = new Map(prevMap);
-    //             const currentUiState = {
-    //                 tempScore, tintScore, vibranceScore, saturationScore,
-    //                 exposureScore, highlightsScore, shadowsScore, whitesScore,
-    //                 blacksScore, contrastScore, clarityScore, sharpnessScore
-    //             };
-    //             newMap.set(imageId, currentUiState);
-    //             return newMap;
-    //         });
-    //     }
-    //     setSelectedImageIds(newSelectedIds);
-    // }, [selectedImageIds, tempScore, tintScore, vibranceScore, saturationScore, exposureScore, highlightsScore, shadowsScore, whitesScore, blacksScore, contrastScore, clarityScore, sharpnessScore]);
     // Mobile Panel Drag Handlers
     const handleContentHeightChange = useCallback((height) => {
         if (height > 0 && height !== contentHeight)
@@ -164,7 +138,7 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
             return;
         if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
             event.preventDefault();
-            handleOpenCopyDialog(); // Assumes handleOpenCopyDialog is defined in the hook
+            handleOpenCopyDialog();
         }
     }, [ /* handleOpenCopyDialog dependency */]);
     const extractPathFromGallery = useCallback((data) => {
@@ -224,7 +198,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
             return;
         controller.handleBack(firebaseUid, galleryImageData.id);
     }, [controller, firebaseUid, galleryImageData]);
-    // MARK: - UI Handlers (Moved from page.tsx)
     // MARK: - UI Handlers
     // Panel Handlers
     const handleColorAccordionChange = (panel) => (_, isExpanded) => {
