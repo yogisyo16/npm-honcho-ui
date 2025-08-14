@@ -1,8 +1,6 @@
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsx as _jsx } from "react/jsx-runtime";
 import { useMemo } from "react";
 import { Box, CardMedia, useTheme } from "@mui/material";
-import { TickCircle } from "iconsax-react";
-import CustomTickIcon from "../svg/Tick";
 import { neutral } from "../../../color";
 const initialAdjustments = {
     temperature: 0, tint: 0, saturation: 0, vibrance: 0, exposure: 0, contrast: 0,
@@ -20,70 +18,32 @@ const selectedImgStyle = {
     // transition: "transform .135s cubic-bezier(0.0,0.0,0.2,1),opacity linear .15s"
 };
 const GalleryImageItem = (props) => {
-    const { photo, margin, adjustments, isSelected = false, data } = props;
+    const { margin, data } = props;
     const theme = useTheme();
     const imageData = data;
-    const hasAdjustments = useMemo(() => {
-        if (!adjustments)
-            return false;
-        return Object.keys(initialAdjustments).some(key => adjustments[key] !== initialAdjustments[key]);
-    }, [adjustments]);
-    const styleHiddenGallery = useMemo(() => {
-        if (props.isHiddenGallery) {
-            return { filter: "blur(20px)", pointerEvents: "none" };
-        }
-        else {
-            return {};
-        }
-    }, [props.isHiddenGallery]);
     const commonStyle = useMemo(() => {
         return {
             backgroundColor: neutral.white,
             overflow: "hidden",
             position: "relative",
             width: "100%",
-            aspectRatio: `${photo.width}/${photo.height}`,
+            aspectRatio: `${imageData.width}/${imageData.height}`,
         };
-    }, [props.direction, props.photo]);
-    const handleImageClick = () => {
-        console.debug({
-            isFullMode: props.isFullScreenMode,
-            isShowGallery: props.isHiddenGallery,
-        }, "handleImageClick");
-        if (!props.isFullScreenMode && !props.isHiddenGallery) {
-            if (props.isSelectedMode) {
-                console.debug("handleImageClick with toggle select");
-                props.onToggleSelect();
-            }
-            else {
-                console.debug("handleImageClick with preview");
-            }
-        }
-    };
-    const handleImageSelectedIconClick = () => {
-        console.debug("handleImageSelectedIconClick");
-        if (!props.isFullScreenMode) {
-            if (!props.isSelectedMode) {
-            }
-            props.onToggleSelect();
-        }
-    };
+    }, [props.direction, imageData]);
     const imageSx = useMemo(() => {
-        const baseStyles = isSelected ? {
+        const baseStyles = imageData.isSelected ? {
             ...imgStyle,
             ...selectedImgStyle,
-            ...styleHiddenGallery,
-            aspectRatio: `${photo.width}/${photo.height}`,
+            aspectRatio: `${imageData.width}/${imageData.height}`,
         } : {
             ...imgStyle,
-            ...styleHiddenGallery,
         };
         return {
             ...baseStyles,
             opacity: 1, // Previously depended on isProcessingComplete
             transition: 'opacity 0.3s ease-in-out',
         };
-    }, [isSelected, styleHiddenGallery, photo.width, photo.height]);
+    }, [props.data.isSelected, imageData.width, imageData.height]);
     const boxNotSelected = useMemo(() => ({
         margin,
         // height: photo.height,
@@ -91,17 +51,15 @@ const GalleryImageItem = (props) => {
         transition: ".3s",
         // "&:hover": { padding: "12px", backgroundColor: "primary.light1" },
         "&:-webkit-transition": { transition: ".3s" },
-        "&:hover > .checkbox": { display: props.isHiddenGallery ? "" : "block" },
-        cursor: props.isFullScreenMode || props.isHiddenGallery ? "inherit" : "pointer",
-        backgroundColor: props.isFullScreenMode
-            ? "rgba(0,0,0,0.1)"
-            : "transparent",
-    }), [margin, commonStyle, props.isHiddenGallery, props.isFullScreenMode]);
+        "&:hover > .checkbox": { display: "block" },
+        cursor: "pointer",
+        backgroundColor: "transparent",
+    }), [margin, commonStyle]);
     const boxSelected = useMemo(() => ({
         margin,
         // height: photo.height,
         ...commonStyle,
-        cursor: props.isFullScreenMode || props.isHiddenGallery ? "inherit" : "pointer",
+        cursor: "pointer",
         transition: ".3s",
         "&:-webkit-transition": { transition: ".3s" },
         padding: { xs: "13px 12px", sm: "21.31px 25.56px 21.32px 27.68px" },
@@ -109,55 +67,15 @@ const GalleryImageItem = (props) => {
         margin,
         commonStyle,
         theme.palette.light,
-        props.isFullScreenMode,
-        props.isHiddenGallery,
     ]);
     const boxOuterSx = useMemo(() => {
-        if (props.isFullScreenMode) {
-            return {
-                margin,
-                ...commonStyle,
-            };
+        if (props.data.isSelected) {
+            return { ...boxSelected };
         }
         else {
-            if (props.isSelected) {
-                return { ...boxSelected };
-            }
-            else {
-                return { ...boxNotSelected };
-            }
+            return { ...boxNotSelected };
         }
-    }, [
-        props.isFullScreenMode,
-        photo.height,
-        photo.width,
-        commonStyle,
-        boxSelected,
-        boxNotSelected,
-        margin,
-        props.isSelected,
-    ]);
-    return (_jsxs(Box, { id: "Box_image", sx: boxOuterSx, className: "image", children: [!props.isHiddenGallery &&
-                (hasAdjustments && isSelected ? (_jsx(Box, { color: "primary.dark1", onClick: handleImageSelectedIconClick, sx: {
-                        position: "absolute",
-                        width: "19px",
-                        height: "19px",
-                        zIndex: "2",
-                        left: "5px",
-                        top: "5px",
-                        borderRadius: { xs: "50%", sm: 0 },
-                    }, className: "checkbox", children: _jsx(CustomTickIcon, {}) })) : (_jsx(Box, { color: "neutral.light2", onClick: handleImageSelectedIconClick, sx: {
-                        position: "absolute",
-                        width: "19px",
-                        height: "19px",
-                        zIndex: "1",
-                        left: "5px",
-                        top: "5px",
-                        display: "none",
-                        visibility: {
-                            xs: props.isSelectedMode ? "visible" : "hidden",
-                            sm: "visible",
-                        },
-                    }, className: "checkbox", children: _jsx(TickCircle, { style: { width: "24px", height: "24px" }, color: "white" }) }))), _jsx(CardMedia, { id: "card_media", component: "img", className: "image", loading: "lazy", alt: imageData.alt ?? "Image", sx: imageSx, src: imageData.src, width: "100%", onClick: handleImageClick })] }, photo.key));
+    }, [imageData.height, imageData.width, commonStyle, boxSelected, boxNotSelected, margin]);
+    return (_jsx(Box, { id: "Box_image", sx: boxOuterSx, className: "image", children: _jsx(CardMedia, { id: "card_media", component: "img", className: "image", loading: "lazy", alt: imageData.alt ?? "Image", sx: imageSx, src: imageData.src, width: "100%", onClick: props.onToggleSelect }) }, imageData.key));
 };
 export default GalleryImageItem;

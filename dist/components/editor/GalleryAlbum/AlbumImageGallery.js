@@ -4,9 +4,7 @@ import { Box, Stack } from "@mui/material";
 import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
 import GalleryImageItem from "./ImageItem";
 export const AlbumImageGallery = (props) => {
-    const { imageCollection, isSelectedMode, isHiddenGallery, enableEditor, // Destructure the new prop
-    onToggleSelect, } = props;
-    console.log("imageCollection: ", imageCollection);
+    const { imageCollection, onToggleSelect } = props;
     return (_jsx(Stack, { sx: { width: '100%', maxHeight: '100%', overflowY: 'auto' }, children: _jsx(ResponsiveMasonry, { columnsCountBreakPoints: { 750: 2, 900: 4 }, children: _jsx(Masonry, { children: imageCollection.map((photo, index) => {
                     // This guard clause is still important for runtime safety.
                     if (!photo.key || !photo.src) {
@@ -25,8 +23,6 @@ export const AlbumImageGallery = (props) => {
                         // in case ImageItem needs it for other operations.
                         photo: photo,
                     };
-                    return (_jsx(Box, { sx: { m: 0.5 }, children: _jsx(GalleryImageItem, { margin: "0px", index: index, 
-                            // UPDATED: Pass the new, correctly-typed object.
-                            photo: imageItemPhotoProps, direction: "column", isFullScreenMode: false, isSelected: photo.isSelected, isSelectedMode: isSelectedMode, isHiddenGallery: isHiddenGallery, onToggleSelect: () => { onToggleSelect(photo); }, enableEditor: enableEditor, adjustments: photo.adjustments, frame: photo.frame, data: photo }) }, photo.key));
+                    return (_jsx(Box, { sx: { m: 0.5 }, children: _jsx(GalleryImageItem, { margin: "0px", index: index, direction: "column", onToggleSelect: () => { onToggleSelect(photo); }, data: photo }) }, photo.key));
                 }) }) }) }));
 };

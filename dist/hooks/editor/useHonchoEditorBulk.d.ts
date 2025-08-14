@@ -22,7 +22,7 @@ export interface ControllerBulk {
     deletePreset(firebaseUid: string, presetId: string): Promise<void>;
 }
 export declare function useHonchoEditorBulk(controller: Controller, eventID: string, firebaseUid: string): {
-    imageCollection: PhotoData[];
+    imageData: PhotoData[];
     isLoading: boolean;
     error: string | null;
     selectedIds: string[];

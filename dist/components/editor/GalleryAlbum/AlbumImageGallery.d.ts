@@ -1,16 +1,8 @@
 import React from "react";
-import { AdjustmentValues } from "../../../lib/editor/honcho-editor";
-import type { PhotoData as BulkPhotoData } from "../../../hooks/editor/useHonchoEditorBulk";
-export interface ExtendedPhotoData extends BulkPhotoData {
-    adjustments?: Partial<AdjustmentValues>;
-    frame?: string;
-}
+import type { PhotoData } from "../../../hooks/editor/useHonchoEditorBulk";
 interface ImageGalleryProps {
-    imageCollection: ExtendedPhotoData[];
-    isSelectedMode: boolean;
-    isHiddenGallery: boolean;
-    enableEditor: boolean;
-    onToggleSelect: (photo: ExtendedPhotoData) => void;
+    imageCollection: PhotoData[];
+    onToggleSelect: (photo: PhotoData) => void;
 }
 export declare const AlbumImageGallery: React.FC<ImageGalleryProps>;
 export {};

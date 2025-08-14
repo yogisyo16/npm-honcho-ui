@@ -1,8 +1,8 @@
 'use client';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useAdjustmentHistoryBatch } from '../useAdjustmentHistoryBatch';
 // Helper function to map the API response to the format our UI component needs
-const mapGalleryToPhotoData = (gallery) => {
+const mapGalleryToPhotoData = (gallery, selectedIds) => {
     return {
         key: gallery.id,
         src: gallery.raw_thumbnail?.path ? gallery.raw_thumbnail.path : gallery.thumbnail?.path,
@@ -10,7 +10,7 @@ const mapGalleryToPhotoData = (gallery) => {
         width: gallery.thumbnail?.width,
         height: gallery.thumbnail?.height,
         alt: gallery.id || 'gallery image',
-        isSelected: false, // Default to not selected
+        isSelected: selectedIds.includes(gallery.id),
         adjustments: gallery.editor_config?.color_adjustment,
     };
 };
@@ -45,10 +45,18 @@ export function useHonchoEditorBulk(controller, eventID, firebaseUid) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedBulkPreset, setSelectedBulkPreset] = useState('preset1');
+    const imageData = useMemo(() => {
+        return imageCollection.map(item => {
+            return mapGalleryToPhotoData(item, selectedIds);
+        }).map(item => {
+            const adjustment = currentBatch.allImages[item.key];
+            return adjustment ? { ...item, ...adjustment } : item;
+        });
+    }, [imageCollection, selectedIds, currentBatch.allImages]);
     const handleBackCallbackBulk = useCallback(() => {
-        const lastSelectedId = selectedIds.length > 0 ? selectedIds[selectedIds.length - 1] : eventID;
+        const lastSelectedId = selectedIds.length > 0 ? selectedIds[selectedIds.length - 1] : "";
         controller.handleBack(firebaseUid, lastSelectedId);
-    }, [controller, firebaseUid, selectedIds, eventID]);
+    }, [controller, firebaseUid, selectedIds]);
     const handleSelectBulkPreset = (event) => setSelectedBulkPreset(event.target.value);
     // This factory creates functions that adjust a value for all selected images
     const createRelativeAdjuster = useCallback((key, amount) => () => {
@@ -110,9 +118,9 @@ export function useHonchoEditorBulk(controller, eventID, firebaseUid) {
             setError(null);
             controller.getImageList(firebaseUid, eventID, 1)
                 .then(response => {
+                // TODO need do pagination for this one
                 batchActions.syncAdjustment(response.gallery.map(mapToImageAdjustmentConfig));
-                const mappedData = response.gallery.map(mapGalleryToPhotoData);
-                setImageCollection(mappedData);
+                setImageCollection(response.gallery);
             })
                 .catch(err => {
                 console.error("Failed to fetch image list:", err);
@@ -123,21 +131,8 @@ export function useHonchoEditorBulk(controller, eventID, firebaseUid) {
             });
         }
     }, [eventID, firebaseUid, controller]);
-    useEffect(() => {
-        // react the changes in the batch state
-        if (currentBatch.allImages) {
-            setImageCollection((current) => {
-                const updated = current.map((image) => {
-                    const adjustment = currentBatch.allImages[image.key];
-                    return adjustment ? { ...image, ...adjustment } : image;
-                });
-                return updated;
-            });
-            console.log("Adjustment changed detected");
-        }
-    }, [currentBatch.allImages]);
     return {
-        imageCollection,
+        imageData,
         isLoading,
         error,
         selectedIds,

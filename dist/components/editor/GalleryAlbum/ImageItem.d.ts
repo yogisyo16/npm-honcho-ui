@@ -1,26 +1,10 @@
-import type { AdjustmentValues } from "../../../lib/editor/honcho-editor";
-import { GallerySetup } from "../../../hooks/editor/type";
-interface PhotoProps<T> {
-    src: string;
-    alt?: string;
-    width: number;
-    height: number;
-    key: string;
-}
+import { PhotoData } from "../../../hooks/editor/useHonchoEditorBulk";
 interface Props {
     margin?: any;
     index: number;
-    photo: PhotoProps<GallerySetup>;
-    data: GallerySetup;
+    data: PhotoData;
     direction: "row" | "column";
-    isSelectedMode: boolean;
-    isFullScreenMode: boolean;
-    isSelected?: boolean;
-    isHiddenGallery: boolean;
     onToggleSelect: () => void;
-    enableEditor?: boolean;
-    adjustments?: Partial<AdjustmentValues>;
-    frame?: string | null;
 }
 declare const GalleryImageItem: (props: Props) => import("react/jsx-runtime").JSX.Element;
 export default GalleryImageItem;
