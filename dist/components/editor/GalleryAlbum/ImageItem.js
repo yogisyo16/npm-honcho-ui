@@ -142,17 +142,13 @@ const GalleryImageItem = (props) => {
     return (_jsxs(Box, { id: "Box_image", sx: boxOuterSx, className: "image", children: [!props.isHiddenGallery &&
                 (hasAdjustments && isSelected ? (_jsx(Box, { color: "primary.dark1", onClick: handleImageSelectedIconClick, sx: {
                         position: "absolute",
-                        // width: "19px",
-                        // height: "19px",
-                        // zIndex: "2",
-                        // left: "5px",
-                        // top: "5px",
+                        width: "19px",
+                        height: "19px",
+                        zIndex: "2",
+                        left: "5px",
+                        top: "5px",
                         borderRadius: { xs: "50%", sm: 0 },
-                    }, className: "checkbox", children: _jsx(CustomTickIcon, {}) })) : (_jsx(Box
-                // color={"neutral.light2"}
-                , { 
-                    // color={"neutral.light2"}
-                    onClick: handleImageSelectedIconClick, sx: {
+                    }, className: "checkbox", children: _jsx(CustomTickIcon, {}) })) : (_jsx(Box, { color: "neutral.light2", onClick: handleImageSelectedIconClick, sx: {
                         position: "absolute",
                         width: "19px",
                         height: "19px",

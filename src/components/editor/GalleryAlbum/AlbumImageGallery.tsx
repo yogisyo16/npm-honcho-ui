@@ -34,7 +34,7 @@ const AlbumImageGallery: React.FC<ImageGalleryProps> = (props) => {
 		onSelectedMode,
 		onToggleSelect,
 	} = props;
-
+    
     console.log("imageCollection: ", imageCollection);
 
 	return (
