@@ -22,6 +22,7 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     const [isEditorReady, setIsEditorReady] = useState(false);
     const [isImageLoaded, setIsImageLoaded] = useState(false);
     const [zoomLevel, setZoomLevel] = useState(1);
+    const [presets, setPresets] = useState([]);
     // MARK: - Adjustment & History State
     const [copiedAdjustments, setCopiedAdjustments] = useState(null);
     const [copyColorChecks, setCopyColorChecks] = useState({ temperature: true, tint: true, vibrance: true, saturation: true });
@@ -46,7 +47,6 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     // Preset State
     const [isPresetModalOpen, setPresetModalOpen] = useState(false);
     const [isPresetModalOpenMobile, setPresetModalOpenMobile] = useState(false);
-    const [presets, setPresets] = useState([]);
     const [presetName, setPresetName] = useState("Type Here");
     const [isPresetCreated, setIsPresetCreated] = useState(false);
     const [selectedMobilePreset, setSelectedMobilePreset] = useState('preset1');
@@ -232,63 +232,11 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     };
     const handlePresetMenuClose = () => { setPresetMenuAnchorEl(null); setActivePresetMenuId(null); };
     const handleRemovePreset = () => { console.log(`Remove: ${activePresetMenuId}`); handlePresetMenuClose(); };
-    const handleDeletePreset = useCallback(async () => {
-        if (!controller || !activePresetMenuId)
-            return;
-        try {
-            await controller.deletePreset(firebaseUid, activePresetMenuId);
-            // On success, remove the preset from local state
-            setPresets(prevPresets => prevPresets.filter(p => p.id !== activePresetMenuId));
-        }
-        catch (error) {
-            console.error("Failed to delete preset:", error);
-        }
-        handlePresetMenuClose(); // Close the options menu
-    }, [controller, activePresetMenuId]);
     // Preset Modal Handlers
     const handleOpenPresetModal = () => { setIsPresetCreated(false); setPresetModalOpen(true); };
     const handleClosePresetModal = () => setPresetModalOpen(false);
-    const handleCreatePreset = useCallback(async () => {
-        if (!controller)
-            return;
-        // The current adjustment state from the history hook
-        const currentAdjustments = { ...currentAdjustmentsState };
-        try {
-            // Call the controller, which now calls the real API
-            await controller.createPreset(firebaseUid, presetName, currentAdjustments);
-            // If the API call was successful and returned a preset...
-            // if (newPresetFromApi) {
-            //     // ...add the new preset from the API response to our local state
-            //     setPresets(prevPresets => [...prevPresets, newPresetFromApi]);
-            // }
-        }
-        catch (error) {
-            console.error("Failed to create preset:", error);
-            // Optionally: show an error message to the user here
-        }
-        // Close the modal and show a confirmation
-        setIsPresetCreated(true);
-        handleClosePresetModal();
-        setTimeout(() => setIsPresetCreated(false), 1000); // Hide confirmation after 1s
-    }, [controller, presetName, currentAdjustmentsState, firebaseUid]);
     const handleOpenPresetModalMobile = () => { setIsPresetCreated(false); setPresetModalOpenMobile(true); };
     const handleClosePresetModalMobile = () => setPresetModalOpenMobile(false);
-    const handleCreatePresetMobile = useCallback(async () => {
-        if (!controller)
-            return;
-        console.log("Creating mobile preset:", presetName);
-        const currentAdjustments = { ...currentAdjustmentsState };
-        try {
-            // RE-USE THE SAME LOGIC AS THE DESKTOP VERSION
-            await controller.createPreset(firebaseUid, presetName, currentAdjustments);
-        }
-        catch (error) {
-            console.error("Failed to create mobile preset:", error);
-        }
-        setIsPresetCreated(true);
-        handleClosePresetModalMobile();
-        setTimeout(() => setIsPresetCreated(false), 1000);
-    }, [controller, presetName, currentAdjustmentsState, firebaseUid]);
     const handleNameChange = (event) => setPresetName(event.target.value);
     // Watermark Handlers
     const handleOpenWatermarkView = () => setIsCreatingWatermark(true);
@@ -694,14 +642,11 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
         handleSelectDesktopPreset,
         handlePresetMenuClick,
         handlePresetMenuClose,
-        handleCreatePreset,
         handleRemovePreset,
-        handleDeletePreset,
         handleOpenPresetModal,
         handleClosePresetModal,
         handleOpenPresetModalMobile,
         handleClosePresetModalMobile,
-        handleCreatePresetMobile,
         setPresetName,
         handleNameChange,
         isRenameModalOpen,

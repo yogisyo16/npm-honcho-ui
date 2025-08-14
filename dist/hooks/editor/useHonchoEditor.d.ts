@@ -184,14 +184,11 @@ export declare function useHonchoEditor(controller: Controller, initImageId: str
     handleSelectDesktopPreset: (presetId: string) => void;
     handlePresetMenuClick: (event: React.MouseEvent<HTMLElement>, presetId: string) => void;
     handlePresetMenuClose: () => void;
-    handleCreatePreset: () => Promise<void>;
     handleRemovePreset: () => void;
-    handleDeletePreset: () => Promise<void>;
     handleOpenPresetModal: () => void;
     handleClosePresetModal: () => void;
     handleOpenPresetModalMobile: () => void;
     handleClosePresetModalMobile: () => void;
-    handleCreatePresetMobile: () => Promise<void>;
     setPresetName: import("react").Dispatch<import("react").SetStateAction<string>>;
     handleNameChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
     isRenameModalOpen: boolean;
