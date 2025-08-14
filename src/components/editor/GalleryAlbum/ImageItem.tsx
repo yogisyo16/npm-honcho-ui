@@ -199,7 +199,7 @@ const GalleryImageItem = (props: Props) => {
 	]);
 
 	return (
-		<Box id={"Box_image"} key={photo.key} sx={boxOuterSx} className={"image"}>
+		<Box id={"Box_image"} key={photo.key} className={"image"}>
 			{!props.isHiddenGallery &&
 				(hasAdjustments && isSelected ? (
 					<Box
@@ -207,11 +207,11 @@ const GalleryImageItem = (props: Props) => {
 						onClick={handleImageSelectedIconClick}
 						sx={{
 							position: "absolute",
-							width: "19px",
-							height: "19px",
-							zIndex: "2",
-							left: "5px",
-							top: "5px",
+							// width: "19px",
+							// height: "19px",
+							// zIndex: "2",
+							// left: "5px",
+							// top: "5px",
 							borderRadius: { xs: "50%", sm: 0 },
 						}}
 						className={"checkbox"}
@@ -220,7 +220,7 @@ const GalleryImageItem = (props: Props) => {
 					</Box>
 				) : (
 					<Box
-						color={"neutral.light2"}
+						// color={"neutral.light2"}
 						onClick={handleImageSelectedIconClick}
 						sx={{
 							position: "absolute",
