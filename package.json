@@ -1,6 +1,6 @@
 {
   "name": "@yogiswara/honcho-editor-ui",
-  "version": "2.1.6",
+  "version": "2.1.7",
   "description": "A complete UI component library for the Honcho photo editor.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
