@@ -25,6 +25,8 @@ export { default as HModalMobile } from './components/editor/HModalMobile';
 export { default as HPresetOptionsMenu } from './components/editor/HPresetOptionMenu';
 export { HAlertInternetBox, HAlertCopyBox, HAlertInternetConnectionBox, HAlertPresetSave } from './components/editor/HAlertBox';
 export { useHonchoEditorBulk } from './hooks/editor/useHonchoEditorBulk';
+export { default as AlbumImageGallery } from './components/editor/GalleryAlbum/AlbumImageGallery'
+export { default as GalleryImageItem } from './components/editor/GalleryAlbum/ImageItem'
 
 // --- History Hooks ---
 export { 

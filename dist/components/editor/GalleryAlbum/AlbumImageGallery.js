@@ -1,52 +1,32 @@
-"use strict";
-// "use client";
-// import React from "react";
-// import { Box } from "@mui/material";
-// import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
-// import ImageItem from "../GalleryAlbum/ImageItem";
-// import { GallerySetup } from "../../../hooks/editor/type";
-// interface ImageGalleryProps {
-// 	imageCollection: GallerySetup[];
-// 	isSelectedMode: boolean;
-// 	isHiddenGallery: boolean;
-// 	onPreview: (photo: unknown) => () => void;
-// 	onSelectedMode: () => void;
-// 	onToggleSelect: (photo: unknown) => () => void;
-// }
-// const AlbumImageGallery: React.FC<ImageGalleryProps> = (props) => {
-// 	const {
-// 		imageCollection,
-// 		isSelectedMode,
-// 		isHiddenGallery,
-// 		onPreview,
-// 		onSelectedMode,
-// 		onToggleSelect,
-// 	} = props;
-// 	return (
-// 		<section>
-// 			<ResponsiveMasonry columnsCountBreakPoints={{ 750: 2, 900: 4 }}>
-// 				<Masonry>
-// 					{imageCollection.map((photo, index) => (
-// 						<Box key={photo.key} sx={{ m: 0.5 }}>
-// 							<ImageItem
-// 								margin="0px"
-// 								index={index}
-// 								photo={photo}
-// 								direction="column"
-// 								isFullScreenMode={false}
-// 								isSelected={photo.isSelected}
-// 								isSelectedMode={isSelectedMode}
-// 								isHiddenGallery={isHiddenGallery}
-// 								onPreview={onPreview(photo)}
-// 								onSelectedMode={onSelectedMode}
-// 								onToggleSelect={onToggleSelect(photo)}
-// 								frame={photo.frame}
-// 							/>
-// 						</Box>
-// 					))}
-// 				</Masonry>
-// 			</ResponsiveMasonry>
-// 		</section>
-// 	);
-// };
-// export default AlbumImageGallery;
+"use client";
+import { jsx as _jsx } from "react/jsx-runtime";
+import { Box } from "@mui/material";
+import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
+import GalleryImageItem from "./ImageItem";
+const AlbumImageGallery = (props) => {
+    const { imageCollection, isSelectedMode, isHiddenGallery, enableEditor, // Destructure the new prop
+    onPreview, onSelectedMode, onToggleSelect, } = props;
+    return (_jsx("section", { children: _jsx(ResponsiveMasonry, { columnsCountBreakPoints: { 750: 2, 900: 4 }, children: _jsx(Masonry, { children: imageCollection.map((photo, index) => {
+                    // This guard clause is still important for runtime safety.
+                    if (!photo.key || !photo.src) {
+                        console.warn("Skipping item without a key or src:", photo);
+                        return null;
+                    }
+                    // NEW: Create a new object that matches the 'PhotoProps' interface.
+                    // This explicitly tells TypeScript that all required fields are present.
+                    const imageItemPhotoProps = {
+                        key: photo.key,
+                        src: photo.src,
+                        width: photo.width,
+                        height: photo.height,
+                        alt: photo.alt,
+                        // We pass the original photo object in the generic 'photo' property
+                        // in case ImageItem needs it for other operations.
+                        photo: photo,
+                    };
+                    return (_jsx(Box, { sx: { m: 0.5 }, children: _jsx(GalleryImageItem, { margin: "0px", index: index, 
+                            // UPDATED: Pass the new, correctly-typed object.
+                            photo: imageItemPhotoProps, direction: "column", isFullScreenMode: false, isSelected: photo.isSelected, isSelectedMode: isSelectedMode, isHiddenGallery: isHiddenGallery, onPreview: onPreview(photo), onSelectedMode: onSelectedMode, onToggleSelect: onToggleSelect(photo), enableEditor: enableEditor, adjustments: photo.adjustments, frame: photo.frame }) }, photo.key));
+                }) }) }) }));
+};
+export default AlbumImageGallery;
