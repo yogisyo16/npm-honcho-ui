@@ -4,7 +4,7 @@ import { AdjustmentValues } from "../../../lib/editor/honcho-editor";
 interface PhotoData extends GallerySetup {
     adjustments?: Partial<AdjustmentValues>;
     frame?: string;
-    originalData: Gallery;
+    originalData?: Gallery;
 }
 interface ImageGalleryProps {
     imageCollection: PhotoData[];

@@ -12,7 +12,7 @@ import { AdjustmentValues } from "../../../lib/editor/honcho-editor"; // Adjust 
 interface PhotoData extends GallerySetup {
 	adjustments?: Partial<AdjustmentValues>;
 	frame?: string;
-    originalData: Gallery;
+    originalData?: Gallery;
 }
 
 // UPDATED: The main props interface for the gallery
