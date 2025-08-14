@@ -20,16 +20,17 @@ export interface PhotoData {
 
 // Helper function to map the API response to the format our UI component needs
 const mapGalleryToPhotoData = (gallery: Gallery): PhotoData => {
-    const bestAvailableImage: Content = gallery.thumbnail || gallery.download || { path: '', width: 1, height: 1, key: gallery.id, size: 0 };
+    // Use thumbnail as the primary source, with fallbacks for safety
+    const bestImage = gallery.thumbnail || gallery.download || { path: '', width: 1, height: 1, key: gallery.id, size: 0 };
     
     return {
         key: gallery.id,
-        src: bestAvailableImage.path,
-        original: gallery.download?.path || bestAvailableImage.path,
-        width: bestAvailableImage.width || 1,
-        height: bestAvailableImage.height || 1,
+        src: bestImage.path,
+        original: gallery.download?.path || bestImage.path,
+        width: bestImage.width || 1,
+        height: bestImage.height || 1,
         alt: gallery.id || 'gallery image',
-        isSelected: false,
+        isSelected: false, // Default to not selected
         originalData: gallery,
     };
 };
@@ -242,30 +243,18 @@ export function useHonchoEditorBulk(controllerBulk: Controller, eventID: string,
             setError(null);
             controllerBulk.getImageList(firebaseUid, eventID, 1)
                 .then(response => {
-                    const images = response.gallery;
-                    
-                    // Prepare the initial data for the batch history hook
-                    const imageConfigs: ImageAdjustmentConfig[] = images.map(img => ({
-                        imageId: img.id,
-                        adjustment: img.editor_config?.color_adjustment 
-                            ? mapColorAdjustmentToAdjustmentState(img.editor_config.color_adjustment) 
-                            : initialAdjustments
-                    }));
-
-                    // Populate the batch history with all fetched images
-                    batchActions.setSelection(imageConfigs);
-                    // Immediately clear the selection so no images are selected by default
-                    batchActions.clearSelection(); 
+                    const mappedData = response.gallery.map(mapGalleryToPhotoData);
+                    setImageCollection(mappedData);
                 })
                 .catch(err => {
-                    console.error("Failed to fetch gallery:", err);
-                    setError(err.message || "Could not load images.");
+                    console.error("Failed to fetch image list:", err);
+                    setError("Could not load images.");
                 })
                 .finally(() => {
                     setIsLoading(false);
                 });
         }
-    }, [eventID, firebaseUid, controllerBulk, batchActions]);
+    }, [eventID, firebaseUid, controllerBulk]);
 
     return {
         imageCollection,
