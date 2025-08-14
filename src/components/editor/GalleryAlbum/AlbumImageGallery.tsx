@@ -4,34 +4,16 @@ import React from "react";
 import { Box, Stack } from "@mui/material";
 import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
 import GalleryImageItem from "./ImageItem";
-import { Gallery, GallerySetup } from "../../../hooks/editor/type";
-import { AdjustmentValues } from "../../../lib/editor/honcho-editor"; // Adjust path if needed
-import type { PhotoData as BulkPhotoData } from "../../../hooks/editor/useHonchoEditorBulk";
-
-export interface ExtendedPhotoData extends BulkPhotoData {
-    adjustments?: Partial<AdjustmentValues>;
-    frame?: string;
-}
+import type { PhotoData } from "../../../hooks/editor/useHonchoEditorBulk";
 
 // UPDATED: The main props interface for the gallery
 interface ImageGalleryProps {
-	imageCollection: ExtendedPhotoData[]; // Use the more specific type
-	isSelectedMode: boolean;
-	isHiddenGallery: boolean;
-	enableEditor: boolean; // Add prop to control editor state
-	onToggleSelect: (photo: ExtendedPhotoData) => void;
+	imageCollection: PhotoData[]; // Use the more specific type
+	onToggleSelect: (photo: PhotoData) => void;
 }
 
 export const AlbumImageGallery: React.FC<ImageGalleryProps> = (props) => {
-	const {
-		imageCollection,
-		isSelectedMode,
-		isHiddenGallery,
-		enableEditor, // Destructure the new prop
-		onToggleSelect,
-	} = props;
-    
-    console.log("imageCollection: ", imageCollection);
+	const { imageCollection, onToggleSelect } = props;
 
 	return (
 		<Stack sx={{ width: '100%', maxHeight: '100%', overflowY: 'auto'}}>
@@ -62,17 +44,8 @@ export const AlbumImageGallery: React.FC<ImageGalleryProps> = (props) => {
 								<GalleryImageItem
 									margin="0px"
 									index={index}
-									// UPDATED: Pass the new, correctly-typed object.
-									photo={imageItemPhotoProps}
 									direction="column"
-									isFullScreenMode={false}
-									isSelected={photo.isSelected}
-									isSelectedMode={isSelectedMode}
-									isHiddenGallery={isHiddenGallery}
-									onToggleSelect={()=> {onToggleSelect(photo)}}
-									enableEditor={enableEditor}
-									adjustments={photo.adjustments}
-									frame={photo.frame}
+									onToggleSelect={() => { onToggleSelect(photo) }}
                                     data={photo}
 								/>
 							</Box>
