@@ -187,6 +187,7 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
                 });
                 return updated;
             });
+            console.log("Adjustment changed detected");
         }
     }, [currentBatch.allImages]);
 
