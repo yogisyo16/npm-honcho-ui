@@ -10,7 +10,6 @@ interface ImageGalleryProps {
     isSelectedMode: boolean;
     isHiddenGallery: boolean;
     enableEditor: boolean;
-    onPreview: (photo: ExtendedPhotoData) => void;
     onSelectedMode: () => void;
     onToggleSelect: (photo: ExtendedPhotoData) => void;
 }

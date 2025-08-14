@@ -48,7 +48,6 @@ interface Props {
 	isSelected?: boolean;
 	isHiddenGallery: boolean;
 	onToggleSelect: () => void;
-	onPreview: () => void;
 	onSelectedMode: () => void;
 
 	// NEW: Editor interceptor props
@@ -101,7 +100,6 @@ const GalleryImageItem = (props: Props) => {
 				props.onToggleSelect();
 			} else {
 				console.debug("handleImageClick with preview");
-				props.onPreview();
 			}
 		}
 	};

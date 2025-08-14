@@ -18,7 +18,6 @@ interface Props {
     isSelected?: boolean;
     isHiddenGallery: boolean;
     onToggleSelect: () => void;
-    onPreview: () => void;
     onSelectedMode: () => void;
     enableEditor?: boolean;
     adjustments?: Partial<AdjustmentValues>;

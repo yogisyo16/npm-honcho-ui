@@ -57,7 +57,6 @@ const GalleryImageItem = (props) => {
             }
             else {
                 console.debug("handleImageClick with preview");
-                props.onPreview();
             }
         }
     };

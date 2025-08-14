@@ -19,7 +19,6 @@ interface ImageGalleryProps {
 	isSelectedMode: boolean;
 	isHiddenGallery: boolean;
 	enableEditor: boolean; // Add prop to control editor state
-	onPreview: (photo: ExtendedPhotoData) => void;
 	onSelectedMode: () => void;
 	onToggleSelect: (photo: ExtendedPhotoData) => void;
 }
@@ -30,7 +29,6 @@ export const AlbumImageGallery: React.FC<ImageGalleryProps> = (props) => {
 		isSelectedMode,
 		isHiddenGallery,
 		enableEditor, // Destructure the new prop
-		onPreview,
 		onSelectedMode,
 		onToggleSelect,
 	} = props;
@@ -73,7 +71,6 @@ export const AlbumImageGallery: React.FC<ImageGalleryProps> = (props) => {
 									isSelected={photo.isSelected}
 									isSelectedMode={isSelectedMode}
 									isHiddenGallery={isHiddenGallery}
-									onPreview={() => { onPreview(photo) }}
 									onSelectedMode={onSelectedMode}
 									onToggleSelect={()=> {onToggleSelect(photo)}}
 									enableEditor={enableEditor}

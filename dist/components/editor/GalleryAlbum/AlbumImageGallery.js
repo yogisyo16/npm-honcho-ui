@@ -5,7 +5,7 @@ import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
 import GalleryImageItem from "./ImageItem";
 export const AlbumImageGallery = (props) => {
     const { imageCollection, isSelectedMode, isHiddenGallery, enableEditor, // Destructure the new prop
-    onPreview, onSelectedMode, onToggleSelect, } = props;
+    onSelectedMode, onToggleSelect, } = props;
     console.log("imageCollection: ", imageCollection);
     return (_jsx(Stack, { sx: { width: '100%', maxHeight: '100%', overflowY: 'auto' }, children: _jsx(ResponsiveMasonry, { columnsCountBreakPoints: { 750: 2, 900: 4 }, children: _jsx(Masonry, { children: imageCollection.map((photo, index) => {
                     // This guard clause is still important for runtime safety.
@@ -27,6 +27,6 @@ export const AlbumImageGallery = (props) => {
                     };
                     return (_jsx(Box, { sx: { m: 0.5 }, children: _jsx(GalleryImageItem, { margin: "0px", index: index, 
                             // UPDATED: Pass the new, correctly-typed object.
-                            photo: imageItemPhotoProps, direction: "column", isFullScreenMode: false, isSelected: photo.isSelected, isSelectedMode: isSelectedMode, isHiddenGallery: isHiddenGallery, onPreview: () => { onPreview(photo); }, onSelectedMode: onSelectedMode, onToggleSelect: () => { onToggleSelect(photo); }, enableEditor: enableEditor, adjustments: photo.adjustments, frame: photo.frame, data: photo }) }, photo.key));
+                            photo: imageItemPhotoProps, direction: "column", isFullScreenMode: false, isSelected: photo.isSelected, isSelectedMode: isSelectedMode, isHiddenGallery: isHiddenGallery, onSelectedMode: onSelectedMode, onToggleSelect: () => { onToggleSelect(photo); }, enableEditor: enableEditor, adjustments: photo.adjustments, frame: photo.frame, data: photo }) }, photo.key));
                 }) }) }) }));
 };
