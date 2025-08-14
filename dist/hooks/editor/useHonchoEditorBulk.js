@@ -1,81 +1,83 @@
 'use client';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useAdjustmentHistory } from '../useAdjustmentHistory';
 import { useAdjustmentHistoryBatch } from '../useAdjustmentHistoryBatch';
+// Helper function to map the API response to the format our UI component needs
+const mapGalleryToPhotoData = (gallery) => ({
+    key: gallery.id,
+    src: gallery.raw_edited?.path || gallery.download?.path || '',
+    width: gallery.raw_edited?.width || 1, // Default to 1 to prevent division by zero
+    height: gallery.raw_edited?.height || 1,
+    alt: gallery.id || 'gallery image',
+    isSelected: false, // All images start as unselected
+    originalData: gallery,
+});
 const initialAdjustments = {
     tempScore: 0, tintScore: 0, vibranceScore: 0, exposureScore: 0, highlightsScore: 0, shadowsScore: 0,
     whitesScore: 0, blacksScore: 0, saturationScore: 0, contrastScore: 0, clarityScore: 0, sharpnessScore: 0,
 };
 const clamp = (value) => Math.max(-100, Math.min(100, value));
+function mapColorAdjustmentToAdjustmentState(adj) {
+    return {
+        tempScore: adj.temperature || 0,
+        tintScore: adj.tint || 0,
+        vibranceScore: adj.vibrance || 0,
+        saturationScore: adj.saturation || 0,
+        exposureScore: adj.exposure || 0,
+        highlightsScore: adj.highlights || 0,
+        shadowsScore: adj.shadows || 0,
+        whitesScore: adj.whites || 0,
+        blacksScore: adj.blacks || 0,
+        contrastScore: adj.contrast || 0,
+        clarityScore: adj.clarity || 0,
+        sharpnessScore: adj.sharpness || 0,
+    };
+}
 export function useHonchoEditorBulk(controllerBulk, eventID, firebaseUid) {
-    const { currentState, actions: historyActions, historyInfo } = useAdjustmentHistory(initialAdjustments);
-    const { currentBatch, selectedIds, allImageIds, actions: batchActions, } = useAdjustmentHistoryBatch({
-        maxSize: historyInfo.historySize,
-        defaultAdjustmentState: currentState,
-    });
+    const { currentState, actions: historyActions, } = useAdjustmentHistory(initialAdjustments);
+    const { currentBatch, selectedIds, allImageIds, actions: batchActions, historyInfo } = useAdjustmentHistoryBatch({});
     // State for Bulk Editing
+    const [imageCollection, setImageCollection] = useState([]);
+    const [isSelectedMode, setIsSelectedMode] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [isBulkEditing, setIsBulkEditing] = useState(false);
     const [selectedImages, setSelectedImages] = useState('Select');
     const [imageList, setImageList] = useState([]);
-    const [selectedImageIds, setSelectedImageIds] = useState(new Set());
     const [adjustmentsMap, setAdjustmentsMap] = useState(new Map());
     const [selectedBulkPreset, setSelectedBulkPreset] = useState('preset1');
+    const [isEditorReady, setIsEditorReady] = useState(false);
+    const selectedImageIds = useMemo(() => imageCollection.filter(p => p.isSelected).map(p => p.key), [imageCollection]);
     const handleBackCallbackBulk = useCallback(() => {
-        // 1. Convert the Set of selected IDs into an array to get the last item.
-        const selectedIdsArray = Array.from(selectedImageIds);
-        // 2. Determine which ID to send back.
-        //    - If any images are selected, get the ID of the LAST one in the array.
-        //    - If no images are selected, fall back to using the eventID.
-        const idToSendBack = selectedIdsArray.length > 0
-            ? selectedIdsArray[selectedIdsArray.length - 1]
-            : eventID;
-        // 3. Check if we have an ID to send, otherwise log a warning.
-        if (!idToSendBack) {
-            console.warn("handleBack called, but no selected image ID or eventID was available.");
-            window.history.back();
-            return;
-        }
-        // 4. Call the controller with the chosen ID (either the last imageId or the eventId).
-        controllerBulk.handleBack(firebaseUid, idToSendBack);
+        const lastSelectedId = selectedImageIds.length > 0 ? selectedImageIds[selectedImageIds.length - 1] : eventID;
+        controllerBulk.handleBack(firebaseUid, lastSelectedId);
     }, [controllerBulk, firebaseUid, selectedImageIds, eventID]);
-    const handleFileChangeBulk = (event) => {
-        const files = event.target?.files;
-        if (!files || files.length <= 1) {
-            // If it's not a bulk operation, we clear the state.
-            setIsBulkEditing(false);
-            setImageList([]);
-            setSelectedImageIds(new Set());
-            setAdjustmentsMap(new Map());
-            return;
+    const handleSelectedMode = useCallback(() => {
+        setIsSelectedMode(true);
+    }, []);
+    const handleToggleSelect = useCallback((photoToToggle) => () => {
+        setImageCollection(currentCollection => currentCollection.map(photo => photo.key === photoToToggle.key
+            ? { ...photo, isSelected: !photo.isSelected }
+            : photo));
+        // Automatically enter selection mode on first selection
+        if (!isSelectedMode) {
+            setIsSelectedMode(true);
         }
-        ;
-        setIsBulkEditing(true);
-        const newImageList = Array.from(files).map((file, index) => ({
-            id: `${file.name}-${Date.now()}-${index}`,
-            name: file.name,
-            file: file,
-            url: URL.createObjectURL(file),
-        }));
-        const newAdjustmentsMap = new Map();
-        newImageList.forEach(image => {
-            newAdjustmentsMap.set(image.id, { ...initialAdjustments });
-        });
-        setAdjustmentsMap(newAdjustmentsMap);
-        setImageList(newImageList);
-        setSelectedImageIds(new Set(newImageList.map(img => img.id)));
-    };
-    const handleToggleImageSelection = useCallback((imageId) => {
-        const newSelectedIds = new Set(selectedImageIds);
-        if (newSelectedIds.has(imageId)) {
-            if (newSelectedIds.size > 1) { // Prevent deselecting the last image
-                newSelectedIds.delete(imageId);
-            }
-        }
-        else {
-            newSelectedIds.add(imageId);
-        }
-        setSelectedImageIds(newSelectedIds);
-    }, [selectedImageIds]);
+    }, [isSelectedMode]);
+    const handlePreview = useCallback((photo) => () => {
+        console.log("Previewing image:", photo.key);
+    }, []);
+    // const handleToggleImageSelection = useCallback((imageId: string) => {
+    //     const newSelectedIds = new Set(selectedImageIds);
+    //     if (newSelectedIds.has(imageId)) {
+    //         if (newSelectedIds.size > 1) { // Prevent deselecting the last image
+    //             newSelectedIds.delete(imageId);
+    //         }
+    //     } else {
+    //         newSelectedIds.add(imageId);
+    //     }
+    //     setSelectedImageIds(newSelectedIds);
+    // }, [selectedImageIds]);
     const toggleBulkEditing = () => {
         setIsBulkEditing(prev => {
             const isNowBulk = !prev;
@@ -85,19 +87,6 @@ export function useHonchoEditorBulk(controllerBulk, eventID, firebaseUid) {
     };
     const handleSelectBulkPreset = (event) => setSelectedBulkPreset(event.target.value);
     // This factory creates functions that adjust a value for all selected images
-    const createAbsoluteSetter = (key, setter) => (value) => {
-        setter(value); // Update UI slider
-        if (isBulkEditing) {
-            setAdjustmentsMap(prevMap => {
-                const newMap = new Map(prevMap);
-                selectedImageIds.forEach(id => {
-                    const currentState = newMap.get(id) || initialAdjustments;
-                    newMap.set(id, { ...currentState, [key]: value });
-                });
-                return newMap;
-            });
-        }
-    };
     const updateAdjustments = useCallback((newValues) => {
         const newState = { ...currentState, ...newValues };
         historyActions.pushState(newState);
@@ -108,18 +97,6 @@ export function useHonchoEditorBulk(controllerBulk, eventID, firebaseUid) {
         const newValue = clamp(currentValue + amount);
         updateAdjustments({ [key]: newValue });
     };
-    useEffect(() => {
-        if (!isBulkEditing)
-            return;
-        setAdjustmentsMap(prevMap => {
-            const newMap = new Map(prevMap);
-            selectedImageIds.forEach(id => {
-                // Apply the new global state to each selected image
-                newMap.set(id, currentState);
-            });
-            return newMap;
-        });
-    }, [currentState, selectedImageIds, isBulkEditing]);
     const setTempScore = (value) => updateAdjustments({ tempScore: value });
     const setTintScore = (value) => updateAdjustments({ tintScore: value });
     const setVibranceScore = (value) => updateAdjustments({ vibranceScore: value });
@@ -180,18 +157,57 @@ export function useHonchoEditorBulk(controllerBulk, eventID, firebaseUid) {
     const handleBulkSharpnessDecrease = createRelativeAdjuster('sharpnessScore', -5);
     const handleBulkSharpnessIncrease = createRelativeAdjuster('sharpnessScore', 5);
     const handleBulkSharpnessIncreaseMax = createRelativeAdjuster('sharpnessScore', 20);
+    // Extract selected image IDs for other operations (like applying bulk adjustments)
+    useEffect(() => {
+        if (eventID && firebaseUid) {
+            setIsLoading(true);
+            setError(null);
+            controllerBulk.getImageList(firebaseUid, eventID, 1)
+                .then(response => {
+                const images = response.gallery;
+                // Prepare the initial data for the batch history hook
+                const imageConfigs = images.map(img => ({
+                    imageId: img.id,
+                    adjustment: img.editor_config?.color_adjustment
+                        ? mapColorAdjustmentToAdjustmentState(img.editor_config.color_adjustment)
+                        : initialAdjustments
+                }));
+                // Populate the batch history with all fetched images
+                batchActions.setSelection(imageConfigs);
+                // Immediately clear the selection so no images are selected by default
+                batchActions.clearSelection();
+            })
+                .catch(err => {
+                console.error("Failed to fetch gallery:", err);
+                setError(err.message || "Could not load images.");
+            })
+                .finally(() => {
+                setIsLoading(false);
+            });
+        }
+    }, [eventID, firebaseUid, controllerBulk, batchActions]);
     return {
+        imageCollection,
+        isSelectedMode,
+        isLoading,
+        error,
+        selectedImageIds,
+        // Gallery Handlers
+        handleSelectedMode,
+        handleToggleSelect,
+        handlePreview,
+        handleBackCallbackBulk,
         isBulkEditing,
         selectedImages,
         imageList,
-        selectedImageIds,
+        currentBatch,
+        selectedIds,
+        allImageIds,
         adjustmentsMap,
         selectedBulkPreset,
-        handleFileChangeBulk,
-        handleToggleImageSelection,
+        handleToggleImageSelection: batchActions.toggleSelection,
         toggleBulkEditing,
         handleSelectBulkPreset,
-        handleBackCallbackBulk,
         // Bulk Adjustment Handlers
         setTempScore,
         setTintScore,

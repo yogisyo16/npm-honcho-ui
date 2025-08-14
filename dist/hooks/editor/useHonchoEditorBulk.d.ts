@@ -1,6 +1,15 @@
 import { SelectChangeEvent } from "@mui/material";
 import { AdjustmentState, ImageItem, Controller, Preset } from './useHonchoEditor';
 import { Gallery, ResponseGalleryPaging } from '../../hooks/editor/type';
+export interface PhotoData {
+    key: string;
+    src: string;
+    width: number;
+    height: number;
+    alt: string;
+    isSelected: boolean;
+    originalData: Gallery;
+}
 export interface ControllerBulk {
     onGetImage(firebaseUid: string, imageID: string): Promise<Gallery>;
     getImageList(firebaseUid: string, eventID: string, page: number): Promise<ResponseGalleryPaging>;
@@ -11,17 +20,26 @@ export interface ControllerBulk {
     deletePreset(firebaseUid: string, presetId: string): Promise<void>;
 }
 export declare function useHonchoEditorBulk(controllerBulk: Controller, eventID: string, firebaseUid: string): {
+    imageCollection: PhotoData[];
+    isSelectedMode: boolean;
+    isLoading: boolean;
+    error: string | null;
+    selectedImageIds: string[];
+    handleSelectedMode: () => void;
+    handleToggleSelect: (photoToToggle: PhotoData) => () => void;
+    handlePreview: (photo: PhotoData) => () => void;
+    handleBackCallbackBulk: () => void;
     isBulkEditing: boolean;
     selectedImages: string;
     imageList: ImageItem[];
-    selectedImageIds: Set<string>;
+    currentBatch: import("../useAdjustmentHistoryBatch").BatchAdjustmentState;
+    selectedIds: string[];
+    allImageIds: string[];
     adjustmentsMap: Map<string, AdjustmentState>;
     selectedBulkPreset: string;
-    handleFileChangeBulk: (event: React.ChangeEvent<HTMLInputElement>) => void;
     handleToggleImageSelection: (imageId: string) => void;
     toggleBulkEditing: () => void;
     handleSelectBulkPreset: (event: SelectChangeEvent<string>) => void;
-    handleBackCallbackBulk: () => void;
     setTempScore: (value: number) => void;
     setTintScore: (value: number) => void;
     setVibranceScore: (value: number) => void;
