@@ -3,15 +3,19 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useAdjustmentHistory } from '../useAdjustmentHistory';
 import { useAdjustmentHistoryBatch } from '../useAdjustmentHistoryBatch';
 // Helper function to map the API response to the format our UI component needs
-const mapGalleryToPhotoData = (gallery) => ({
-    key: gallery.id,
-    src: gallery.raw_edited?.path || gallery.download?.path || '',
-    width: gallery.raw_edited?.width || 1, // Default to 1 to prevent division by zero
-    height: gallery.raw_edited?.height || 1,
-    alt: gallery.id || 'gallery image',
-    isSelected: false, // All images start as unselected
-    originalData: gallery,
-});
+const mapGalleryToPhotoData = (gallery) => {
+    const bestAvailableImage = gallery.thumbnail || gallery.download || { path: '', width: 1, height: 1, key: gallery.id, size: 0 };
+    return {
+        key: gallery.id,
+        src: bestAvailableImage.path,
+        original: gallery.download?.path || bestAvailableImage.path,
+        width: bestAvailableImage.width || 1,
+        height: bestAvailableImage.height || 1,
+        alt: gallery.id || 'gallery image',
+        isSelected: false,
+        originalData: gallery,
+    };
+};
 const initialAdjustments = {
     tempScore: 0, tintScore: 0, vibranceScore: 0, exposureScore: 0, highlightsScore: 0, shadowsScore: 0,
     whitesScore: 0, blacksScore: 0, saturationScore: 0, contrastScore: 0, clarityScore: 0, sharpnessScore: 0,
@@ -52,17 +56,11 @@ export function useHonchoEditorBulk(controllerBulk, eventID, firebaseUid) {
         const lastSelectedId = selectedImageIds.length > 0 ? selectedImageIds[selectedImageIds.length - 1] : eventID;
         controllerBulk.handleBack(firebaseUid, lastSelectedId);
     }, [controllerBulk, firebaseUid, selectedImageIds, eventID]);
-    const handleSelectedMode = useCallback(() => {
-        setIsSelectedMode(true);
-    }, []);
+    const handleSelectedMode = useCallback(() => setIsSelectedMode(true), []);
     const handleToggleSelect = useCallback((photoToToggle) => () => {
-        setImageCollection(currentCollection => currentCollection.map(photo => photo.key === photoToToggle.key
-            ? { ...photo, isSelected: !photo.isSelected }
-            : photo));
-        // Automatically enter selection mode on first selection
-        if (!isSelectedMode) {
+        setImageCollection(current => current.map(p => p.key === photoToToggle.key ? { ...p, isSelected: !p.isSelected } : p));
+        if (!isSelectedMode)
             setIsSelectedMode(true);
-        }
     }, [isSelectedMode]);
     const handlePreview = useCallback((photo) => () => {
         console.log("Previewing image:", photo.key);

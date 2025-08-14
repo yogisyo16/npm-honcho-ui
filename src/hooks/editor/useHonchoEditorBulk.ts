@@ -4,30 +4,35 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { SelectChangeEvent } from "@mui/material";
 import { AdjustmentState, ImageItem, Controller, Preset } from './useHonchoEditor';
 import { useAdjustmentHistory } from '../useAdjustmentHistory';
-import { Gallery, ResponseGalleryPaging } from '../../hooks/editor/type'
+import { Gallery, ResponseGalleryPaging, Content } from '../../hooks/editor/type'
 import { useAdjustmentHistoryBatch, ImageAdjustmentConfig  } from '../useAdjustmentHistoryBatch';
 
 export interface PhotoData {
     key: string;
     src: string;
+    original: string;
     width: number;
     height: number;
     alt: string;
     isSelected: boolean;
-    // Include the original gallery object for full data access
     originalData: Gallery; 
 }
 
 // Helper function to map the API response to the format our UI component needs
-const mapGalleryToPhotoData = (gallery: Gallery): PhotoData => ({
-    key: gallery.id,
-    src: gallery.raw_edited?.path || gallery.download?.path || '',
-    width: gallery.raw_edited?.width || 1, // Default to 1 to prevent division by zero
-    height: gallery.raw_edited?.height || 1,
-    alt: gallery.id || 'gallery image',
-    isSelected: false, // All images start as unselected
-    originalData: gallery,
-});
+const mapGalleryToPhotoData = (gallery: Gallery): PhotoData => {
+    const bestAvailableImage: Content = gallery.thumbnail || gallery.download || { path: '', width: 1, height: 1, key: gallery.id, size: 0 };
+    
+    return {
+        key: gallery.id,
+        src: bestAvailableImage.path,
+        original: gallery.download?.path || bestAvailableImage.path,
+        width: bestAvailableImage.width || 1,
+        height: bestAvailableImage.height || 1,
+        alt: gallery.id || 'gallery image',
+        isSelected: false,
+        originalData: gallery,
+    };
+};
 
 export interface ControllerBulk {
     // Image Handling
@@ -105,22 +110,15 @@ export function useHonchoEditorBulk(controllerBulk: Controller, eventID: string,
         controllerBulk.handleBack(firebaseUid, lastSelectedId);
     }, [controllerBulk, firebaseUid, selectedImageIds, eventID]);
     
-    const handleSelectedMode = useCallback(() => {
-        setIsSelectedMode(true);
-    }, []);
+    const handleSelectedMode = useCallback(() => setIsSelectedMode(true), []);
 
     const handleToggleSelect = useCallback((photoToToggle: PhotoData) => () => {
-        setImageCollection(currentCollection =>
-            currentCollection.map(photo =>
-                photo.key === photoToToggle.key
-                    ? { ...photo, isSelected: !photo.isSelected }
-                    : photo
+        setImageCollection(current =>
+            current.map(p =>
+                p.key === photoToToggle.key ? { ...p, isSelected: !p.isSelected } : p
             )
         );
-        // Automatically enter selection mode on first selection
-        if (!isSelectedMode) {
-            setIsSelectedMode(true);
-        }
+        if (!isSelectedMode) setIsSelectedMode(true);
     }, [isSelectedMode]);
 
     const handlePreview = useCallback((photo: PhotoData) => () => {

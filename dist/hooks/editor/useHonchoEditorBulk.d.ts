@@ -4,6 +4,7 @@ import { Gallery, ResponseGalleryPaging } from '../../hooks/editor/type';
 export interface PhotoData {
     key: string;
     src: string;
+    original: string;
     width: number;
     height: number;
     alt: string;

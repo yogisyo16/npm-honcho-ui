@@ -44,6 +44,13 @@ export interface EditorConfig {
     transformation_adjustment: TransformationAdjustment[];
     watermarks: Watermark[];
 }
+export interface Content {
+    key: string;
+    path: string;
+    size: number;
+    width: number;
+    height: number;
+}
 export interface GallerySetup {
     src: string;
     original: string;
