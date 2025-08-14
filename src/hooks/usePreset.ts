@@ -155,6 +155,30 @@ export function usePreset(
         }
     }, [debugLog, handleError]);
 
+    // Fire-and-forget version of load for internal use
+    const loadInBackground = useCallback(() => {
+        if (!controllerRef.current || !firebaseUidRef.current) {
+            debugLog('Background load skipped: missing controller or firebaseUid');
+            return;
+        }
+
+        debugLog('Background loading presets...');
+        
+        // Don't set loading state for background operations
+        controllerRef.current.getPresets(firebaseUidRef.current)
+            .then(loadedPresets => {
+                setPresets(loadedPresets);
+                if (!isInitialized) {
+                    setIsInitialized(true);
+                }
+                debugLog('Background presets loaded successfully', { count: loadedPresets.length });
+            })
+            .catch(err => {
+                debugLog('Background load failed:', err);
+                // Don't set error state for background operations
+            });
+    }, [debugLog, isInitialized]);
+
     // Create a new preset
     const create = useCallback(async (name: string, settings: AdjustmentState): Promise<Preset | null> => {
         if (!controllerRef.current || !firebaseUidRef.current) {
@@ -178,26 +202,31 @@ export function usePreset(
 
         try {
             debugLog('Creating preset...', { name, settings });
-            const newPreset = await controllerRef.current.createPreset(
+            
+            // Fire the create request but don't wait for preset data in response
+            await controllerRef.current.createPreset(
                 firebaseUidRef.current,
                 name,
                 settings
             );
 
-            if (newPreset) {
-                setPresets(prev => [...prev, newPreset]);
-                debugLog('Preset created successfully', newPreset);
-                return newPreset;
-            } else {
-                throw new Error('Backend returned null preset');
-            }
+            debugLog('Preset creation request completed');
+
+            // Fire and forget: Schedule a delayed refresh to get updated preset list
+            setTimeout(() => {
+                debugLog('Refreshing presets after create (fire and forget)');
+                loadInBackground();
+            }, 500); // 500ms delay to allow backend processing
+
+            // Return a minimal success indicator since we don't have the actual preset data
+            return { id: 'pending', name, is_default: false } as Preset;
         } catch (err) {
             handleError('create preset', err);
             return null;
         } finally {
             setIsLoading(false);
         }
-    }, [presets, debugLog, handleError]);
+    }, [presets, debugLog, handleError, loadInBackground]);
 
     // Rename an existing preset
     const rename = useCallback(async (presetId: string, newName: string): Promise<boolean> => {

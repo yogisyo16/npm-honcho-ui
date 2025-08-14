@@ -35,7 +35,7 @@ export interface Controller {
 
     // Preset
     getPresets(firebaseUid: string): Promise<Preset[]>;
-    createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset>;
+    createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<void>;
     deletePreset(firebaseUid: string, presetId: string): Promise<void>;
     updatePreset(firebaseUid: string, data: Preset): Promise<void>;
 }
@@ -373,13 +373,13 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
 
         try {
             // Call the controller, which now calls the real API
-            const newPresetFromApi = await controller.createPreset(firebaseUid, presetName, currentAdjustments);
+            await controller.createPreset(firebaseUid, presetName, currentAdjustments);
             
             // If the API call was successful and returned a preset...
-            if (newPresetFromApi) {
-                // ...add the new preset from the API response to our local state
-                setPresets(prevPresets => [...prevPresets, newPresetFromApi]);
-            }
+            // if (newPresetFromApi) {
+            //     // ...add the new preset from the API response to our local state
+            //     setPresets(prevPresets => [...prevPresets, newPresetFromApi]);
+            // }
         } catch (error) {
             console.error("Failed to create preset:", error);
             // Optionally: show an error message to the user here
@@ -402,10 +402,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
 
         try {
             // RE-USE THE SAME LOGIC AS THE DESKTOP VERSION
-            const newPresetFromApi = await controller.createPreset(firebaseUid, presetName, currentAdjustments);
-            if (newPresetFromApi) {
-                setPresets(prevPresets => [...prevPresets, newPresetFromApi]);
-            }
+            await controller.createPreset(firebaseUid, presetName, currentAdjustments);
         } catch (error) {
             console.error("Failed to create mobile preset:", error);
         }
