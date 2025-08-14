@@ -251,34 +251,47 @@ export function useHonchoEditor(controller, initImageId, firebaseUid) {
     const handleCreatePreset = useCallback(async () => {
         if (!controller)
             return;
+        // The current adjustment state from the history hook
         const currentAdjustments = { ...currentAdjustmentsState };
         try {
-            const newPreset = await controller.createPreset(firebaseUid, presetName, currentAdjustments);
-            if (newPreset) {
-                // Add the new preset returned from the API to our local state
-                setPresets(prevPresets => [...prevPresets, newPreset]);
+            // Call the controller, which now calls the real API
+            const newPresetFromApi = await controller.createPreset(firebaseUid, presetName, currentAdjustments);
+            // If the API call was successful and returned a preset...
+            if (newPresetFromApi) {
+                // ...add the new preset from the API response to our local state
+                setPresets(prevPresets => [...prevPresets, newPresetFromApi]);
             }
         }
         catch (error) {
             console.error("Failed to create preset:", error);
+            // Optionally: show an error message to the user here
         }
-        console.log("Creating preset:", presetName);
-        const newPreset = { id: `preset${presets.length + 1}`, name: presetName };
-        setPresets(prevPresets => [...prevPresets, newPreset]);
+        // Close the modal and show a confirmation
         setIsPresetCreated(true);
         handleClosePresetModal();
-        setTimeout(() => setIsPresetCreated(false), 1000);
+        setTimeout(() => setIsPresetCreated(false), 1000); // Hide confirmation after 1s
     }, [controller, presetName, currentAdjustmentsState, firebaseUid]);
     const handleOpenPresetModalMobile = () => { setIsPresetCreated(false); setPresetModalOpenMobile(true); };
     const handleClosePresetModalMobile = () => setPresetModalOpenMobile(false);
-    const handleCreatePresetMobile = () => {
+    const handleCreatePresetMobile = useCallback(async () => {
+        if (!controller)
+            return;
         console.log("Creating mobile preset:", presetName);
-        const newPreset = { id: `preset${presets.length + 1}`, name: presetName };
-        setPresets(prevPresets => [...prevPresets, newPreset]);
+        const currentAdjustments = { ...currentAdjustmentsState };
+        try {
+            // RE-USE THE SAME LOGIC AS THE DESKTOP VERSION
+            const newPresetFromApi = await controller.createPreset(firebaseUid, presetName, currentAdjustments);
+            if (newPresetFromApi) {
+                setPresets(prevPresets => [...prevPresets, newPresetFromApi]);
+            }
+        }
+        catch (error) {
+            console.error("Failed to create mobile preset:", error);
+        }
         setIsPresetCreated(true);
         handleClosePresetModalMobile();
         setTimeout(() => setIsPresetCreated(false), 1000);
-    };
+    }, [controller, presetName, currentAdjustmentsState, firebaseUid]);
     const handleNameChange = (event) => setPresetName(event.target.value);
     // Watermark Handlers
     const handleOpenWatermarkView = () => setIsCreatingWatermark(true);

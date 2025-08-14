@@ -177,7 +177,7 @@ export declare function useHonchoEditor(controller: Controller, initImageId: str
     handleClosePresetModal: () => void;
     handleOpenPresetModalMobile: () => void;
     handleClosePresetModalMobile: () => void;
-    handleCreatePresetMobile: () => void;
+    handleCreatePresetMobile: () => Promise<void>;
     setPresetName: import("react").Dispatch<import("react").SetStateAction<string>>;
     handleNameChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
     isRenameModalOpen: boolean;
