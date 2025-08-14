@@ -14,7 +14,7 @@ export interface ControllerBulk {
 
     // syncConfig
     syncConfig(firebaseUid: string): Promise<void>;
-    handleBack(firebaseUid: string, eventID: string):void;
+    handleBack(firebaseUid: string, lastImageID: string):void;
 
     // Preset
     getPresets(firebaseUid: string): Promise<Preset[]>;
@@ -55,9 +55,27 @@ export function useHonchoEditorBulk(controllerBulk: Controller, eventID: string,
     const [selectedBulkPreset, setSelectedBulkPreset] = useState<string>('preset1');
 
     const handleBackCallbackBulk = useCallback(() => {
-        if (!eventID) return;
-        controllerBulk.handleBack(firebaseUid, eventID);
-    }, [controllerBulk, firebaseUid, eventID]);
+        // 1. Convert the Set of selected IDs into an array to get the last item.
+        const selectedIdsArray = Array.from(selectedImageIds);
+
+        // 2. Determine which ID to send back.
+        //    - If any images are selected, get the ID of the LAST one in the array.
+        //    - If no images are selected, fall back to using the eventID.
+        const idToSendBack = selectedIdsArray.length > 0
+            ? selectedIdsArray[selectedIdsArray.length - 1]
+            : eventID;
+
+        // 3. Check if we have an ID to send, otherwise log a warning.
+        if (!idToSendBack) {
+            console.warn("handleBack called, but no selected image ID or eventID was available.");
+            window.history.back();
+            return;
+        }
+
+        // 4. Call the controller with the chosen ID (either the last imageId or the eventId).
+        controllerBulk.handleBack(firebaseUid, idToSendBack);
+
+    }, [controllerBulk, firebaseUid, selectedImageIds, eventID]);
 
     const handleFileChangeBulk = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target?.files;
