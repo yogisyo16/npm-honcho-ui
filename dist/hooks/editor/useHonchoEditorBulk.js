@@ -52,6 +52,7 @@ export function useHonchoEditorBulk(controller, eventID, firebaseUid) {
     const handleSelectBulkPreset = (event) => setSelectedBulkPreset(event.target.value);
     // This factory creates functions that adjust a value for all selected images
     const createRelativeAdjuster = useCallback((key, amount) => () => {
+        console.debug("createRelativeAdjuster", key, amount);
         batchActions.adjustSelected({ [key]: amount });
     }, [batchActions]);
     const handleBulkTempDecreaseMax = createRelativeAdjuster('tempScore', -20);
