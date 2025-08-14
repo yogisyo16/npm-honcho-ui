@@ -23,6 +23,8 @@ export { default as HPresetOptionsMenu } from './components/editor/HPresetOption
 export { HAlertInternetBox, HAlertCopyBox, HAlertInternetConnectionBox, HAlertPresetSave } from './components/editor/HAlertBox';
 export { default as AlbumImageGallery } from './components/editor/GalleryAlbum/AlbumImageGallery';
 export { default as GalleryImageItem } from './components/editor/GalleryAlbum/ImageItem';
+export { default as SimplifiedAlbumGallery } from './components/editor/GalleryAlbum/SimplifiedAlbumGallery';
+export { default as SimplifiedImageItem } from './components/editor/GalleryAlbum/SimplifiedImageItem';
 export { useAdjustmentHistory, type UseAdjustmentHistoryReturn, type HistoryInfo, type HistoryActions, type HistoryConfig } from './hooks/useAdjustmentHistory';
 export { useAdjustmentHistoryBatch, type UseAdjustmentHistoryBatchReturn, type BatchAdjustmentState, type ImageAdjustmentConfig, type BatchHistoryInfo, type BatchHistoryActions, type BatchHistoryConfig } from './hooks/useAdjustmentHistoryBatch';
 export { default as useColors } from './themes/colors';
