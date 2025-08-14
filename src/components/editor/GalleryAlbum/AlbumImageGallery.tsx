@@ -35,6 +35,8 @@ const AlbumImageGallery: React.FC<ImageGalleryProps> = (props) => {
 		onToggleSelect,
 	} = props;
 
+    console.log("imageCollection: ", imageCollection);
+
 	return (
 		<section>
 			<ResponsiveMasonry columnsCountBreakPoints={{ 750: 2, 900: 4 }}>
