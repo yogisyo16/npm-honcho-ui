@@ -64,7 +64,6 @@ const GalleryImageItem = (props) => {
         console.debug("handleImageSelectedIconClick");
         if (!props.isFullScreenMode) {
             if (!props.isSelectedMode) {
-                props.onSelectedMode();
             }
             props.onToggleSelect();
         }

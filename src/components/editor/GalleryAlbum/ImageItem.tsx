@@ -48,7 +48,6 @@ interface Props {
 	isSelected?: boolean;
 	isHiddenGallery: boolean;
 	onToggleSelect: () => void;
-	onSelectedMode: () => void;
 
 	// NEW: Editor interceptor props
 	enableEditor?: boolean;
@@ -108,7 +107,6 @@ const GalleryImageItem = (props: Props) => {
 		console.debug("handleImageSelectedIconClick");
 		if (!props.isFullScreenMode) {
 			if (!props.isSelectedMode) {
-				props.onSelectedMode();
 			}
 			props.onToggleSelect();
 		}

@@ -10,7 +10,6 @@ interface ImageGalleryProps {
     isSelectedMode: boolean;
     isHiddenGallery: boolean;
     enableEditor: boolean;
-    onSelectedMode: () => void;
     onToggleSelect: (photo: ExtendedPhotoData) => void;
 }
 export declare const AlbumImageGallery: React.FC<ImageGalleryProps>;
