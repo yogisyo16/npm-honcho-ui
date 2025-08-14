@@ -106,7 +106,6 @@ const GalleryImageItem = (props) => {
         transition: ".3s",
         "&:-webkit-transition": { transition: ".3s" },
         padding: { xs: "13px 12px", sm: "21.31px 25.56px 21.32px 27.68px" },
-        backgroundColor: theme.palette.light["Surface-Variant-2"],
     }), [
         margin,
         commonStyle,
