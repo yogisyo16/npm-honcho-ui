@@ -79,6 +79,7 @@ const AlbumImageGallery: React.FC<ImageGalleryProps> = (props) => {
 									enableEditor={enableEditor}
 									adjustments={photo.adjustments}
 									frame={photo.frame}
+                                    data={photo}
 								/>
 							</Box>
 						);

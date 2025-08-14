@@ -27,7 +27,7 @@ const AlbumImageGallery = (props) => {
                     };
                     return (_jsx(Box, { sx: { m: 0.5 }, children: _jsx(GalleryImageItem, { margin: "0px", index: index, 
                             // UPDATED: Pass the new, correctly-typed object.
-                            photo: imageItemPhotoProps, direction: "column", isFullScreenMode: false, isSelected: photo.isSelected, isSelectedMode: isSelectedMode, isHiddenGallery: isHiddenGallery, onPreview: onPreview(photo), onSelectedMode: onSelectedMode, onToggleSelect: onToggleSelect(photo), enableEditor: enableEditor, adjustments: photo.adjustments, frame: photo.frame }) }, photo.key));
+                            photo: imageItemPhotoProps, direction: "column", isFullScreenMode: false, isSelected: photo.isSelected, isSelectedMode: isSelectedMode, isHiddenGallery: isHiddenGallery, onPreview: onPreview(photo), onSelectedMode: onSelectedMode, onToggleSelect: onToggleSelect(photo), enableEditor: enableEditor, adjustments: photo.adjustments, frame: photo.frame, data: photo }) }, photo.key));
                 }) }) }) }));
 };
 export default AlbumImageGallery;
