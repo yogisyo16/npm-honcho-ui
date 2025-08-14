@@ -5,7 +5,7 @@ export interface ControllerBulk {
     onGetImage(firebaseUid: string, imageID: string): Promise<Gallery>;
     getImageList(firebaseUid: string, eventID: string, page: number): Promise<ResponseGalleryPaging>;
     syncConfig(firebaseUid: string): Promise<void>;
-    handleBack(firebaseUid: string, eventID: string): void;
+    handleBack(firebaseUid: string, lastImageID: string): void;
     getPresets(firebaseUid: string): Promise<Preset[]>;
     createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset>;
     deletePreset(firebaseUid: string, presetId: string): Promise<void>;

@@ -21,10 +21,23 @@ export function useHonchoEditorBulk(controllerBulk, eventID, firebaseUid) {
     const [adjustmentsMap, setAdjustmentsMap] = useState(new Map());
     const [selectedBulkPreset, setSelectedBulkPreset] = useState('preset1');
     const handleBackCallbackBulk = useCallback(() => {
-        if (!eventID)
+        // 1. Convert the Set of selected IDs into an array to get the last item.
+        const selectedIdsArray = Array.from(selectedImageIds);
+        // 2. Determine which ID to send back.
+        //    - If any images are selected, get the ID of the LAST one in the array.
+        //    - If no images are selected, fall back to using the eventID.
+        const idToSendBack = selectedIdsArray.length > 0
+            ? selectedIdsArray[selectedIdsArray.length - 1]
+            : eventID;
+        // 3. Check if we have an ID to send, otherwise log a warning.
+        if (!idToSendBack) {
+            console.warn("handleBack called, but no selected image ID or eventID was available.");
+            window.history.back();
             return;
-        controllerBulk.handleBack(firebaseUid, eventID);
-    }, [controllerBulk, firebaseUid, eventID]);
+        }
+        // 4. Call the controller with the chosen ID (either the last imageId or the eventId).
+        controllerBulk.handleBack(firebaseUid, idToSendBack);
+    }, [controllerBulk, firebaseUid, selectedImageIds, eventID]);
     const handleFileChangeBulk = (event) => {
         const files = event.target?.files;
         if (!files || files.length <= 1) {
