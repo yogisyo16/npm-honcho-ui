@@ -7,7 +7,7 @@ export interface PhotoData {
     original: string;
     width: number;
     height: number;
-    alt: string;
+    alt?: string;
     isSelected: boolean;
     originalData: Gallery;
 }
