@@ -8,7 +8,7 @@ import { Gallery, GallerySetup } from "../../../hooks/editor/type";
 import { AdjustmentValues } from "../../../lib/editor/honcho-editor"; // Adjust path if needed
 import type { PhotoData as BulkPhotoData } from "../../../hooks/editor/useHonchoEditorBulk";
 
-interface ExtendedPhotoData extends BulkPhotoData {
+export interface ExtendedPhotoData extends BulkPhotoData {
     adjustments?: Partial<AdjustmentValues>;
     frame?: string;
 }
@@ -19,12 +19,12 @@ interface ImageGalleryProps {
 	isSelectedMode: boolean;
 	isHiddenGallery: boolean;
 	enableEditor: boolean; // Add prop to control editor state
-	onPreview: (photo: ExtendedPhotoData) => () => void;
+	onPreview: (photo: ExtendedPhotoData) => void;
 	onSelectedMode: () => void;
-	onToggleSelect: (photo: ExtendedPhotoData) => () => void;
+	onToggleSelect: (photo: ExtendedPhotoData) => void;
 }
 
-const AlbumImageGallery: React.FC<ImageGalleryProps> = (props) => {
+export const AlbumImageGallery: React.FC<ImageGalleryProps> = (props) => {
 	const {
 		imageCollection,
 		isSelectedMode,
@@ -73,9 +73,9 @@ const AlbumImageGallery: React.FC<ImageGalleryProps> = (props) => {
 									isSelected={photo.isSelected}
 									isSelectedMode={isSelectedMode}
 									isHiddenGallery={isHiddenGallery}
-									onPreview={onPreview(photo)}
+									onPreview={() => { onPreview(photo) }}
 									onSelectedMode={onSelectedMode}
-									onToggleSelect={onToggleSelect(photo)}
+									onToggleSelect={()=> {onToggleSelect(photo)}}
 									enableEditor={enableEditor}
 									adjustments={photo.adjustments}
 									frame={photo.frame}
@@ -89,5 +89,3 @@ const AlbumImageGallery: React.FC<ImageGalleryProps> = (props) => {
 		</Stack>
 	);
 };
-
-export default AlbumImageGallery;

@@ -18,7 +18,7 @@ export { default as HWatermarkView } from './components/editor/HWatermarkView';
 export { default as HModalMobile } from './components/editor/HModalMobile';
 export { default as HPresetOptionsMenu } from './components/editor/HPresetOptionMenu';
 export { HAlertInternetBox, HAlertCopyBox, HAlertInternetConnectionBox, HAlertPresetSave } from './components/editor/HAlertBox';
-export { default as AlbumImageGallery } from './components/editor/GalleryAlbum/AlbumImageGallery';
+export { AlbumImageGallery } from './components/editor/GalleryAlbum/AlbumImageGallery';
 export { default as GalleryImageItem } from './components/editor/GalleryAlbum/ImageItem';
 export { default as SimplifiedAlbumGallery } from './components/editor/GalleryAlbum/SimplifiedAlbumGallery';
 export { default as SimplifiedImageItem } from './components/editor/GalleryAlbum/SimplifiedImageItem';

@@ -3,7 +3,7 @@ import { jsx as _jsx } from "react/jsx-runtime";
 import { Box, Stack } from "@mui/material";
 import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
 import GalleryImageItem from "./ImageItem";
-const AlbumImageGallery = (props) => {
+export const AlbumImageGallery = (props) => {
     const { imageCollection, isSelectedMode, isHiddenGallery, enableEditor, // Destructure the new prop
     onPreview, onSelectedMode, onToggleSelect, } = props;
     console.log("imageCollection: ", imageCollection);
@@ -27,7 +27,6 @@ const AlbumImageGallery = (props) => {
                     };
                     return (_jsx(Box, { sx: { m: 0.5 }, children: _jsx(GalleryImageItem, { margin: "0px", index: index, 
                             // UPDATED: Pass the new, correctly-typed object.
-                            photo: imageItemPhotoProps, direction: "column", isFullScreenMode: false, isSelected: photo.isSelected, isSelectedMode: isSelectedMode, isHiddenGallery: isHiddenGallery, onPreview: onPreview(photo), onSelectedMode: onSelectedMode, onToggleSelect: onToggleSelect(photo), enableEditor: enableEditor, adjustments: photo.adjustments, frame: photo.frame, data: photo }) }, photo.key));
+                            photo: imageItemPhotoProps, direction: "column", isFullScreenMode: false, isSelected: photo.isSelected, isSelectedMode: isSelectedMode, isHiddenGallery: isHiddenGallery, onPreview: () => { onPreview(photo); }, onSelectedMode: onSelectedMode, onToggleSelect: () => { onToggleSelect(photo); }, enableEditor: enableEditor, adjustments: photo.adjustments, frame: photo.frame, data: photo }) }, photo.key));
                 }) }) }) }));
 };
-export default AlbumImageGallery;
