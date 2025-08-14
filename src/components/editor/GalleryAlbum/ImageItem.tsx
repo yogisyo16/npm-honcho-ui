@@ -199,7 +199,7 @@ const GalleryImageItem = (props: Props) => {
 	]);
 
 	return (
-		<Box id={"Box_image"} key={photo.key} className={"image"}>
+		<Box id={"Box_image"} key={photo.key} sx={boxOuterSx} className={"image"}>
 			{!props.isHiddenGallery &&
 				(hasAdjustments && isSelected ? (
 					<Box

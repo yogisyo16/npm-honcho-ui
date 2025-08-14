@@ -140,7 +140,7 @@ const GalleryImageItem = (props) => {
         margin,
         props.isSelected,
     ]);
-    return (_jsxs(Box, { id: "Box_image", className: "image", children: [!props.isHiddenGallery &&
+    return (_jsxs(Box, { id: "Box_image", sx: boxOuterSx, className: "image", children: [!props.isHiddenGallery &&
                 (hasAdjustments && isSelected ? (_jsx(Box, { color: "primary.dark1", onClick: handleImageSelectedIconClick, sx: {
                         position: "absolute",
                         // width: "19px",
