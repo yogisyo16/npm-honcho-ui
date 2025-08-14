@@ -37,6 +37,7 @@ export interface Controller {
     getPresets(firebaseUid: string): Promise<Preset[]>;
     createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset>;
     deletePreset(firebaseUid: string, presetId: string): Promise<void>;
+    updatePreset(firebaseUid: string, data: Preset): Promise<void>;
 }
 
 export type AdjustmentState = {
@@ -57,6 +58,19 @@ export type AdjustmentState = {
 export type Preset = {
     id: string;
     name: string;
+    is_default: boolean;
+    temperature: number;
+    tint: number;
+    saturation: number;
+    vibrance: number;
+    exposure: number;
+    contrast: number;
+    highlights: number;
+    shadows: number;
+    whites: number;
+    blacks: number;
+    clarity: number;
+    sharpness: number;
 }
 
 // Bulk Image List
