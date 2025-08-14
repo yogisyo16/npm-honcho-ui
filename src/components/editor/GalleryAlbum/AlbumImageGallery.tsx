@@ -6,24 +6,22 @@ import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
 import GalleryImageItem from "./ImageItem";
 import { Gallery, GallerySetup } from "../../../hooks/editor/type";
 import { AdjustmentValues } from "../../../lib/editor/honcho-editor"; // Adjust path if needed
+import type { PhotoData as BulkPhotoData } from "../../../hooks/editor/useHonchoEditorBulk";
 
-// NEW: Define a more specific type for the photo object
-// This ensures each photo can carry its own adjustment and frame data.
-interface PhotoData extends GallerySetup {
-	adjustments?: Partial<AdjustmentValues>;
-	frame?: string;
-    originalData?: Gallery;
+interface ExtendedPhotoData extends BulkPhotoData {
+    adjustments?: Partial<AdjustmentValues>;
+    frame?: string;
 }
 
 // UPDATED: The main props interface for the gallery
 interface ImageGalleryProps {
-	imageCollection: PhotoData[]; // Use the more specific type
+	imageCollection: ExtendedPhotoData[]; // Use the more specific type
 	isSelectedMode: boolean;
 	isHiddenGallery: boolean;
 	enableEditor: boolean; // Add prop to control editor state
-	onPreview: (photo: PhotoData) => () => void;
+	onPreview: (photo: ExtendedPhotoData) => () => void;
 	onSelectedMode: () => void;
-	onToggleSelect: (photo: PhotoData) => () => void;
+	onToggleSelect: (photo: ExtendedPhotoData) => () => void;
 }
 
 const AlbumImageGallery: React.FC<ImageGalleryProps> = (props) => {
