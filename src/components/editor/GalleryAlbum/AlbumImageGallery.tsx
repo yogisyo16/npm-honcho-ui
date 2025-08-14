@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Box } from "@mui/material";
+import { Box, Stack } from "@mui/material";
 import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
 import GalleryImageItem from "./ImageItem";
 import { Gallery, GallerySetup } from "../../../hooks/editor/type";
@@ -38,7 +38,7 @@ const AlbumImageGallery: React.FC<ImageGalleryProps> = (props) => {
     console.log("imageCollection: ", imageCollection);
 
 	return (
-		<section style={{ width: '100%', maxHeight: '100%', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+		<Stack sx={{ width: '100%', maxHeight: '100%', overflowY: 'auto'}}>
 			<ResponsiveMasonry columnsCountBreakPoints={{ 750: 2, 900: 4 }}>
 				<Masonry>
 					{imageCollection.map((photo, index) => {
@@ -86,7 +86,7 @@ const AlbumImageGallery: React.FC<ImageGalleryProps> = (props) => {
 					})}
 				</Masonry>
 			</ResponsiveMasonry>
-		</section>
+		</Stack>
 	);
 };
 

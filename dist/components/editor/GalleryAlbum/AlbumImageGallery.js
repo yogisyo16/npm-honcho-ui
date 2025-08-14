@@ -1,13 +1,13 @@
 "use client";
 import { jsx as _jsx } from "react/jsx-runtime";
-import { Box } from "@mui/material";
+import { Box, Stack } from "@mui/material";
 import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
 import GalleryImageItem from "./ImageItem";
 const AlbumImageGallery = (props) => {
     const { imageCollection, isSelectedMode, isHiddenGallery, enableEditor, // Destructure the new prop
     onPreview, onSelectedMode, onToggleSelect, } = props;
     console.log("imageCollection: ", imageCollection);
-    return (_jsx("section", { style: { width: '100%', maxHeight: '100%', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }, children: _jsx(ResponsiveMasonry, { columnsCountBreakPoints: { 750: 2, 900: 4 }, children: _jsx(Masonry, { children: imageCollection.map((photo, index) => {
+    return (_jsx(Stack, { sx: { width: '100%', maxHeight: '100%', overflowY: 'auto' }, children: _jsx(ResponsiveMasonry, { columnsCountBreakPoints: { 750: 2, 900: 4 }, children: _jsx(Masonry, { children: imageCollection.map((photo, index) => {
                     // This guard clause is still important for runtime safety.
                     if (!photo.key || !photo.src) {
                         console.warn("Skipping item without a key or src:", photo);
