@@ -39,6 +39,7 @@ interface Props {
 	margin?: any;
 	index: number;
 	photo: PhotoProps<GallerySetup>;
+	data: GallerySetup;
 	// onClick: renderImageClickHandler | null
 	direction: "row" | "column";
 
@@ -57,8 +58,9 @@ interface Props {
 }
 
 const GalleryImageItem = (props: Props) => {
-	const { photo, margin, adjustments, isSelected = false } = props;
+	const { photo, margin, adjustments, isSelected = false, data } = props;
 	const theme = useTheme();
+	const imageData = data;
 	
 	const hasAdjustments = useMemo(() => {
         if (!adjustments) return false;
@@ -245,9 +247,9 @@ const GalleryImageItem = (props: Props) => {
 				component="img"
 				className="image"
 				loading="lazy"
-				alt={photo.alt ?? "Image"}
+				alt={imageData.alt ?? "Image"}
 				sx={imageSx}
-				src={photo.src}
+				src={imageData.src}
 				width="100%"
 				onClick={handleImageClick}
 			/>
