@@ -6,7 +6,6 @@ interface PhotoProps<T> {
     width: number;
     height: number;
     key: string;
-    photo?: T;
 }
 interface Props {
     margin?: any;

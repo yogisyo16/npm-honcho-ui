@@ -23,6 +23,7 @@ const GalleryImageItem = (props) => {
     const { photo, margin, adjustments, isSelected = false, data } = props;
     const theme = useTheme();
     const imageData = data;
+    console.debug("Image src", imageData.src);
     const hasAdjustments = useMemo(() => {
         if (!adjustments)
             return false;
