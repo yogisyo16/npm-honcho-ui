@@ -20,8 +20,9 @@ const selectedImgStyle = {
     // transition: "transform .135s cubic-bezier(0.0,0.0,0.2,1),opacity linear .15s"
 };
 const GalleryImageItem = (props) => {
-    const { photo, margin, adjustments, isSelected = false } = props;
+    const { photo, margin, adjustments, isSelected = false, data } = props;
     const theme = useTheme();
+    const imageData = data;
     const hasAdjustments = useMemo(() => {
         if (!adjustments)
             return false;
@@ -159,6 +160,6 @@ const GalleryImageItem = (props) => {
                             xs: props.isSelectedMode ? "visible" : "hidden",
                             sm: "visible",
                         },
-                    }, className: "checkbox", children: _jsx(TickCircle, { style: { width: "24px", height: "24px" }, color: "white" }) }))), _jsx(CardMedia, { id: "card_media", component: "img", className: "image", loading: "lazy", alt: photo.alt ?? "Image", sx: imageSx, src: photo.src, width: "100%", onClick: handleImageClick })] }, photo.key));
+                    }, className: "checkbox", children: _jsx(TickCircle, { style: { width: "24px", height: "24px" }, color: "white" }) }))), _jsx(CardMedia, { id: "card_media", component: "img", className: "image", loading: "lazy", alt: imageData.alt ?? "Image", sx: imageSx, src: imageData.src, width: "100%", onClick: handleImageClick })] }, photo.key));
 };
 export default GalleryImageItem;

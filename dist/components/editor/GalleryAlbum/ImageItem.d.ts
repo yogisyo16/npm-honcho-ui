@@ -12,6 +12,7 @@ interface Props {
     margin?: any;
     index: number;
     photo: PhotoProps<GallerySetup>;
+    data: GallerySetup;
     direction: "row" | "column";
     isSelectedMode: boolean;
     isFullScreenMode: boolean;
