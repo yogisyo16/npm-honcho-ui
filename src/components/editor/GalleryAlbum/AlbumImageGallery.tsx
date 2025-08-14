@@ -38,7 +38,7 @@ const AlbumImageGallery: React.FC<ImageGalleryProps> = (props) => {
     console.log("imageCollection: ", imageCollection);
 
 	return (
-		<section style={{ width: '100%', maxHeight: '100%', overflowY: 'auto' }}>
+		<section style={{ width: '100%', maxHeight: '100%', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
 			<ResponsiveMasonry columnsCountBreakPoints={{ 750: 2, 900: 4 }}>
 				<Masonry>
 					{imageCollection.map((photo, index) => {
