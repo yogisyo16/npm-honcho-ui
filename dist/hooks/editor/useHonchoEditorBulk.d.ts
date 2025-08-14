@@ -1,6 +1,7 @@
 import { SelectChangeEvent } from "@mui/material";
-import { AdjustmentState, ImageItem, Controller, Preset } from './useHonchoEditor';
+import { AdjustmentState, Controller, Preset } from './useHonchoEditor';
 import { Gallery, ResponseGalleryPaging } from '../../hooks/editor/type';
+import { AdjustmentValues } from "../../lib/editor/honcho-editor";
 export interface PhotoData {
     key: string;
     src: string;
@@ -9,7 +10,7 @@ export interface PhotoData {
     height: number;
     alt: string;
     isSelected: boolean;
-    originalData: Gallery;
+    adjustments?: Partial<AdjustmentValues>;
 }
 export interface ControllerBulk {
     onGetImage(firebaseUid: string, imageID: string): Promise<Gallery>;
@@ -20,39 +21,15 @@ export interface ControllerBulk {
     createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset>;
     deletePreset(firebaseUid: string, presetId: string): Promise<void>;
 }
-export declare function useHonchoEditorBulk(controllerBulk: Controller, eventID: string, firebaseUid: string): {
+export declare function useHonchoEditorBulk(controller: Controller, eventID: string, firebaseUid: string): {
     imageCollection: PhotoData[];
-    isSelectedMode: boolean;
     isLoading: boolean;
     error: string | null;
-    selectedImageIds: string[];
-    handleSelectedMode: () => void;
-    handleToggleSelect: (photoToToggle: PhotoData) => () => void;
-    handlePreview: (photo: PhotoData) => () => void;
-    handleBackCallbackBulk: () => void;
-    isBulkEditing: boolean;
-    selectedImages: string;
-    imageList: ImageItem[];
-    currentBatch: import("../useAdjustmentHistoryBatch").BatchAdjustmentState;
     selectedIds: string[];
-    allImageIds: string[];
-    adjustmentsMap: Map<string, AdjustmentState>;
+    handleBackCallbackBulk: () => void;
     selectedBulkPreset: string;
     handleToggleImageSelection: (imageId: string) => void;
-    toggleBulkEditing: () => void;
     handleSelectBulkPreset: (event: SelectChangeEvent<string>) => void;
-    setTempScore: (value: number) => void;
-    setTintScore: (value: number) => void;
-    setVibranceScore: (value: number) => void;
-    setSaturationScore: (value: number) => void;
-    setExposureScore: (value: number) => void;
-    setHighlightsScore: (value: number) => void;
-    setShadowsScore: (value: number) => void;
-    setWhitesScore: (value: number) => void;
-    setBlacksScore: (value: number) => void;
-    setContrastScore: (value: number) => void;
-    setClarityScore: (value: number) => void;
-    setSharpnessScore: (value: number) => void;
     handleBulkTempDecreaseMax: () => void;
     handleBulkTempDecrease: () => void;
     handleBulkTempIncrease: () => void;

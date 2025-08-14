@@ -32,6 +32,9 @@ export { default as AlbumImageGallery } from './components/editor/GalleryAlbum/A
 export { default as GalleryImageItem } from './components/editor/GalleryAlbum/ImageItem';
 export { default as SimplifiedAlbumGallery } from './components/editor/GalleryAlbum/SimplifiedAlbumGallery';
 export { default as SimplifiedImageItem } from './components/editor/GalleryAlbum/SimplifiedImageItem';
+export { EditorProvider, useEditorContext } from './lib/context/EditorContext';
+export { useImageProcessor } from './lib/hooks/useImageProcessor';
+export { useEditorHeadless } from './lib/hooks/useEditorHeadless';
 
 // --- History Hooks ---
 export { 
