@@ -52,6 +52,15 @@ export {
   type BatchHistoryConfig
 } from './hooks/useAdjustmentHistoryBatch';
 
+// --- Preset Hook ---
+export {
+  usePreset,
+  type UsePresetReturn,
+  type PresetInfo,
+  type PresetActions,
+  type PresetOptions
+} from './hooks/usePreset';
+
 // --- Theme & Utils ---
 export { default as useColors } from './themes/colors';
 export { default as useHonchoTypography } from './themes/honchoTheme';
