@@ -49,6 +49,7 @@
   "keywords": [],
   "author": "",
   "dependencies": {
+    "iconsax-react": "^0.0.8",
     "react-responsive-masonry": "^2.7.1"
   }
 }
