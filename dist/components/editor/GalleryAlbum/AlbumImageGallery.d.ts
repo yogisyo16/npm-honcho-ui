@@ -1,9 +1,10 @@
 import React from "react";
-import { GallerySetup } from "../../../hooks/editor/type";
+import { Gallery, GallerySetup } from "../../../hooks/editor/type";
 import { AdjustmentValues } from "../../../lib/editor/honcho-editor";
 interface PhotoData extends GallerySetup {
     adjustments?: Partial<AdjustmentValues>;
     frame?: string;
+    originalData: Gallery;
 }
 interface ImageGalleryProps {
     imageCollection: PhotoData[];

@@ -4,7 +4,7 @@ import React from "react";
 import { Box } from "@mui/material";
 import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
 import GalleryImageItem from "./ImageItem";
-import { GallerySetup } from "../../../hooks/editor/type";
+import { Gallery, GallerySetup } from "../../../hooks/editor/type";
 import { AdjustmentValues } from "../../../lib/editor/honcho-editor"; // Adjust path if needed
 
 // NEW: Define a more specific type for the photo object
@@ -12,6 +12,7 @@ import { AdjustmentValues } from "../../../lib/editor/honcho-editor"; // Adjust 
 interface PhotoData extends GallerySetup {
 	adjustments?: Partial<AdjustmentValues>;
 	frame?: string;
+    originalData: Gallery;
 }
 
 // UPDATED: The main props interface for the gallery
