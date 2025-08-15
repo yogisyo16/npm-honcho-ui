@@ -19,7 +19,7 @@ export default function HImageEditorBulkDekstop(props) {
                     // pl: "20px"
                 }, children: _jsxs(Stack, { direction: "row", sx: { height: '100%', pl: "0px" }, children: [_jsxs(Stack, { direction: "column", sx: { width: 'calc(100% - 60px)', height: '95%' }, children: [_jsx(Stack, { sx: { flexGrow: 1, overflowY: 'auto', pl: '0px', pr: '16px', msOverflowStyle: 'none', scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }, children: props.children }), _jsx(Stack, { sx: {
                                         flexShrink: 0,
-                                        p: '0px 25px',
+                                        p: '0px 12px',
                                     }, children: props.footer })] }), _jsxs(Stack, { justifyContent: "flex-start", spacing: "15px", sx: {
                                 width: '10px',
                                 flexShrink: 0,

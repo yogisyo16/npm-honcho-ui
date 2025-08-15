@@ -46,7 +46,7 @@ export default function HImageEditorBulkDekstop(props: Props) {
                             </Stack>
                             <Stack sx={{
                                 flexShrink: 0,
-                                p: '0px 25px',
+                                p: '0px 12px',
                             }}>
                                 {props.footer}
                             </Stack>
