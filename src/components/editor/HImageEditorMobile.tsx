@@ -62,7 +62,7 @@ interface Props {
 // Data structure for the sub-navigation tabs
 const subTabs: { [key: string]: { value: string; label: string, inactiveIcon?: string, activeIcon?: string }[] } = {
     colorAdjustment: [
-        { value: "color", label: "Color", inactiveIcon: "/v1/svg/white-balance-inactive-mobile.svg", activeIcon: "/v1/svg/white-balance-active-mobile.svg" },
+        { value: "color", label: "Color", inactiveIcon: "/v1/svg/new-mobile-coloAdjustment-notpress.svg", activeIcon: "/v1/svg/new-mobile-coloAdjustment-presssvg.svg" },
         { value: "light", label: "Light", inactiveIcon: "/v1/svg/light-inactive-mobile.svg", activeIcon: "/v1/svg/light-active-mobile.svg" },
         // { value: "details", label: "Details", inactiveIcon: "/v1/svg/details-inactive-mobile.svg", activeIcon: "/v1/svg/details-active-mobile.svg"},
     ],
