@@ -28,7 +28,7 @@ export default function HImageEditorBulkDekstop(props: Props) {
                     elevation={3}
                     sx={{
                         position: 'inherit',
-                        right: '40px',
+                        right: '10px',
                         top: '55px',
                         width: '320px',
                         height: 'calc(100vh - 70px)',

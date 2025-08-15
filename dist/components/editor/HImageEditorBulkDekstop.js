@@ -8,7 +8,7 @@ export default function HImageEditorBulkDekstop(props) {
     const isZoomMenuOpen = Boolean(props.anchorElZoom);
     return (_jsx(_Fragment, { children: _jsx(Slide, { direction: "left", in: props.isPanelOpen, mountOnEnter: true, unmountOnExit: true, children: _jsx(Paper, { elevation: 3, sx: {
                     position: 'inherit',
-                    right: '40px',
+                    right: '10px',
                     top: '55px',
                     width: '320px',
                     height: 'calc(100vh - 70px)',
