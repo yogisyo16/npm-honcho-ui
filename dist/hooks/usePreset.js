@@ -131,13 +131,33 @@ export function usePreset(controller, firebaseUid, options = {}) {
             // Fire the create request but don't wait for preset data in response
             await controllerRef.current.createPreset(firebaseUidRef.current, name, settings);
             debugLog('Preset creation request completed');
+            const newPreset = {
+                id: `temp-${Date.now()}`, // Use a temporary ID
+                name: name,
+                is_default: false,
+                temperature: settings.tempScore,
+                tint: settings.tintScore,
+                saturation: settings.saturationScore,
+                vibrance: settings.vibranceScore,
+                exposure: settings.exposureScore,
+                contrast: settings.contrastScore,
+                highlights: settings.highlightsScore,
+                shadows: settings.shadowsScore,
+                whites: settings.whitesScore,
+                blacks: settings.blacksScore,
+                clarity: settings.clarityScore,
+                sharpness: settings.sharpnessScore,
+            };
+            // Add the new preset to the local state immediately
+            setPresets(prev => [...prev, newPreset]);
             // Fire and forget: Schedule a delayed refresh to get updated preset list
-            setTimeout(() => {
-                debugLog('Refreshing presets after create (fire and forget)');
-                loadInBackground();
-            }, 500); // 500ms delay to allow backend processing
+            // setTimeout(() => {
+            //     debugLog('Refreshing presets after create (fire and forget)');
+            //     loadInBackground();
+            // }, 500); // 500ms delay to allow backend processing
             // Return a minimal success indicator since we don't have the actual preset data
-            return { id: 'pending', name, is_default: false };
+            // return { id: 'pending', name, is_default: false } as Preset;
+            return newPreset;
         }
         catch (err) {
             handleError('create preset', err);
@@ -146,7 +166,8 @@ export function usePreset(controller, firebaseUid, options = {}) {
         finally {
             setIsLoading(false);
         }
-    }, [presets, debugLog, handleError, loadInBackground]);
+        // loadInBackground
+    }, [presets, debugLog, handleError]);
     // Rename an existing preset
     const rename = useCallback(async (presetId, newName) => {
         if (!controllerRef.current || !firebaseUidRef.current) {
