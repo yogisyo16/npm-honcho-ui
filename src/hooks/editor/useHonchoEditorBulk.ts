@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { SelectChangeEvent } from "@mui/material";
 import { AdjustmentState, Controller, Preset } from './useHonchoEditor';
 import { ColorAdjustment, Gallery, ResponseGalleryPaging } from '../../hooks/editor/type'
 import { useAdjustmentHistoryBatch, ImageAdjustmentConfig  } from '../useAdjustmentHistoryBatch';
 import { AdjustmentValues } from "../../lib/editor/honcho-editor";
+import { usePaging } from "../usePaging";
 
 export interface PhotoData {
     key: string;
@@ -75,27 +76,43 @@ function mapColorAdjustmentToAdjustmentState(adj: ColorAdjustment | undefined): 
 
 export function useHonchoEditorBulk(controller: Controller, eventID: string, firebaseUid: string) {
     const { currentBatch, selectedIds, actions: batchActions } = useAdjustmentHistoryBatch();
+    const { images, info, actions } = usePaging(controller, firebaseUid, eventID);
 
-    // State for Bulk Editing
-    const [imageCollection, setImageCollection] = useState<Gallery[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [page, setPage] = useState(1);
-    const [isFetchingMore, setIsFetchingMore] = useState(false);
-    const [hasMore, setHasMore] = useState(true);
+    // Track which images have been synced to prevent loops
+    const lastSyncedImageIds = useRef<Set<string>>(new Set());
 
+    // State for Bulk Editing  
     const [selectedBulkPreset, setSelectedBulkPreset] = useState<string>('preset1');
 
+    // Use loading states from usePaging instead of local state
+    const isLoading = info.isLoading;
+    const error = info.error;
+    const hasMore = info.hasMore;
+
     const imageData = useMemo(() => {
-        return imageCollection.map(item => {
-            console.log("item FROM USEHONCHOBULK: ", item);
-            return mapGalleryToPhotoData(item, selectedIds);
-        }).map(item => {
-            const adjustment = currentBatch.allImages[item.key];
-            console.log("adjustment FROM USEHONCHOBULK: ", adjustment);
-            return adjustment ? { ...item, ...adjustment } : item;
+        return images.map(item => {
+            const basePhoto = mapGalleryToPhotoData(item, selectedIds);
+            const batchAdjustment = currentBatch.allImages[item.id];
+            
+            // Merge batch adjustments over backend adjustments
+            return batchAdjustment ? { ...basePhoto, ...batchAdjustment } : basePhoto;
         });
-    }, [imageCollection, selectedIds, currentBatch.allImages]);
+    }, [images, selectedIds, currentBatch.allImages]);
+
+    // Safe sync: Only sync new images to prevent infinite loops
+    useEffect(() => {
+        if (images.length === 0) return;
+        
+        // Check if we have new images that haven't been synced
+        const currentImageIds = new Set(images.map(img => img.id));
+        const hasNewImages = images.some(img => !lastSyncedImageIds.current.has(img.id));
+        
+        if (hasNewImages) {
+            console.log('[useHonchoEditorBulk] Syncing new images to batch:', images.length);
+            batchActions.syncAdjustment(images.map(mapToImageAdjustmentConfig));
+            lastSyncedImageIds.current = currentImageIds;
+        }
+    }, [images, batchActions]);
 
     const handleBackCallbackBulk = useCallback(() => {
         const lastSelectedId = selectedIds.length > 0 ? selectedIds[selectedIds.length - 1] : "";
@@ -209,26 +226,8 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
     //     }
     // }, [isFetchingMore, hasMore, page, loadImages]);
 
-    useEffect(() => {
-        if (eventID && firebaseUid) {
-            setIsLoading(true);
-            setError(null);
-            controller.getImageList(firebaseUid, eventID, 2)
-                .then(response => {
-                    // TODO need do pagination for this one
-                    batchActions.syncAdjustment(response.gallery.map(mapToImageAdjustmentConfig));
-                    setImageCollection(response.gallery);
-                })
-                .catch(err => {
-                    console.error("Failed to fetch image list:", err);
-                    setError("Could not load images.");
-                })
-                .finally(() => {
-                    setIsLoading(false);
-                });
-            console.log("Image data FROM USEHONCHOBULK: ", imageData);
-        }
-    }, [eventID, firebaseUid, controller]);
+    // Note: Image loading is now handled by usePaging hook
+    // The sync logic above handles syncing loaded images to batch state
 
     // useEffect(() => {
     //     if (eventID && firebaseUid) {
@@ -250,6 +249,8 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
 
         selectedBulkPreset,
         handleToggleImageSelection: batchActions.toggleSelection,
+        handleLoadMore: actions.loadMore,
+        handleRefresh: actions.refresh,
 
         handleSelectBulkPreset,
         // Adjustment

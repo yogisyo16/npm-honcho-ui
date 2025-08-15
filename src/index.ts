@@ -61,6 +61,15 @@ export {
   type PresetOptions
 } from './hooks/usePreset';
 
+// --- Paging Hook ---
+export {
+  usePaging,
+  type UsePagingReturn,
+  type PagingInfo,
+  type PagingActions,
+  type PagingOptions
+} from './hooks/usePaging';
+
 // --- Theme & Utils ---
 export { default as useColors } from './themes/colors';
 export { default as useHonchoTypography } from './themes/honchoTheme';
