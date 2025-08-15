@@ -67,6 +67,7 @@ export function usePreset(controller, firebaseUid, options = {}) {
     }, [debugLog]);
     // Load presets from backend
     const load = useCallback(async () => {
+        console.log("Load Presets Get Function Called");
         if (!controllerRef.current || !firebaseUidRef.current) {
             debugLog('Load skipped: missing controller or firebaseUid');
             return;
@@ -111,6 +112,7 @@ export function usePreset(controller, firebaseUid, options = {}) {
     }, [debugLog, isInitialized]);
     // Create a new preset
     const create = useCallback(async (name, settings) => {
+        console.log("Create Preset Get Function Called");
         if (!controllerRef.current || !firebaseUidRef.current) {
             debugLog('Create skipped: missing controller or firebaseUid');
             return null;
@@ -209,6 +211,7 @@ export function usePreset(controller, firebaseUid, options = {}) {
     }, [presets, debugLog, handleError]);
     // Delete a preset
     const deletePreset = useCallback(async (presetId) => {
+        console.log("Delete Presets Get Function Called");
         if (!controllerRef.current || !firebaseUidRef.current) {
             debugLog('Delete skipped: missing controller or firebaseUid');
             return false;
