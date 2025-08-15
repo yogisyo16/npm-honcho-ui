@@ -73,6 +73,23 @@ function mapColorAdjustmentToAdjustmentState(adj: ColorAdjustment | undefined): 
     };
 }
 
+const mapAdjustmentStateToAdjustmentValues = (state: AdjustmentState): Partial<AdjustmentValues> => {
+    return {
+        temperature: state.tempScore,
+        tint: state.tintScore,
+        saturation: state.saturationScore,
+        vibrance: state.vibranceScore,
+        exposure: state.exposureScore,
+        contrast: state.contrastScore,
+        highlights: state.highlightsScore,
+        shadows: state.shadowsScore,
+        whites: state.whitesScore,
+        blacks: state.blacksScore,
+        clarity: state.clarityScore,
+        sharpness: state.sharpnessScore,
+    };
+};
+
 export function useHonchoEditorBulk(controller: Controller, eventID: string, firebaseUid: string) {
     const { currentBatch, selectedIds, actions: batchActions } = useAdjustmentHistoryBatch();
 
@@ -87,15 +104,33 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
     const [selectedBulkPreset, setSelectedBulkPreset] = useState<string>('preset1');
 
     const imageData = useMemo(() => {
-        return imageCollection.map(item => {
-            console.log("item FROM USEHONCHOBULK: ", item);
-            return mapGalleryToPhotoData(item, selectedIds);
-        }).map(item => {
-            const adjustment = currentBatch.allImages[item.key];
-            console.log("adjustment FROM USEHONCHOBULK: ", adjustment);
-            return adjustment ? { ...item, ...adjustment } : item;
+        // We use a single .map() for better performance and clarity
+        return imageCollection.map(galleryItem => {
+            // 1. Create the base PhotoData object from the gallery data
+            const photoDataItem = mapGalleryToPhotoData(galleryItem, selectedIds);
+
+            // 2. Find the latest adjustments for this image from the batch history
+            const adjustmentsFromHistory = currentBatch.allImages[photoDataItem.key];
+
+            // 3. If adjustments exist, TRANSLATE them and ASSIGN them to the correct property
+            if (adjustmentsFromHistory) {
+                photoDataItem.adjustments = mapAdjustmentStateToAdjustmentValues(adjustmentsFromHistory);
+            }
+
+            return photoDataItem;
         });
     }, [imageCollection, selectedIds, currentBatch.allImages]);
+
+    // const imageData = useMemo(() => {
+    //     return imageCollection.map(item => {
+    //         console.log("item FROM USEHONCHOBULK: ", item);
+    //         return mapGalleryToPhotoData(item, selectedIds);
+    //     }).map(item => {
+    //         const adjustment = currentBatch.allImages[item.key];
+    //         console.log("adjustment FROM USEHONCHOBULK: ", adjustment);
+    //         return adjustment ? { ...item, ...adjustment } : item;
+    //     });
+    // }, [imageCollection, selectedIds, currentBatch.allImages]);
 
     const handleBackCallbackBulk = useCallback(() => {
         const lastSelectedId = selectedIds.length > 0 ? selectedIds[selectedIds.length - 1] : "";
