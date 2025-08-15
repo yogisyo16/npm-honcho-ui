@@ -299,6 +299,10 @@ export function usePreset(controller, firebaseUid, options = {}) {
             load();
         }
     }, [memoizedOptions.autoLoad, controller, firebaseUid, isInitialized, load, debugLog]);
+    useEffect(() => {
+        // This will run every time the 'presets' state actually changes.
+        console.log("✅ NEW RENDER: The 'presets' state has been updated to:", presets);
+    }, [presets]);
     // Clear state when controller or firebaseUid changes
     useEffect(() => {
         if (isInitialized) {
