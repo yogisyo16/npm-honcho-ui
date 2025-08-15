@@ -39,9 +39,9 @@ export default function HModalMobile(props: Props) {
                     <Box sx={{ mt: 2 }}>
                         {props.children}
                     </Box>
-                    <Box>
+                    <Stack sx={{ px: "2px" }}>
                         {props.action}
-                    </Box>
+                    </Stack>
                 </Stack>
             </Modal>
         </>
