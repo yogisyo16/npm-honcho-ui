@@ -116,79 +116,73 @@ export function useHonchoEditorBulk(controller, eventID, firebaseUid) {
     const handleBulkSharpnessDecrease = createRelativeAdjuster('sharpnessScore', -5);
     const handleBulkSharpnessIncrease = createRelativeAdjuster('sharpnessScore', 5);
     const handleBulkSharpnessIncreaseMax = createRelativeAdjuster('sharpnessScore', 20);
-    const loadImages = useCallback(async (pageNum) => {
-        // Use the correct loading state
-        if (pageNum === 1) {
-            setIsLoading(true);
-        }
-        else {
-            setIsFetchingMore(true);
-        }
-        setError(null);
-        try {
-            const response = await controller.getImageList(firebaseUid, eventID, pageNum);
-            // Sync adjustments for the new images with the batch history
-            batchActions.syncAdjustment(response.gallery.map(mapToImageAdjustmentConfig));
-            // Append new images for page > 1, otherwise replace
-            setImageCollection(prev => pageNum === 1 ? response.gallery : [...prev, ...response.gallery]);
-            setPage(response.current_page);
-            setHasMore(response.next_page > 0 && response.gallery.length > 0);
-        }
-        catch (err) {
-            console.error("Failed to fetch image list:", err);
-            setError(err.message || "Could not load images.");
-        }
-        finally {
-            if (pageNum === 1) {
-                setIsLoading(false);
-            }
-            else {
-                setIsFetchingMore(false);
-            }
-        }
-    }, [controller, firebaseUid, eventID, batchActions]);
-    const loadMoreImages = useCallback(() => {
-        if (!isFetchingMore && hasMore) {
-            loadImages(page + 1);
-        }
-    }, [isFetchingMore, hasMore, page, loadImages]);
-    // useEffect(() => {
-    //     if (eventID && firebaseUid) {
+    // const loadImages = useCallback(async (pageNum: number) => {
+    //     // Use the correct loading state
+    //     if (pageNum === 1) {
     //         setIsLoading(true);
-    //         setError(null);
-    //         controller.getImageList(firebaseUid, eventID, 2)
-    //             .then(response => {
-    //                 // TODO need do pagination for this one
-    //                 batchActions.syncAdjustment(response.gallery.map(mapToImageAdjustmentConfig));
-    //                 setImageCollection(response.gallery);
-    //             })
-    //             .catch(err => {
-    //                 console.error("Failed to fetch image list:", err);
-    //                 setError("Could not load images.");
-    //             })
-    //             .finally(() => {
-    //                 setIsLoading(false);
-    //             });
-    //         console.log("Image data FROM USEHONCHOBULK: ", imageData);
+    //     } else {
+    //         setIsFetchingMore(true);
     //     }
-    // }, [eventID, firebaseUid, controller]);
+    //     setError(null);
+    //     try {
+    //         const response = await controller.getImageList(firebaseUid, eventID, pageNum);
+    //         // Sync adjustments for the new images with the batch history
+    //         batchActions.syncAdjustment(response.gallery.map(mapToImageAdjustmentConfig));
+    //         // Append new images for page > 1, otherwise replace
+    //         setImageCollection(prev => pageNum === 1 ? response.gallery : [...prev, ...response.gallery]);
+    //         setPage(response.current_page);
+    //         setHasMore(response.next_page > 0 && response.gallery.length > 0);
+    //     } catch (err: any) {
+    //         console.error("Failed to fetch image list:", err);
+    //         setError(err.message || "Could not load images.");
+    //     } finally {
+    //         if (pageNum === 1) {
+    //             setIsLoading(false);
+    //         } else {
+    //             setIsFetchingMore(false);
+    //         }
+    //     }
+    // }, [controller, firebaseUid, eventID, batchActions]);
+    // const loadMoreImages = useCallback(() => {
+    //     if (!isFetchingMore && hasMore) {
+    //         loadImages(page + 1);
+    //     }
+    // }, [isFetchingMore, hasMore, page, loadImages]);
     useEffect(() => {
         if (eventID && firebaseUid) {
-            // Reset state when the event changes
-            setImageCollection([]);
-            setPage(1);
-            setHasMore(true);
-            loadImages(1); // Load the first page
+            setIsLoading(true);
+            setError(null);
+            controller.getImageList(firebaseUid, eventID, 2)
+                .then(response => {
+                // TODO need do pagination for this one
+                batchActions.syncAdjustment(response.gallery.map(mapToImageAdjustmentConfig));
+                setImageCollection(response.gallery);
+            })
+                .catch(err => {
+                console.error("Failed to fetch image list:", err);
+                setError("Could not load images.");
+            })
+                .finally(() => {
+                setIsLoading(false);
+            });
+            console.log("Image data FROM USEHONCHOBULK: ", imageData);
         }
-    }, [eventID, firebaseUid, loadImages]);
+    }, [eventID, firebaseUid, controller]);
+    // useEffect(() => {
+    //     if (eventID && firebaseUid) {
+    //         setImageCollection([]); // reset when event changes
+    //         setPage(1);
+    //         loadImages(1);
+    //     }
+    // }, [eventID, firebaseUid, loadImages]);
     return {
         imageData,
         isLoading,
         error,
         selectedIds,
         hasMore,
-        loadMoreImages,
-        isFetchingMore,
+        // loadMoreImages,
+        // Gallery Handlers
         handleBackCallbackBulk,
         selectedBulkPreset,
         handleToggleImageSelection: batchActions.toggleSelection,
