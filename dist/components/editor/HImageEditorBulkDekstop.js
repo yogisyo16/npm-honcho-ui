@@ -8,7 +8,7 @@ export default function HImageEditorBulkDekstop(props) {
     const isZoomMenuOpen = Boolean(props.anchorElZoom);
     return (_jsx(_Fragment, { children: _jsx(Slide, { direction: "left", in: props.isPanelOpen, mountOnEnter: true, unmountOnExit: true, children: _jsx(Paper, { elevation: 3, sx: {
                     position: 'inherit',
-                    right: '10px',
+                    right: '40px',
                     top: '55px',
                     width: '320px',
                     height: 'calc(100vh - 70px)',
@@ -17,7 +17,7 @@ export default function HImageEditorBulkDekstop(props) {
                     backgroundColor: '#000000',
                     overflow: 'hidden',
                     // pl: "20px"
-                }, children: _jsxs(Stack, { direction: "row", sx: { height: '100%', pl: "0px" }, children: [_jsxs(Stack, { direction: "column", sx: { width: 'calc(100% - 60px)', height: '95%' }, children: [_jsx(Stack, { sx: { flexGrow: 1, overflowY: 'auto', px: 2, msOverflowStyle: 'none', scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }, children: props.children }), _jsx(Stack, { sx: {
+                }, children: _jsxs(Stack, { direction: "row", sx: { height: '100%', pl: "0px" }, children: [_jsxs(Stack, { direction: "column", sx: { width: 'calc(100% - 60px)', height: '95%' }, children: [_jsx(Stack, { sx: { flexGrow: 1, overflowY: 'auto', pl: '0px', pr: '16px', msOverflowStyle: 'none', scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }, children: props.children }), _jsx(Stack, { sx: {
                                         flexShrink: 0,
                                         p: '0px 25px',
                                     }, children: props.footer })] }), _jsxs(Stack, { justifyContent: "flex-start", spacing: "15px", sx: {
