@@ -140,9 +140,11 @@ export function usePreset(
         setIsLoading(true);
         setError(null);
 
+        console.log('before GOINT to load 2.5. STATE UPDATE: setPresets is being called with:', presets);
         try {
             debugLog('Loading presets from backend...');
             const loadedPresets = await controllerRef.current.getPresets(firebaseUidRef.current);
+            console.log('✅ 3. STATE UPDATE: setPresets is being called with:', loadedPresets);
 
             setPresets(loadedPresets);
             setIsInitialized(true);
@@ -150,8 +152,10 @@ export function usePreset(
             debugLog('Presets loaded successfully', { count: loadedPresets.length });
         } catch (err) {
             handleError('load presets', err);
+            console.log('4. catch ERROR!');
             setPresets([]); // Clear presets on error
         } finally {
+            console.log('5. STATE UPDATE: setIsLoading is being called with:', false);
             setIsLoading(false);
         }
     }, [debugLog, handleError]);
@@ -235,10 +239,10 @@ export function usePreset(
             setPresets(prev => [...prev, newPreset]);
 
             // Fire and forget: Schedule a delayed refresh to get updated preset list
-            // setTimeout(() => {
-            //     debugLog('Refreshing presets after create (fire and forget)');
-            //     loadInBackground();
-            // }, 500); // 500ms delay to allow backend processing
+            setTimeout(() => {
+                debugLog('Refreshing presets after create (fire and forget)');
+                loadInBackground();
+            }, 500); // 500ms delay to allow backend processing
 
             // Return a minimal success indicator since we don't have the actual preset data
             // return { id: 'pending', name, is_default: false } as Preset;
@@ -250,7 +254,7 @@ export function usePreset(
             setIsLoading(false);
         }
         // loadInBackground
-    }, [presets, debugLog, handleError]);
+    }, [presets, debugLog, handleError, loadInBackground]);
 
     // Rename an existing preset
     const rename = useCallback(async (presetId: string, newName: string): Promise<boolean> => {
