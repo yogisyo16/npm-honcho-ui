@@ -147,6 +147,8 @@ export function usePreset(
             console.log('✅ 3. STATE UPDATE: setPresets is being called with:', loadedPresets);
 
             setPresets(loadedPresets);
+            console.log('✅ 4. STATE UPDATE: setIsInitialized is being called with:', true);
+            console.log('presets thats called:', presets);
             setIsInitialized(true);
 
             debugLog('Presets loaded successfully', { count: loadedPresets.length });
