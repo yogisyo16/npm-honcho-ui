@@ -28,6 +28,8 @@ export { useAdjustmentHistory } from './hooks/useAdjustmentHistory';
 export { useAdjustmentHistoryBatch } from './hooks/useAdjustmentHistoryBatch';
 // --- Preset Hook ---
 export { usePreset } from './hooks/usePreset';
+// --- Paging Hook ---
+export { usePaging } from './hooks/usePaging';
 // --- Theme & Utils ---
 export { default as useColors } from './themes/colors';
 export { default as useHonchoTypography } from './themes/honchoTheme';

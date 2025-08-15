@@ -29,6 +29,7 @@ export { useEditorHeadless } from './lib/hooks/useEditorHeadless';
 export { useAdjustmentHistory, type UseAdjustmentHistoryReturn, type HistoryInfo, type HistoryActions, type HistoryConfig } from './hooks/useAdjustmentHistory';
 export { useAdjustmentHistoryBatch, type UseAdjustmentHistoryBatchReturn, type BatchAdjustmentState, type ImageAdjustmentConfig, type BatchHistoryInfo, type BatchHistoryActions, type BatchHistoryConfig } from './hooks/useAdjustmentHistoryBatch';
 export { usePreset, type UsePresetReturn, type PresetInfo, type PresetActions, type PresetOptions } from './hooks/usePreset';
+export { usePaging, type UsePagingReturn, type PagingInfo, type PagingActions, type PagingOptions } from './hooks/usePaging';
 export { default as useColors } from './themes/colors';
 export { default as useHonchoTypography } from './themes/honchoTheme';
 export { default as useIsMobile } from './utils/isMobile';

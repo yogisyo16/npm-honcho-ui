@@ -30,6 +30,8 @@ export declare function useHonchoEditorBulk(controller: Controller, eventID: str
     handleBackCallbackBulk: () => void;
     selectedBulkPreset: string;
     handleToggleImageSelection: (imageId: string) => void;
+    handleLoadMore: () => Promise<void>;
+    handleRefresh: () => Promise<void>;
     handleSelectBulkPreset: (event: SelectChangeEvent<string>) => void;
     handleBulkTempDecreaseMax: () => void;
     handleBulkTempDecrease: () => void;
