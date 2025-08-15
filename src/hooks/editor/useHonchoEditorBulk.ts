@@ -212,7 +212,7 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
     }, [eventID, firebaseUid, controller]);
 
     useEffect(() => {
-        loadImages(1);
+        setImageCollection([]);
     }, [loadImages]);
 
     return {

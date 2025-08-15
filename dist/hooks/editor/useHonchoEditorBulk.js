@@ -44,6 +44,8 @@ export function useHonchoEditorBulk(controller, eventID, firebaseUid) {
     const [imageCollection, setImageCollection] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
     const [selectedBulkPreset, setSelectedBulkPreset] = useState('preset1');
     const imageData = useMemo(() => {
         return imageCollection.map(item => {
@@ -111,6 +113,27 @@ export function useHonchoEditorBulk(controller, eventID, firebaseUid) {
     const handleBulkSharpnessDecrease = createRelativeAdjuster('sharpnessScore', -5);
     const handleBulkSharpnessIncrease = createRelativeAdjuster('sharpnessScore', 5);
     const handleBulkSharpnessIncreaseMax = createRelativeAdjuster('sharpnessScore', 20);
+    const loadImages = useCallback(async (pageNum) => {
+        setIsLoading(true);
+        try {
+            const res = await controller.getImageList(firebaseUid, eventID, pageNum);
+            const newImages = res.gallery || [];
+            setImageCollection(prev => [...prev, ...newImages]);
+            setPage(pageNum);
+            setHasMore(newImages.length > 0);
+        }
+        catch (err) {
+            console.error("Failed to load images:", err);
+        }
+        finally {
+            setIsLoading(false);
+        }
+    }, [controller, firebaseUid, eventID]);
+    const loadMoreImages = useCallback(() => {
+        if (!isLoading && hasMore) {
+            loadImages(page + 1);
+        }
+    }, [isLoading, hasMore, page, loadImages]);
     // Extract selected image IDs for other operations (like applying bulk adjustments)
     useEffect(() => {
         if (eventID && firebaseUid) {
@@ -131,11 +154,16 @@ export function useHonchoEditorBulk(controller, eventID, firebaseUid) {
             });
         }
     }, [eventID, firebaseUid, controller]);
+    useEffect(() => {
+        setImageCollection([]);
+    }, [loadImages]);
     return {
         imageData,
         isLoading,
         error,
         selectedIds,
+        hasMore,
+        loadMoreImages,
         // Gallery Handlers
         handleBackCallbackBulk,
         selectedBulkPreset,
