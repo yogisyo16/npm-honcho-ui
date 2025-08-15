@@ -5,6 +5,7 @@ interface Props {
     modalTitle: string;
     modalInformation: string;
     children: React.ReactNode;
+    action?: React.ReactNode;
     modalClose: () => void;
     onConfirm: () => void;
 }

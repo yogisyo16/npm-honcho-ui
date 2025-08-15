@@ -9,6 +9,7 @@ interface Props {
     modalTitle: string;
     modalInformation: string;
     children: React.ReactNode;
+    action?: React.ReactNode;
     modalClose: () => void;
     onConfirm: () => void;
 }
@@ -37,6 +38,9 @@ export default function HModalMobile(props: Props) {
                     <Typography variant="inherit" color="initial">{props.modalInformation}</Typography>
                     <Box sx={{ mt: 2 }}>
                         {props.children}
+                    </Box>
+                    <Box>
+                        {props.action}
                     </Box>
                 </Stack>
             </Modal>
