@@ -169,36 +169,36 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
     const handleBulkSharpnessIncrease = createRelativeAdjuster('sharpnessScore', 5);
     const handleBulkSharpnessIncreaseMax = createRelativeAdjuster('sharpnessScore', 20);
 
-    const loadImages = useCallback(async (pageNum: number) => {
-        setIsLoading(true);
-        try {
-            const response = await controller.getImageList(firebaseUid, eventID, pageNum);
+    // const loadImages = useCallback(async (pageNum: number) => {
+    //     setIsLoading(true);
+    //     try {
+    //         const response = await controller.getImageList(firebaseUid, eventID, pageNum);
 
-            batchActions.syncAdjustment(response.gallery.map(mapToImageAdjustmentConfig));
+    //         batchActions.syncAdjustment(response.gallery.map(mapToImageAdjustmentConfig));
 
-            // append instead of replacing
-            setImageCollection(prev => [...prev, ...response.gallery]);
+    //         // append instead of replacing
+    //         setImageCollection(prev => [...prev, ...response.gallery]);
 
-            // track page & "more" status
-            setPage(response.current_page);
-            if (!response.next_page || response.gallery.length === 0) {
-                setHasMore(false);
-            } else {
-                setHasMore(true);
-            }
-        } catch (err) {
-            console.error("Failed to fetch image list:", err);
-            setError("Could not load images.");
-        } finally {
-            setIsLoading(false);
-        }
-    }, [controller, firebaseUid, eventID, batchActions]);
+    //         // track page & "more" status
+    //         setPage(response.current_page);
+    //         if (!response.next_page || response.gallery.length === 0) {
+    //             setHasMore(false);
+    //         } else {
+    //             setHasMore(true);
+    //         }
+    //     } catch (err) {
+    //         console.error("Failed to fetch image list:", err);
+    //         setError("Could not load images.");
+    //     } finally {
+    //         setIsLoading(false);
+    //     }
+    // }, [controller, firebaseUid, eventID, batchActions]);
 
-    const loadMoreImages = useCallback(() => {
-        if (!isLoading && hasMore) {
-            loadImages(page + 1);
-        }
-    }, [isLoading, hasMore, page, loadImages]);
+    // const loadMoreImages = useCallback(() => {
+    //     if (!isLoading && hasMore) {
+    //         loadImages(page + 1);
+    //     }
+    // }, [isLoading, hasMore, page, loadImages]);
 
     // Extract selected image IDs for other operations (like applying bulk adjustments)
 
@@ -206,7 +206,7 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
         if (eventID && firebaseUid) {
             setIsLoading(true);
             setError(null);
-            controller.getImageList(firebaseUid, eventID, page+1)
+            controller.getImageList(firebaseUid, eventID, 2)
                 .then(response => {
                     // TODO need do pagination for this one
                     batchActions.syncAdjustment(response.gallery.map(mapToImageAdjustmentConfig));
@@ -223,13 +223,13 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
         }
     }, [eventID, firebaseUid, controller]);
 
-    useEffect(() => {
-        if (eventID && firebaseUid) {
-            setImageCollection([]); // reset when event changes
-            setPage(1);
-            loadImages(1);
-        }
-    }, [eventID, firebaseUid, loadImages]);
+    // useEffect(() => {
+    //     if (eventID && firebaseUid) {
+    //         setImageCollection([]); // reset when event changes
+    //         setPage(1);
+    //         loadImages(1);
+    //     }
+    // }, [eventID, firebaseUid, loadImages]);
 
     return {
         imageData,
@@ -237,7 +237,7 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
         error,
         selectedIds,
         hasMore,
-        loadMoreImages,
+        // loadMoreImages,
         // Gallery Handlers
         handleBackCallbackBulk,
 

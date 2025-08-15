@@ -27,7 +27,6 @@ export declare function useHonchoEditorBulk(controller: Controller, eventID: str
     error: string | null;
     selectedIds: string[];
     hasMore: boolean;
-    loadMoreImages: () => void;
     handleBackCallbackBulk: () => void;
     selectedBulkPreset: string;
     handleToggleImageSelection: (imageId: string) => void;
