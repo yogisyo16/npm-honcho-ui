@@ -73,7 +73,7 @@ export default function HSliderDetailsMobile(props) {
                         '& .MuiSlider-thumb:hover': {
                             boxShadow: 'none',
                         }
-                    }, size: "small", value: props.clarityScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onClarityChange(newValue) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px' }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Sharpness" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.sharpnessScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onSharpnessChange), sx: {
+                    }, size: "small", value: props.clarityScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onClarityChange(newValue), onDoubleClick: () => props.onClarityChange(0) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px' }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Sharpness" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.sharpnessScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onSharpnessChange), sx: {
                                 width: "40px",
                                 alignItems: "center",
                                 textAlign: "right",
@@ -126,5 +126,5 @@ export default function HSliderDetailsMobile(props) {
                         '& .MuiSlider-thumb:hover': {
                             boxShadow: 'none',
                         }
-                    }, size: "small", value: props.sharpnessScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onSharpnessChange(newValue) })] }) }));
+                    }, size: "small", value: props.sharpnessScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onSharpnessChange(newValue), onDoubleClick: () => props.onSharpnessChange(0) })] }) }));
 }

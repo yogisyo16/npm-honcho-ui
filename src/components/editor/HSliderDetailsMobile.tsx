@@ -101,6 +101,7 @@ export default function HSliderDetailsMobile(props: Props) {
                     min={-100}
                     max={100}
                     onChange={(_event, newValue) => props.onClarityChange(newValue as number)}
+                    onDoubleClick={() => props.onClarityChange(0)}
                 />
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: '10px', pb: '0px' }}>
                     <Typography sx={{ ...typography.bodyMedium, color: colors.surface }}>Sharpness</Typography>
@@ -173,6 +174,7 @@ export default function HSliderDetailsMobile(props: Props) {
                     min={-100}
                     max={100}
                     onChange={(_event, newValue) => props.onSharpnessChange(newValue as number)}
+                    onDoubleClick={() => props.onSharpnessChange(0)}
                 />
             </Stack>
         </>

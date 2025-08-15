@@ -86,7 +86,7 @@ export default function HSliderColorMobile(props) {
                         '& .MuiSlider-thumb': {
                             boxShadow: 'none',
                         }
-                    }, size: "small", value: props.tempScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onTempChange(newValue) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px', '&:focus-within .MuiFilledInput-input': focusedInputStyle }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Tint" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.tintScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onTintChange), sx: {
+                    }, size: "small", value: props.tempScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onTempChange(newValue), onDoubleClick: () => props.onTempChange(0) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px', '&:focus-within .MuiFilledInput-input': focusedInputStyle }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Tint" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.tintScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onTintChange), sx: {
                                 width: "40px",
                                 alignItems: "center",
                                 textAlign: "right",
@@ -130,7 +130,7 @@ export default function HSliderColorMobile(props) {
                         '& .MuiSlider-thumb': {
                             boxShadow: 'none',
                         }
-                    }, size: "small", value: props.tintScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onTintChange(newValue) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px', '&:focus-within .MuiFilledInput-input': focusedInputStyle }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Vibrance" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.vibranceScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onVibranceChange), sx: {
+                    }, size: "small", value: props.tintScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onTintChange(newValue), onDoubleClick: () => props.onTintChange(0) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px', '&:focus-within .MuiFilledInput-input': focusedInputStyle }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Vibrance" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.vibranceScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onVibranceChange), sx: {
                                 width: "40px",
                                 alignItems: "center",
                                 textAlign: "right",
@@ -174,7 +174,7 @@ export default function HSliderColorMobile(props) {
                         '& .MuiSlider-thumb': {
                             boxShadow: 'none',
                         }
-                    }, size: "small", value: props.vibranceScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onVibranceChange(newValue) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px', '&:focus-within .MuiFilledInput-input': focusedInputStyle }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Saturation" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.saturationScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onSaturationChange), sx: {
+                    }, size: "small", value: props.vibranceScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onVibranceChange(newValue), onDoubleClick: () => props.onVibranceChange(0) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px', '&:focus-within .MuiFilledInput-input': focusedInputStyle }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Saturation" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.saturationScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onSaturationChange), sx: {
                                 width: "40px",
                                 alignItems: "center",
                                 textAlign: "right",
@@ -218,5 +218,5 @@ export default function HSliderColorMobile(props) {
                         '& .MuiSlider-thumb': {
                             boxShadow: 'none',
                         }
-                    }, size: "small", value: props.saturationScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onSaturationChange(newValue) })] }) }));
+                    }, size: "small", value: props.saturationScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onSaturationChange(newValue), onDoubleClick: () => props.onSaturationChange(0) })] }) }));
 }

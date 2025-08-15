@@ -126,6 +126,8 @@ export default function HSliderColorMobile(props: Props) {
                     min={-100}
                     max={100}
                     onChange={(_event, newValue) => props.onTempChange(newValue as number)}
+                    onDoubleClick={() => props.onTempChange(0)}
+                    
                 />
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: '10px', pb: '0px', '&:focus-within .MuiFilledInput-input': focusedInputStyle }}>
                     <Typography sx={{...typography.bodyMedium, color: colors.surface}}>Tint</Typography>
@@ -189,6 +191,7 @@ export default function HSliderColorMobile(props: Props) {
                     min={-100}
                     max={100}
                     onChange={(_event, newValue) => props.onTintChange(newValue as number)}
+                    onDoubleClick={() => props.onTintChange(0)}
                 />
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: '10px', pb: '0px', '&:focus-within .MuiFilledInput-input': focusedInputStyle }}>
                     <Typography sx={{ ...typography.bodyMedium, color: colors.surface }}>
@@ -254,6 +257,7 @@ export default function HSliderColorMobile(props: Props) {
                     min={-100}
                     max={100}
                     onChange={(_event, newValue) => props.onVibranceChange(newValue as number)}
+                    onDoubleClick={() => props.onVibranceChange(0)}
                 />
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: '10px', pb: '0px', '&:focus-within .MuiFilledInput-input': focusedInputStyle }}>
                     <Typography sx={{ ...typography.bodyMedium, color: colors.surface }}>
@@ -319,6 +323,7 @@ export default function HSliderColorMobile(props: Props) {
                     min={-100}
                     max={100}
                     onChange={(_event, newValue) => props.onSaturationChange(newValue as number)}
+                    onDoubleClick={() => props.onSaturationChange(0)}
                 />
             </Stack>
         </>

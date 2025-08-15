@@ -112,6 +112,7 @@ export default function HSliderLightMobile (props: Props){
                     min={-100}
                     max={100}
                     onChange={(_event, newValue) => props.onExposureChange(newValue as number)}
+                    onDoubleClick={() => props.onExposureChange(0)}
                 />
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: '10px', pb: '0px' }}>
                     <Typography sx={{ ...typography.bodyMedium, color: colors.surface }}>Contrast</Typography>
@@ -185,6 +186,7 @@ export default function HSliderLightMobile (props: Props){
                     min={-100}
                     max={100}
                     onChange={(_event, newValue) => props.onContrastChange(newValue as number)}
+                    onDoubleClick={() => props.onContrastChange(0)}
                 />
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: '10px', pb: '0px' }}>
                     <Typography sx={{...typography.bodyMedium, color: colors.surface}}>Highlights</Typography>
@@ -258,6 +260,7 @@ export default function HSliderLightMobile (props: Props){
                     min={-100}
                     max={100}
                     onChange={(_event, newValue) => props.onHighlightsChange(newValue as number)}
+                    onDoubleClick={() => props.onHighlightsChange(0)}
                 />
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: '10px', pb: '0px' }}>
                     <Typography sx={{...typography.bodyMedium, color: colors.surface}}>Shadows</Typography>
@@ -331,6 +334,7 @@ export default function HSliderLightMobile (props: Props){
                     min={-100}
                     max={100}
                     onChange={(_event, newValue) => props.onShadowsChange(newValue as number)}
+                    onDoubleClick={() => props.onShadowsChange(0)}
                 />
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: '10px', pb: '0px' }}>
                     <Typography sx={{...typography.bodyMedium, color: colors.surface}}>Whites</Typography>
@@ -404,6 +408,7 @@ export default function HSliderLightMobile (props: Props){
                     min={-100}
                     max={100}
                     onChange={(_event, newValue) => props.onWhitesChange(newValue as number)}
+                    onDoubleClick={() => props.onWhitesChange(0)}
                 />
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ pt: '10px', pb: '0px' }}>
                     <Typography sx={{...typography.bodyMedium, color: colors.surface}}>Blacks</Typography>
@@ -477,6 +482,7 @@ export default function HSliderLightMobile (props: Props){
                     min={-100}
                     max={100}
                     onChange={(_event, newValue) => props.onBlacksChange(newValue as number)}
+                    onDoubleClick={() => props.onBlacksChange(0)}
                 />
             </Stack>
         </>

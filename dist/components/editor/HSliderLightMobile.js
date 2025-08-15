@@ -74,7 +74,7 @@ export default function HSliderLightMobile(props) {
                         '& .MuiSlider-thumb:hover': {
                             boxShadow: 'none',
                         }
-                    }, size: "small", value: props.exposureScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onExposureChange(newValue) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px' }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Contrast" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.contrastScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onContrastChange), sx: {
+                    }, size: "small", value: props.exposureScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onExposureChange(newValue), onDoubleClick: () => props.onExposureChange(0) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px' }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Contrast" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.contrastScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onContrastChange), sx: {
                                 width: "40px",
                                 alignItems: "center",
                                 textAlign: "right",
@@ -128,7 +128,7 @@ export default function HSliderLightMobile(props) {
                         '& .MuiSlider-thumb:hover': {
                             boxShadow: 'none',
                         }
-                    }, size: "small", value: props.contrastScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onContrastChange(newValue) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px' }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Highlights" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.highlightsScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onHighlightsChange), sx: {
+                    }, size: "small", value: props.contrastScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onContrastChange(newValue), onDoubleClick: () => props.onContrastChange(0) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px' }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Highlights" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.highlightsScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onHighlightsChange), sx: {
                                 width: "40px",
                                 alignItems: "center",
                                 textAlign: "right",
@@ -182,7 +182,7 @@ export default function HSliderLightMobile(props) {
                         '& .MuiSlider-thumb:hover': {
                             boxShadow: 'none',
                         }
-                    }, size: "small", value: props.highlightsScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onHighlightsChange(newValue) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px' }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Shadows" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.shadowScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onShadowsChange), sx: {
+                    }, size: "small", value: props.highlightsScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onHighlightsChange(newValue), onDoubleClick: () => props.onHighlightsChange(0) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px' }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Shadows" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.shadowScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onShadowsChange), sx: {
                                 width: "40px",
                                 alignItems: "center",
                                 textAlign: "right",
@@ -236,7 +236,7 @@ export default function HSliderLightMobile(props) {
                         '& .MuiSlider-thumb:hover': {
                             boxShadow: 'none',
                         }
-                    }, size: "small", value: props.shadowScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onShadowsChange(newValue) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px' }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Whites" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.whiteScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onWhitesChange), sx: {
+                    }, size: "small", value: props.shadowScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onShadowsChange(newValue), onDoubleClick: () => props.onShadowsChange(0) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px' }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Whites" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.whiteScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onWhitesChange), sx: {
                                 width: "40px",
                                 alignItems: "center",
                                 textAlign: "right",
@@ -290,7 +290,7 @@ export default function HSliderLightMobile(props) {
                         '& .MuiSlider-thumb:hover': {
                             boxShadow: 'none',
                         }
-                    }, size: "small", value: props.whiteScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onWhitesChange(newValue) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px' }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Blacks" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.blackScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onBlacksChange), sx: {
+                    }, size: "small", value: props.whiteScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onWhitesChange(newValue), onDoubleClick: () => props.onWhitesChange(0) }), _jsxs(Stack, { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { pt: '10px', pb: '0px' }, children: [_jsx(Typography, { sx: { ...typography.bodyMedium, color: colors.surface }, children: "Blacks" }), _jsx(TextField, { hiddenLabel: true, id: "filled-hidden-label-small", value: formatValue(props.blackScore), variant: "filled", onChange: (e) => handleInputChange(e, -100, 100, props.onBlacksChange), sx: {
                                 width: "40px",
                                 alignItems: "center",
                                 textAlign: "right",
@@ -344,5 +344,5 @@ export default function HSliderLightMobile(props) {
                         '& .MuiSlider-thumb:hover': {
                             boxShadow: 'none',
                         }
-                    }, size: "small", value: props.blackScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onBlacksChange(newValue) })] }) }));
+                    }, size: "small", value: props.blackScore, step: 1, min: -100, max: 100, onChange: (_event, newValue) => props.onBlacksChange(newValue), onDoubleClick: () => props.onBlacksChange(0) })] }) }));
 }
