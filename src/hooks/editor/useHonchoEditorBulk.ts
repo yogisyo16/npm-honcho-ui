@@ -87,9 +87,11 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
 
     const imageData = useMemo(() => {
         return imageCollection.map(item => {
+            console.log("item FROM USEHONCHOBULK: ", item);
             return mapGalleryToPhotoData(item, selectedIds);
         }).map(item => {
             const adjustment = currentBatch.allImages[item.key];
+            console.log("adjustment FROM USEHONCHOBULK: ", adjustment);
             return adjustment ? { ...item, ...adjustment } : item;
         });
     }, [imageCollection, selectedIds, currentBatch.allImages]);
@@ -208,11 +210,13 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
                 .finally(() => {
                     setIsLoading(false);
                 });
+            console.log("Image data FROM USEHONCHOBULK: ", imageData);
         }
     }, [eventID, firebaseUid, controller]);
 
     useEffect(() => {
         setImageCollection([]);
+        console.log("Image collection FROM USEHONCHOBULK: : ", imageCollection);
     }, [loadImages]);
 
     return {
