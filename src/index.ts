@@ -9,6 +9,7 @@ export type {
     CreateEditorTaskRequest,
     EditorHistoryEntry,
     GetGalleryUpdateTimestampResponse,
+    GetHistoryResponse,
 } from './hooks/editor/type';
 export type { 
     PhotoData 
