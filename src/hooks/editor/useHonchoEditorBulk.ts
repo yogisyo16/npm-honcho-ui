@@ -123,7 +123,6 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
     // This factory creates functions that adjust a value for all selected images
     
     const createRelativeAdjuster = useCallback((key: keyof AdjustmentState, amount: number) => () => {
-        console.debug("createRelativeAdjuster", key, amount);
         batchActions.adjustSelected({ [key]: amount });
     }, [batchActions]);
 
