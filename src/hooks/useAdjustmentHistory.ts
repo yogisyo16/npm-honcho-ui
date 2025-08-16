@@ -76,6 +76,8 @@ export interface HistoryConfig {
     setBatchMode: (enabled: boolean) => Promise<void>;
     /** Get current memory usage estimate */
     getMemoryUsage: () => number;
+    /** Force sync current state to backend */
+    syncToBackend: () => Promise<void>;
 }
 
 /**
@@ -578,12 +580,68 @@ export function useAdjustmentHistory(
         syncHistory
     }), [pushState, undo, redo, reset, jumpToIndex, clearHistory, getHistory, trimHistory, syncHistory]);
 
+    // Force sync current state to backend
+    const syncToBackend = useCallback(async () => {
+        if (internalOptions.controller && internalOptions.firebaseUid && internalOptions.currentImageId) {
+            try {
+                console.log('🔄 Force syncing current state to backend');
+                
+                // Check if we're in middle of history (not at the latest)
+                const wasInMiddleOfHistory = currentIndex < history.length - 1;
+                let replaceFromTaskId: string | undefined;
+                
+                if (wasInMiddleOfHistory) {
+                    // Get the task_id from the current history entry to use as replace_from
+                    const currentHistoryEntry = history[currentIndex];
+                    replaceFromTaskId = currentHistoryEntry?.taskId;
+                    console.log(`📍 In middle of history (index ${currentIndex}), using replace_from: ${replaceFromTaskId}`);
+                }
+                
+                // Generate a unique task ID for this sync
+                const taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                
+                const createEditorConfigPayload: CreateEditorTaskRequest = {
+                    gallery_id: internalOptions.currentImageId,
+                    task_id: taskId,
+                    color_adjustment: convertAdjustmentStateToColorAdjustment(currentState),
+                    ...(replaceFromTaskId && { replace_from: replaceFromTaskId })
+                };
+                
+                await internalOptions.controller.createEditorConfig(
+                    internalOptions.firebaseUid, 
+                    createEditorConfigPayload
+                );
+                
+                console.log('✅ Successfully synced current state to backend');
+                
+                // Update the current history entry with the new task ID
+                setHistory(prevHistory => {
+                    const newHistory = [...prevHistory];
+                    if (newHistory[currentIndex]) {
+                        newHistory[currentIndex] = {
+                            ...newHistory[currentIndex],
+                            taskId: taskId
+                        };
+                    }
+                    return newHistory;
+                });
+                
+            } catch (error) {
+                console.error('❌ Failed to sync current state to backend:', error);
+                throw error;
+            }
+        } else {
+            console.warn('⚠️ Controller, firebaseUid, or currentImageId not provided - skipping backend sync');
+        }
+    }, [currentState, currentIndex, history, internalOptions]);
+
     // Config object - stabilized with useMemo
     const config: HistoryConfig = useMemo(() => ({
         setMaxSize,
         setBatchMode,
-        getMemoryUsage
-    }), [setMaxSize, setBatchMode, getMemoryUsage]);
+        getMemoryUsage,
+        syncToBackend
+    }), [setMaxSize, setBatchMode, getMemoryUsage, syncToBackend]);
 
     // Apply max size enforcement when history changes
     useEffect(() => {

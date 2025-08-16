@@ -137,19 +137,19 @@ export function useHonchoEditorSingle({
         // Reset acts like normal adjustment - each reset creates a new history entry
         console.log('Resetting adjustments to 0 - adding to history and sending to backend');
         
-        await adjustmentHistory.config.setBatchMode(true);
+        // First add reset to history (this creates local history entry)
         adjustmentHistory.actions.pushState(initialAdjustments);
-        adjustmentHistory.actions.pushState(initialAdjustments);
-        adjustmentHistory.actions.pushState(initialAdjustments);
-        await adjustmentHistory.config.setBatchMode(false);
-    }, [adjustmentHistory.actions.pushState, adjustmentHistory.config.setBatchMode]);
+        
+        // Then sync to backend
+        await adjustmentHistory.config.syncToBackend();
+    }, [adjustmentHistory.actions.pushState, adjustmentHistory.config.syncToBackend]);
     
     const loadPresets = useCallback(async () => {
         await presetHook.actions.load();
     }, [presetHook.actions.load]);
     
-    const applyPreset = useCallback((preset: Preset) => {
-        console.log('Applying preset:', preset.name);
+    const applyPreset = useCallback(async (preset: Preset) => {
+        console.log('Applying preset:', preset.name, '- saving to backend history');
         const adjustmentState: AdjustmentState = {
             tempScore: preset.temperature,
             tintScore: preset.tint,
@@ -164,8 +164,13 @@ export function useHonchoEditorSingle({
             clarityScore: preset.clarity,
             sharpnessScore: preset.sharpness,
         };
+        
+        // Apply preset directly and add to history
         adjustmentHistory.actions.pushState(adjustmentState);
-    }, [adjustmentHistory.actions.pushState]);
+        
+        // Then sync to backend
+        await adjustmentHistory.config.syncToBackend();
+    }, [adjustmentHistory.actions.pushState, adjustmentHistory.config.syncToBackend]);
     
     const createPreset = useCallback(async (name: string) => {
         return await presetHook.actions.create(name, adjustmentHistory.currentState);
