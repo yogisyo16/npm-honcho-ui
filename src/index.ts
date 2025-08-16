@@ -1,10 +1,14 @@
 export { useHonchoEditorSingle } from './hooks/editor/useHonchoEditorSingle';
 export { useHonchoEditorBulk } from './hooks/editor/useHonchoEditorBulk';
 export type {
-  Controller,
-  AdjustmentState,
-  Preset,
-  ImageItem,
+    Controller,
+    AdjustmentState,
+    Preset,
+    ImageItem,
+    ColorAdjustment,
+    CreateEditorTaskRequest,
+    EditorHistoryEntry,
+    GetGalleryUpdateTimestampResponse,
 } from './hooks/editor/type';
 export type { 
     PhotoData 
