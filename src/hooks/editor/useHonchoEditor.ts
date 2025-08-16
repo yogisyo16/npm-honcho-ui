@@ -7,8 +7,8 @@ declare global {
     HonchoEditor: new () => any;
   }
 }
-import { CreateEditorTaskRequest, Gallery, GetGalleryUpdateTimestampResponse, GetHistoryResponse, ResponseGalleryPaging } from '../../hooks/editor/type'
-import { mapAdjustmentStateToAdjustmentEditor, mapColorAdjustmentToAdjustmentState } from '../../utils/adjustment';
+import { CreateEditorTaskRequest, EditorHistoryEntry, Gallery, GetGalleryUpdateTimestampResponse, GetHistoryResponse, ResponseGalleryPaging } from '../../hooks/editor/type'
+import { mapAdjustmentStateToAdjustmentEditor, mapColorAdjustmentToAdjustmentState, mapAdjustmentStateToColorAdjustment } from '../../utils/adjustment';
 import { useAdjustmentHistory } from '../useAdjustmentHistory';
 import { useGallerySwipe } from '../useGallerySwipe';
 import HonchoEditor from "../../lib/editor/honcho-editor";
@@ -116,6 +116,19 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         historyInfo,
         config: historyConfig,
     } = useAdjustmentHistory(initialAdjustments);
+
+    // Backend history tracking - maps local history indices to backend task IDs
+    const [backendHistoryMap, setBackendHistoryMap] = useState<Map<number, string>>(new Map());
+
+    // Generate unique task ID for backend operations using UUID format
+    const generateTaskId = () => {
+        // Simple UUID v4 implementation
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    };
 
     const [eventId, setEventId] = useState<string | null>(null);
     // MARK: - Core Editor State & Refs
@@ -439,10 +452,57 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         return `${Math.round(zoomLevel * 100)}%`
     }, [zoomLevel])
 
-    const updateAdjustments = useCallback((newValues: Partial<AdjustmentState>) => {
+    const updateAdjustments = useCallback(async (newValues: Partial<AdjustmentState>) => {
+        if (!galleryImageData) return;
+
         const newState = { ...currentAdjustmentsState, ...newValues };
+        
+        // First update local history
         historyActions.pushState(newState);
-    }, [currentAdjustmentsState, historyActions]);
+
+        // Generate unique task ID for this adjustment
+        const taskId = generateTaskId();
+
+        // Check if user is in the middle of history (not at latest state)
+        const isInMiddleOfHistory = historyInfo.currentIndex < historyInfo.totalStates - 1;
+        let replaceFromTaskId: string | undefined;
+
+        if (isInMiddleOfHistory) {
+            // If user is in middle of history, get the task ID of current position
+            // This will cause backend to replace history from this point
+            replaceFromTaskId = backendHistoryMap.get(historyInfo.currentIndex);
+        }
+
+        try {
+            // Create editor config in backend
+            await controller.createEditorConfig(firebaseUid, {
+                gallery_id: galleryImageData.id,
+                task_id: taskId,
+                color_adjustment: mapAdjustmentStateToColorAdjustment(newState),
+                replace_from: replaceFromTaskId
+            });
+
+            // Update backend history map
+            setBackendHistoryMap(prev => {
+                const newMap = new Map(prev);
+                
+                if (isInMiddleOfHistory) {
+                    // Clear all history entries after current index since they'll be replaced
+                    for (let i = historyInfo.currentIndex + 1; i < historyInfo.totalStates; i++) {
+                        newMap.delete(i);
+                    }
+                }
+                
+                // Set the new task ID for the new history entry
+                newMap.set(historyInfo.totalStates, taskId);
+                return newMap;
+            });
+
+        } catch (error) {
+            console.error('Failed to sync adjustment to backend:', error);
+            // Could implement retry logic or user notification here
+        }
+    }, [currentAdjustmentsState, historyActions, galleryImageData, firebaseUid, controller, historyInfo, backendHistoryMap]);
 
     const setTempScore = (value: number) => updateAdjustments({ tempScore: value });
     const setTintScore = (value: number) => updateAdjustments({ tintScore: value });
@@ -456,6 +516,45 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     const setContrastScore = (value: number) => updateAdjustments({ contrastScore: value });
     const setClarityScore = (value: number) => updateAdjustments({ clarityScore: value });
     const setSharpnessScore = (value: number) => updateAdjustments({ sharpnessScore: value });
+
+    // Custom undo/redo handlers that sync with backend
+    const handleUndo = useCallback(async () => {
+        if (!historyInfo.canUndo || !galleryImageData) return;
+        
+        // Perform local undo
+        historyActions.undo();
+        
+        // Sync with backend
+        const newIndex = historyInfo.currentIndex - 1;
+        const taskId = backendHistoryMap.get(newIndex);
+        
+        if (taskId) {
+            try {
+                await controller.setHistoryIndex(firebaseUid, galleryImageData.id, taskId);
+            } catch (error) {
+                console.error('Failed to sync undo to backend:', error);
+            }
+        }
+    }, [historyInfo, historyActions, galleryImageData, firebaseUid, controller, backendHistoryMap]);
+
+    const handleRedo = useCallback(async () => {
+        if (!historyInfo.canRedo || !galleryImageData) return;
+        
+        // Perform local redo
+        historyActions.redo();
+        
+        // Sync with backend
+        const newIndex = historyInfo.currentIndex + 1;
+        const taskId = backendHistoryMap.get(newIndex);
+        
+        if (taskId) {
+            try {
+                await controller.setHistoryIndex(firebaseUid, galleryImageData.id, taskId);
+            } catch (error) {
+                console.error('Failed to sync redo to backend:', error);
+            }
+        }
+    }, [historyInfo, historyActions, galleryImageData, firebaseUid, controller, backendHistoryMap]);
 
     // MARK: Copied ClipBoard
     const handleHeaderMenuClick = (event: React.MouseEvent<HTMLElement>) => setHeaderMenuAnchorEl(event.currentTarget);
@@ -609,29 +708,68 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
                 await editorRef.current?.initialize();
             }
 
-            const adjustmentData = galleryImageData.editor_config?.color_adjustment;
-            console.log("2. ADJUSTMENT DATA: ", {...adjustmentData}, {...galleryImageData});
+            console.log("2. LOADING HISTORY FROM BACKEND");
+            // Load full history from backend
+            try {
+                const historyResponse = await controller.getEditorHistory(firebaseUid, galleryImageData.id);
+                
+                if (historyResponse.history && historyResponse.history.length > 0) {
+                    console.log("3. HISTORY FOUND:", historyResponse.history.length, "entries");
+                    
+                    // Convert backend history to adjustment states
+                    const adjustmentStates = historyResponse.history.map(entry => 
+                        mapColorAdjustmentToAdjustmentState(entry.editor_config.color_adjustment)
+                    );
+                    
+                    // Build backend history map
+                    const newBackendMap = new Map<number, string>();
+                    historyResponse.history.forEach((entry, index) => {
+                        newBackendMap.set(index, entry.task_id);
+                    });
+                    setBackendHistoryMap(newBackendMap);
+                    
+                    // Sync local history with backend history
+                    historyActions.syncHistory(adjustmentStates, adjustmentStates.length - 1);
+                    console.log("4. SYNCED HISTORY WITH", adjustmentStates.length, "entries");
+                } else {
+                    console.log("3. NO HISTORY FOUND, USING CURRENT ADJUSTMENT OR DEFAULT");
+                    const adjustmentData = galleryImageData.editor_config?.color_adjustment;
+                    
+                    if (adjustmentData) {
+                        const adjustmentState = mapColorAdjustmentToAdjustmentState(adjustmentData);
+                        historyActions.syncHistory([adjustmentState]);
+                        
+                        // Create initial backend map entry if current adjustment exists
+                        // Note: We don't have a task_id for existing adjustment, this might need to be handled
+                        setBackendHistoryMap(new Map());
+                    } else {
+                        historyActions.syncHistory([initialAdjustments]);
+                        setBackendHistoryMap(new Map());
+                        console.log("no adjustment found, use default");
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to load history from backend:", error);
+                // Fallback to current adjustment or default
+                const adjustmentData = galleryImageData.editor_config?.color_adjustment;
+                if (adjustmentData) {
+                    const adjustmentState = mapColorAdjustmentToAdjustmentState(adjustmentData);
+                    historyActions.syncHistory([adjustmentState]);
+                } else {
+                    historyActions.syncHistory([initialAdjustments]);
+                }
+                setBackendHistoryMap(new Map());
+            }
+
             // set event
             setEventId(galleryImageData.event_id);
-            console.log("3. EVENTID: ", eventId);
+            console.log("5. EVENTID: ", eventId);
 
             const pathGallery = extractPathFromGallery(galleryImageData);
             // load image to editor
-            console.log("4. PATH GALLERY: ", pathGallery);
+            console.log("6. PATH GALLERY: ", pathGallery);
             await loadImageEditorFromUrl(pathGallery);
-            console.log("5. LOAD IMAGE TO EDITOR");
-
-            // adjustment setup
-            if (adjustmentData) {
-                console.log("7. ADJUSTMENT DATA FOUND");
-                const adjustmentState = mapColorAdjustmentToAdjustmentState(adjustmentData);
-                // set adjustment to editor to make adjustmentState change
-                console.log("8. SYNC HISTORY");
-                historyActions.syncHistory([adjustmentState]); 
-            } else {
-                historyActions.syncHistory([initialAdjustments]);
-                console.log("no adjustment found, use default");
-            }
+            console.log("7. LOAD IMAGE TO EDITOR");
         }
 
         init();
@@ -735,8 +873,8 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
         setSharpnessScore,
         
         // History functions and state
-        handleUndo: historyActions.undo,
-        handleRedo: historyActions.redo,
+        handleUndo,
+        handleRedo,
         handleRevert: () => historyActions.reset(initialAdjustments),
         canUndo: historyInfo.canUndo,
         canRedo: historyInfo.canRedo,

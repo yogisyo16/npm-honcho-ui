@@ -2,8 +2,8 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { SelectChangeEvent } from "@mui/material";
-import { AdjustmentState, Controller, Preset } from './useHonchoEditor';
-import { ColorAdjustment, Gallery, ResponseGalleryPaging } from '../../hooks/editor/type'
+import { AdjustmentState, Controller } from './useHonchoEditor';
+import { ColorAdjustment, Gallery } from '../../hooks/editor/type'
 import { useAdjustmentHistoryBatch, ImageAdjustmentConfig  } from '../useAdjustmentHistoryBatch';
 import { AdjustmentValues } from "../../lib/editor/honcho-editor";
 import { usePaging } from "../usePaging";
@@ -60,7 +60,12 @@ function mapColorAdjustmentToAdjustmentState(adj: ColorAdjustment | undefined): 
 }
 
 export function useHonchoEditorBulk(controller: Controller, eventID: string, firebaseUid: string) {
-    const { currentBatch, selectedIds, actions: batchActions, historyInfo } = useAdjustmentHistoryBatch();
+    const { currentBatch, selectedIds, actions: batchActions, historyInfo } = useAdjustmentHistoryBatch({
+        controller,
+        firebaseUid,
+        eventId: eventID,
+        devWarnings: true
+    });
     const { images, info, actions } = usePaging(controller, firebaseUid, eventID, {
         autoLoad: true,
         autoReset: false  // Prevent auto-reset to avoid loops

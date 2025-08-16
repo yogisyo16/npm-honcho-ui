@@ -138,7 +138,7 @@ export interface ResponseGalleryPaging {
       }
     }
 */
-export interface EditorConfig {
+export interface EditorHistoryEntry {
 	id: string;
 	gallery_id: string;
 	event_id: string;
@@ -176,7 +176,7 @@ export interface CreateEditorTaskRequest {
 }
 
 export interface GetHistoryResponse {
-	history: EditorConfig[];
+	history: EditorHistoryEntry[];
 }
 
 export interface GetGalleryUpdateTimestampResponse {

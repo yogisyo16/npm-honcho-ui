@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { AdjustmentState } from './editor/useHonchoEditor';
+import { AdjustmentState, Controller } from './editor/useHonchoEditor';
+import { mapAdjustmentStateToColorAdjustment, mapColorAdjustmentToAdjustmentState } from '../utils/adjustment';
 
 export interface HistoryAdjustmentBatch {
   imageId: string;
@@ -8,7 +9,7 @@ export interface HistoryAdjustmentBatch {
 }
 
 export interface HistoryAdjustmentEntry {
-  id: string;
+  id: string; // This ID is also used as the task ID for backend operations
   adjustment: AdjustmentState;
 }
 
@@ -49,6 +50,12 @@ interface BatchHistoryOptions {
   devWarnings?: boolean;
   /** Default adjustment state for new images */
   defaultAdjustmentState?: Partial<AdjustmentState>;
+  /** Controller for backend operations */
+  controller?: Controller;
+  /** Firebase UID for backend operations */
+  firebaseUid?: string;
+  /** Event ID for backend operations */
+  eventId?: string;
 }
 
 /**
@@ -172,10 +179,22 @@ const createEmptyBatchState = (): BatchAdjustmentState => ({
 });
 
 /**
- * Generate unique ID for history entries
+ * Generate unique ID for history entries using UUID format
  */
 const generateEntryId = (): string => {
-  return `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  // Simple UUID v4 implementation
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
+/**
+ * Generate unique task ID for backend operations (same as entry ID)
+ */
+const generateTaskId = (): string => {
+  return generateEntryId();
 };
 
 /**
@@ -228,11 +247,17 @@ export function useAdjustmentHistoryBatch(
   const internalOptions = useMemo(() => ({
     maxSize: options.maxSize ?? 'unlimited' as const,
     devWarnings: options.devWarnings ?? false,
-    defaultAdjustmentState: options.defaultAdjustmentState ?? {}
+    defaultAdjustmentState: options.defaultAdjustmentState ?? {},
+    controller: options.controller,
+    firebaseUid: options.firebaseUid,
+    eventId: options.eventId
   }), [
     options.maxSize, 
     options.devWarnings,
-    options.defaultAdjustmentState
+    options.defaultAdjustmentState,
+    options.controller,
+    options.firebaseUid,
+    options.eventId
   ]);
 
   // Core state management - using per-image history instead of batch history
@@ -306,14 +331,22 @@ export function useAdjustmentHistoryBatch(
     }
   }, [imageHistories, trimImageHistoriesToSize]);
 
-  // Apply adjustment deltas to selected images - with entry-based history
-  const adjustSelected = useCallback((delta: Partial<AdjustmentState>) => {
+  // Apply adjustment deltas to selected images - with entry-based history and backend sync
+  const adjustSelected = useCallback(async (delta: Partial<AdjustmentState>) => {
     if (selectedIds.length === 0) {
       if (devWarningsRef.current) {
         console.warn('[useAdjustmentHistoryBatch] adjustSelected called with no selection');
       }
       return;
     }
+
+    // Store backend operations to perform after state update
+    const backendOperations: Array<{
+      imageId: string;
+      taskId: string;
+      adjustment: AdjustmentState;
+      replaceFromTaskId?: string;
+    }> = [];
 
     setImageHistories(prevHistories => {
       return prevHistories.map(imageHistory => {
@@ -335,15 +368,46 @@ export function useAdjustmentHistoryBatch(
           }
         });
 
-        // Create new entry
-        const newEntryId = generateEntryId();
+        // Check if user is in the middle of history (not at latest state)
+        const currentEntryIndex = imageHistory.history.findIndex(entry => entry.id === imageHistory.currentHistoryEntryId);
+        const isInMiddleOfHistory = currentEntryIndex < imageHistory.history.length - 1;
+        let replaceFromTaskId: string | undefined;
+
+        if (isInMiddleOfHistory) {
+          // If user is in middle of history, get the task ID of current position
+          replaceFromTaskId = currentEntry?.id;
+        }
+
+        // Generate new task ID for backend (same as entry ID)
+        const taskId = generateTaskId();
+
+        // Create new entry with task ID
+        const newEntryId = taskId; // Use the same ID for both entry and task
         const newEntry: HistoryAdjustmentEntry = {
           id: newEntryId,
           adjustment: newAdjustment
         };
 
-        // Add to this image's history
-        const newHistory = [...imageHistory.history, newEntry];
+        // Prepare backend operation
+        if (internalOptions.controller && internalOptions.firebaseUid) {
+          backendOperations.push({
+            imageId: imageHistory.imageId,
+            taskId,
+            adjustment: newAdjustment,
+            replaceFromTaskId
+          });
+        }
+
+        // Build new history
+        let newHistory: HistoryAdjustmentEntry[];
+        
+        if (isInMiddleOfHistory) {
+          // If in middle of history, truncate from current position and add new entry
+          newHistory = [...imageHistory.history.slice(0, currentEntryIndex + 1), newEntry];
+        } else {
+          // If at end of history, just add new entry
+          newHistory = [...imageHistory.history, newEntry];
+        }
         
         // Trim if needed
         const maxSize = maxSizeRef.current;
@@ -358,12 +422,34 @@ export function useAdjustmentHistoryBatch(
         };
       });
     });
-  }, [selectedIds, internalOptions.defaultAdjustmentState]);
+
+    // Perform backend operations asynchronously
+    if (backendOperations.length > 0 && internalOptions.controller && internalOptions.firebaseUid) {
+      try {
+        const promises = backendOperations.map(async (operation) => {
+          await internalOptions.controller!.createEditorConfig(internalOptions.firebaseUid!, {
+            gallery_id: operation.imageId,
+            task_id: operation.taskId,
+            color_adjustment: mapAdjustmentStateToColorAdjustment(operation.adjustment),
+            replace_from: operation.replaceFromTaskId
+          });
+        });
+
+        await Promise.all(promises);
+        
+        if (devWarningsRef.current) {
+          console.log(`[useAdjustmentHistoryBatch] Synced ${backendOperations.length} adjustments to backend`);
+        }
+      } catch (error) {
+        console.error('[useAdjustmentHistoryBatch] Failed to sync adjustments to backend:', error);
+      }
+    }
+  }, [selectedIds, internalOptions]);
 
   // Set specific adjustment states for specified images (removed since not needed)
 
-  // Undo last changes to selected images - entry-based history version
-  const undo = useCallback(() => {
+  // Undo last changes to selected images - entry-based history version with backend sync
+  const undo = useCallback(async () => {
     if (selectedIds.length === 0) {
       if (devWarningsRef.current) {
         console.warn('[useAdjustmentHistoryBatch] Cannot undo - no images selected');
@@ -372,6 +458,10 @@ export function useAdjustmentHistoryBatch(
     }
 
     let anyChanges = false;
+    const backendOperations: Array<{
+      imageId: string;
+      taskId: string;
+    }> = [];
 
     setImageHistories(prevHistories => {
       return prevHistories.map(imageHistory => {
@@ -390,6 +480,14 @@ export function useAdjustmentHistoryBatch(
         const previousEntry = imageHistory.history[currentEntryIndex - 1];
         anyChanges = true;
 
+        // Prepare backend sync operation
+        if (previousEntry.id && internalOptions.controller && internalOptions.firebaseUid) {
+          backendOperations.push({
+            imageId: imageHistory.imageId,
+            taskId: previousEntry.id
+          });
+        }
+
         return {
           ...imageHistory,
           currentHistoryEntryId: previousEntry.id
@@ -397,13 +495,34 @@ export function useAdjustmentHistoryBatch(
       });
     });
 
+    // Sync with backend
+    if (backendOperations.length > 0 && internalOptions.controller && internalOptions.firebaseUid) {
+      try {
+        const promises = backendOperations.map(async (operation) => {
+          await internalOptions.controller!.setHistoryIndex(
+            internalOptions.firebaseUid!,
+            operation.imageId,
+            operation.taskId
+          );
+        });
+
+        await Promise.all(promises);
+        
+        if (devWarningsRef.current) {
+          console.log(`[useAdjustmentHistoryBatch] Synced ${backendOperations.length} undo operations to backend`);
+        }
+      } catch (error) {
+        console.error('[useAdjustmentHistoryBatch] Failed to sync undo to backend:', error);
+      }
+    }
+
     if (!anyChanges && devWarningsRef.current) {
       console.warn('[useAdjustmentHistoryBatch] Undo skipped - no changes to undo for selected images');
     }
-  }, [selectedIds]);
+  }, [selectedIds, internalOptions]);
 
-  // Redo next changes to selected images - entry-based history version
-  const redo = useCallback(() => {
+  // Redo next changes to selected images - entry-based history version with backend sync
+  const redo = useCallback(async () => {
     if (selectedIds.length === 0) {
       if (devWarningsRef.current) {
         console.warn('[useAdjustmentHistoryBatch] Cannot redo - no images selected');
@@ -412,6 +531,10 @@ export function useAdjustmentHistoryBatch(
     }
 
     let anyChanges = false;
+    const backendOperations: Array<{
+      imageId: string;
+      taskId: string;
+    }> = [];
 
     setImageHistories(prevHistories => {
       return prevHistories.map(imageHistory => {
@@ -430,6 +553,14 @@ export function useAdjustmentHistoryBatch(
         const nextEntry = imageHistory.history[currentEntryIndex + 1];
         anyChanges = true;
 
+        // Prepare backend sync operation
+        if (nextEntry.id && internalOptions.controller && internalOptions.firebaseUid) {
+          backendOperations.push({
+            imageId: imageHistory.imageId,
+            taskId: nextEntry.id
+          });
+        }
+
         return {
           ...imageHistory,
           currentHistoryEntryId: nextEntry.id
@@ -437,10 +568,31 @@ export function useAdjustmentHistoryBatch(
       });
     });
 
+    // Sync with backend
+    if (backendOperations.length > 0 && internalOptions.controller && internalOptions.firebaseUid) {
+      try {
+        const promises = backendOperations.map(async (operation) => {
+          await internalOptions.controller!.setHistoryIndex(
+            internalOptions.firebaseUid!,
+            operation.imageId,
+            operation.taskId
+          );
+        });
+
+        await Promise.all(promises);
+        
+        if (devWarningsRef.current) {
+          console.log(`[useAdjustmentHistoryBatch] Synced ${backendOperations.length} redo operations to backend`);
+        }
+      } catch (error) {
+        console.error('[useAdjustmentHistoryBatch] Failed to sync redo to backend:', error);
+      }
+    }
+
     if (!anyChanges && devWarningsRef.current) {
       console.warn('[useAdjustmentHistoryBatch] Redo skipped - no changes to redo for selected images');
     }
-  }, [selectedIds]);
+  }, [selectedIds, internalOptions]);
 
   // Check if any selected image can be undone
   const canUndoSelected = useCallback(() => {
@@ -562,10 +714,123 @@ export function useAdjustmentHistoryBatch(
     }
   }, [allImageIds, currentBatch, internalOptions.defaultAdjustmentState, internalOptions.devWarnings]);
 
-  // Sync adjustments for specific images - entry-based history version
-  const syncAdjustment = useCallback((configs: ImageAdjustmentConfig[]) => {
+  // Sync adjustments for specific images - loads full history from backend
+  const syncAdjustment = useCallback(async (configs: ImageAdjustmentConfig[]) => {
     if (configs.length === 0) return;
     
+    // If controller is available, load full history from backend
+    if (internalOptions.controller && internalOptions.firebaseUid) {
+      try {
+        const historyPromises = configs.map(async (config) => {
+          try {
+            const historyResponse = await internalOptions.controller!.getEditorHistory(
+              internalOptions.firebaseUid!,
+              config.imageId
+            );
+            
+            return {
+              imageId: config.imageId,
+              backendHistory: historyResponse.history || [],
+              fallbackAdjustment: config.adjustment
+            };
+          } catch (error) {
+            console.warn(`[useAdjustmentHistoryBatch] Failed to load history for image ${config.imageId}:`, error);
+            return {
+              imageId: config.imageId,
+              backendHistory: [],
+              fallbackAdjustment: config.adjustment
+            };
+          }
+        });
+
+        const historyResults = await Promise.all(historyPromises);
+
+        setImageHistories(prevHistories => {
+          const updatedHistories = [...prevHistories];
+          
+          for (const result of historyResults) {
+            const { imageId, backendHistory, fallbackAdjustment } = result;
+            const existingIndex = updatedHistories.findIndex(h => h.imageId === imageId);
+            
+            if (backendHistory.length > 0) {
+              // Convert backend history to local history entries
+              const historyEntries = backendHistory.map((entry, index) => ({
+                id: entry.task_id, // Use backend task_id as our entry id
+                adjustment: mapColorAdjustmentToAdjustmentState ? 
+                  mapColorAdjustmentToAdjustmentState(entry.editor_config.color_adjustment) :
+                  createDefaultAdjustmentState(internalOptions.defaultAdjustmentState)
+              }));
+
+              const newImageHistory = {
+                imageId,
+                currentHistoryEntryId: historyEntries[historyEntries.length - 1].id, // Point to latest entry
+                history: historyEntries
+              };
+
+              if (existingIndex >= 0) {
+                updatedHistories[existingIndex] = newImageHistory;
+              } else {
+                updatedHistories.push(newImageHistory);
+              }
+            } else {
+              // No backend history, use fallback adjustment or default
+              const adjustment = fallbackAdjustment ? {
+                ...createDefaultAdjustmentState(internalOptions.defaultAdjustmentState),
+                ...fallbackAdjustment
+              } : createDefaultAdjustmentState(internalOptions.defaultAdjustmentState);
+              
+              const entryId = generateEntryId();
+              const entry: HistoryAdjustmentEntry = {
+                id: entryId,
+                adjustment
+              };
+
+              const newImageHistory = {
+                imageId,
+                currentHistoryEntryId: entryId,
+                history: [entry]
+              };
+
+              if (existingIndex >= 0) {
+                updatedHistories[existingIndex] = newImageHistory;
+              } else {
+                updatedHistories.push(newImageHistory);
+              }
+            }
+          }
+          
+          return updatedHistories;
+        });
+
+        if (internalOptions.devWarnings) {
+          const syncedImageIds = configs.map(c => c.imageId);
+          const totalHistoryEntries = historyResults.reduce((sum, result) => sum + result.backendHistory.length, 0);
+          console.log('[useAdjustmentHistoryBatch] Synced adjustments with backend history', {
+            syncedImages: syncedImageIds,
+            totalHistoryEntries,
+            historyLoaded: true
+          });
+        }
+      } catch (error) {
+        console.error('[useAdjustmentHistoryBatch] Failed to sync with backend, falling back to local only:', error);
+        // Fall back to local-only sync
+        syncAdjustmentLocal(configs);
+      }
+    } else {
+      // No controller available, use local-only sync
+      syncAdjustmentLocal(configs);
+    }
+    
+    // Update allImageIds to include any new images
+    const newImageIds = configs.map(c => c.imageId);
+    setAllImageIds(prev => {
+      const combined = Array.from(new Set([...prev, ...newImageIds]));
+      return combined;
+    });
+  }, [internalOptions]);
+
+  // Local-only sync for fallback
+  const syncAdjustmentLocal = useCallback((configs: ImageAdjustmentConfig[]) => {
     setImageHistories(prevHistories => {
       const updatedHistories = [...prevHistories];
       
@@ -620,22 +885,7 @@ export function useAdjustmentHistoryBatch(
       
       return updatedHistories;
     });
-    
-    // Update allImageIds to include any new images
-    const newImageIds = configs.map(c => c.imageId);
-    setAllImageIds(prev => {
-      const combined = Array.from(new Set([...prev, ...newImageIds]));
-      return combined;
-    });
-    
-    if (internalOptions.devWarnings) {
-      const syncedImageIds = configs.map(c => c.imageId);
-      console.log('[useAdjustmentHistoryBatch] Synced adjustments with entry-based history', {
-        syncedImages: syncedImageIds,
-        historyReset: true
-      });
-    }
-  }, [internalOptions.defaultAdjustmentState, internalOptions.devWarnings]);
+  }, [internalOptions]);
 
   const toggleSelection = useCallback((imageId: string) => {
     setSelectedIds(prev => {

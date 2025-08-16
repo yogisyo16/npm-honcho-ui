@@ -7,7 +7,7 @@ export type {
 } from './hooks/editor/useHonchoEditor';
 export { useHonchoEditorBulk } from './hooks/editor/useHonchoEditorBulk';
 export type { 
-    PhotoData, ControllerBulk 
+    PhotoData 
 } from './hooks/editor/useHonchoEditorBulk';
 export type { Gallery, Content } from './hooks/editor/type';
 export { default as HHeaderEditor } from './components/editor/HHeaderEditor';

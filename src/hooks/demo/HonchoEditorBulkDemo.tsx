@@ -24,7 +24,7 @@ import {
 } from '@mui/material';
 import { useHonchoEditorBulk } from '../editor/useHonchoEditorBulk';
 import { Controller, AdjustmentState, Preset } from '../editor/useHonchoEditor';
-import { Gallery, ResponseGalleryPaging } from '../editor/type';
+import { Gallery, ResponseGalleryPaging, CreateEditorTaskRequest, GetHistoryResponse, GetGalleryUpdateTimestampResponse } from '../editor/type';
 
 // Mock data for demonstration
 const createMockGallery = (id: string, adjustments?: Partial<AdjustmentState>): Gallery => ({
@@ -153,6 +153,31 @@ const createMockController = (): Controller => {
 
     updatePreset: async (uid: string, data: Preset) => {
       console.log(`Updating preset:`, data);
+    },
+
+    createEditorConfig: async (uid: string, payload: CreateEditorTaskRequest) => {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      console.log('Creating editor config:', payload);
+    },
+
+    getEditorHistory: async (uid: string, imageId: string): Promise<GetHistoryResponse> => {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      // Mock history response - return empty history for demo
+      return {
+        history: []
+      };
+    },
+
+    getGalleryUpdateTimestamp: async (uid: string, eventId: string): Promise<GetGalleryUpdateTimestampResponse> => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      return {
+        gallery: []
+      };
+    },
+
+    setHistoryIndex: async (uid: string, imageId: string, taskId: string) => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log(`Setting history index for image ${imageId} to task ${taskId}`);
     },
   };
 };

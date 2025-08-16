@@ -35,3 +35,20 @@ export function mapColorAdjustmentToAdjustmentState(colors: ColorAdjustment): Ad
         sharpnessScore: colors.sharpness
     }
 }
+
+export function mapAdjustmentStateToColorAdjustment(state: AdjustmentState): ColorAdjustment {
+    return {
+        temperature: state.tempScore,
+        tint: state.tintScore,
+        vibrance: state.vibranceScore,
+        saturation: state.saturationScore,
+        exposure: state.exposureScore,
+        contrast: state.contrastScore,
+        highlights: state.highlightsScore,
+        shadows: state.shadowsScore,
+        whites: state.whitesScore,
+        blacks: state.blacksScore,
+        clarity: state.clarityScore,
+        sharpness: state.sharpnessScore
+    }
+}
