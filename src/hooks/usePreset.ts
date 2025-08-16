@@ -103,7 +103,7 @@ export function usePreset(
     const [isInitialized, setIsInitialized] = useState(false);
 
     // Helper function to log debug messages - memoized to prevent re-renders
-    const debugLog = useCallback((message: string, data?: any) => {
+    const debugLog = useCallback((message: string, data?: unknown) => {
         if (memoizedOptions.devWarnings) {
             console.log(`[usePreset] ${message}`, data || '');
         }
@@ -124,8 +124,8 @@ export function usePreset(
     }
 
     // Helper function to handle errors
-    const handleError = useCallback((operation: string, error: any) => {
-        const errorMessage = `Failed to ${operation}: ${error?.message || error}`;
+    const handleError = useCallback((operation: string, error: unknown) => {
+        const errorMessage = `Failed to ${operation}: ${error instanceof Error ? error.message : String(error)}`;
         setError(errorMessage);
         debugLog(`Error in ${operation}`, error);
         return false;
@@ -176,7 +176,7 @@ export function usePreset(
                 }
                 debugLog('Background presets loaded successfully', { count: loadedPresets.length });
             })
-            .catch((err: any) => {
+            .catch((err: unknown) => {
                 debugLog('Background load failed:', err);
                 // Don't set error state for background operations
             });

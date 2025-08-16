@@ -1,2 +1,2 @@
 export { HonchoEditorBulkDemo } from './HonchoEditorBulkDemo';
-export { HonchoEditorSingleDemo } from './HonchoEditorSingleDemo';
+export { HonchoEditorSingleCleanDemo } from './HonchoEditorSingleCleanDemo';

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useEditorHeadless } from '../hooks/useEditorHeadless';
 import { EditorProcessingService } from '../context/EditorProcessingService';
+import HonchoEditor from "../editor/honcho-editor";
 
 interface EditorContextValue {
     isReady: boolean;
@@ -13,17 +14,27 @@ interface EditorContextValue {
         isProcessing: boolean;
         hasProcessor: boolean;
     };
+    editor: HonchoEditor | null;
+    loadImageFromUrl: ((url: string) => Promise<{ width: number; height: number }>) | null;
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
 
 interface EditorProviderProps {
     children: React.ReactNode;
+    /** URL to the honcho-photo-editor.js script (defaults to '/honcho-photo-editor.js') */
+    scriptUrl?: string;
+    /** URL to the honcho-photo-editor.wasm file (defaults to '/honcho-photo-editor.wasm') */
+    wasmUrl?: string;
 }
 
-export const EditorProvider: React.FC<EditorProviderProps> = ({ children }) => {
+export const EditorProvider: React.FC<EditorProviderProps> = ({ 
+    children, 
+    scriptUrl = '/honcho-photo-editor.js',
+    wasmUrl = '/honcho-photo-editor.wasm'
+}) => {
     // Single editor instance for the entire app
-    const { editor, isReady, error, processImage } = useEditorHeadless();
+    const { editor, isReady, error, processImage, loadImageFromUrl } = useEditorHeadless({ scriptUrl, wasmUrl });
     
     // Single processing service instance
     const [processingService] = useState(() => new EditorProcessingService());
@@ -69,6 +80,8 @@ export const EditorProvider: React.FC<EditorProviderProps> = ({ children }) => {
         error,
         processingService,
         queueStatus,
+        editor: editor,
+        loadImageFromUrl
     };
 
     return (

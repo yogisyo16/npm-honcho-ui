@@ -1,10 +1,21 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { AdjustmentState } from './editor/useHonchoEditor';
+import { AdjustmentState, Controller } from './editor/useHonchoEditor';
+import { CreateEditorTaskRequest, ColorAdjustment } from './editor/type';
+
+/**
+ * History entry with task ID for backend synchronization
+ */
+interface HistoryEntry {
+    /** The adjustment state */
+    state: AdjustmentState;
+    /** Task ID for backend operations (if synced) */
+    taskId?: string;
+}
 
 /**
  * Configuration options for the adjustment history hook
  */
-interface HistoryOptions {
+export interface HistoryOptions {
     /** Maximum number of history entries to keep. Use 'unlimited' for no limit */
     maxSize?: number | 'unlimited';
     /** Whether to enable batch mode for grouping multiple changes */
@@ -82,6 +93,26 @@ export interface UseAdjustmentHistoryReturn {
 }
 
 /**
+ * Convert AdjustmentState to ColorAdjustment format for backend
+ */
+const convertAdjustmentStateToColorAdjustment = (adjustmentState: AdjustmentState): ColorAdjustment => {
+    return {
+        temperature: adjustmentState.tempScore,
+        tint: adjustmentState.tintScore,
+        saturation: adjustmentState.saturationScore,
+        vibrance: adjustmentState.vibranceScore,
+        exposure: adjustmentState.exposureScore,
+        contrast: adjustmentState.contrastScore,
+        highlights: adjustmentState.highlightsScore,
+        shadows: adjustmentState.shadowsScore,
+        whites: adjustmentState.whitesScore,
+        blacks: adjustmentState.blacksScore,
+        clarity: adjustmentState.clarityScore,
+        sharpness: adjustmentState.sharpnessScore,
+    };
+};
+
+/**
  * Compare two AdjustmentState objects for equality
  * Uses JSON.stringify for deep comparison of all adjustment values
  */
@@ -120,26 +151,38 @@ const compareAdjustmentStates = (a: AdjustmentState, b: AdjustmentState): boolea
  * - Automatic AdjustmentState comparison
  * 
  * @param initialState - The initial AdjustmentState value
+ * @param controller - Controller for backend operations (optional)
+ * @param firebaseUid - Firebase UID for backend operations (optional)
+ * @param currentImageId - Current image ID for backend operations (optional)
  * @param options - Configuration options for history behavior
  * @returns Object with current state, history info, actions, and config
  */
 export function useAdjustmentHistory(
     initialState: AdjustmentState,
+    controller?: Controller,
+    firebaseUid?: string,
+    currentImageId?: string,
     options: HistoryOptions = {}
 ): UseAdjustmentHistoryReturn {
     // Internal stabilization - prevent re-renders from options object recreation
     const internalOptions = useMemo(() => ({
         maxSize: options.maxSize ?? 'unlimited' as const,
         enableBatching: options.enableBatching ?? false,
-        devWarnings: options.devWarnings ?? false
+        devWarnings: options.devWarnings ?? false,
+        controller: controller,
+        firebaseUid: firebaseUid,
+        currentImageId: currentImageId
     }), [
         options.maxSize, 
         options.enableBatching, 
-        options.devWarnings
+        options.devWarnings,
+        controller,
+        firebaseUid,
+        currentImageId
     ]);
 
     // Core state management
-    const [history, setHistory] = useState<AdjustmentState[]>([initialState]);
+    const [history, setHistory] = useState<HistoryEntry[]>([{ state: initialState }]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [currentState, setCurrentState] = useState<AdjustmentState>(initialState);
     
@@ -162,9 +205,9 @@ export function useAdjustmentHistory(
     // Sync currentState with history when not in batch mode
     useEffect(() => {
         if (!batchModeRef.current) {
-            setCurrentState(history[currentIndex]);
+            setCurrentState(history[currentIndex]?.state || initialState);
         }
-    }, [history, currentIndex]);
+    }, [history, currentIndex, initialState]);
     const getMemoryUsage = useCallback(() => {
         try {
             const historyString = JSON.stringify(history);
@@ -242,19 +285,36 @@ export function useAdjustmentHistory(
         // Normal mode: Update history immediately
         setHistory(prevHistory => {
             const truncatedHistory = prevHistory.slice(0, currentIndex + 1);
-            const newHistory = [...truncatedHistory, newState];
+            const newHistory = [...truncatedHistory, { state: newState }];
             setCurrentIndex(newHistory.length - 1);
             return newHistory;
         });
     }, [currentState, currentIndex]);
 
     // Undo to previous state
-    const undo = useCallback(() => {
+    const undo = useCallback(async () => {
         if (currentIndex > 0) {
             const newIndex = currentIndex - 1;
-            const newState = history[newIndex];
+            const historyEntry = history[newIndex];
+            const newState = historyEntry.state;
+            
             setCurrentIndex(newIndex);
             setCurrentState(newState);
+            
+            // Call controller to set history index in backend if taskId exists
+            if (historyEntry.taskId && internalOptions.controller && internalOptions.firebaseUid && internalOptions.currentImageId) {
+                try {
+                    console.log(`🔙 Undo: Setting history index to taskId: ${historyEntry.taskId}`);
+                    await internalOptions.controller.setHistoryIndex(
+                        internalOptions.firebaseUid,
+                        internalOptions.currentImageId,
+                        historyEntry.taskId
+                    );
+                    console.log('✅ Successfully set history index for undo');
+                } catch (error) {
+                    console.error('❌ Failed to set history index for undo:', error);
+                }
+            }
             
             // Exit batch mode when undoing
             if (batchModeRef.current) {
@@ -263,21 +323,38 @@ export function useAdjustmentHistory(
                 batchStartStateRef.current = null;
             }
         }
-    }, [currentIndex, history]);
+    }, [currentIndex, history, internalOptions]);
 
     // Redo to next state
-    const redo = useCallback(() => {
+    const redo = useCallback(async () => {
         if (currentIndex < history.length - 1) {
             const newIndex = currentIndex + 1;
-            const newState = history[newIndex];
+            const historyEntry = history[newIndex];
+            const newState = historyEntry.state;
+            
             setCurrentIndex(newIndex);
             setCurrentState(newState);
+            
+            // Call controller to set history index in backend if taskId exists
+            if (historyEntry.taskId && internalOptions.controller && internalOptions.firebaseUid && internalOptions.currentImageId) {
+                try {
+                    console.log(`🔄 Redo: Setting history index to taskId: ${historyEntry.taskId}`);
+                    await internalOptions.controller.setHistoryIndex(
+                        internalOptions.firebaseUid,
+                        internalOptions.currentImageId,
+                        historyEntry.taskId
+                    );
+                    console.log('✅ Successfully set history index for redo');
+                } catch (error) {
+                    console.error('❌ Failed to set history index for redo:', error);
+                }
+            }
         }
-    }, [currentIndex, history]);
+    }, [currentIndex, history, internalOptions]);
 
     // Reset history with new initial state
     const reset = useCallback((newInitialState: AdjustmentState) => {
-        setHistory([newInitialState]);
+        setHistory([{ state: newInitialState }]);
         setCurrentIndex(0);
         setCurrentState(newInitialState);
         batchModeRef.current = internalOptions.enableBatching;
@@ -288,7 +365,8 @@ export function useAdjustmentHistory(
     // Jump to specific index in history
     const jumpToIndex = useCallback((index: number) => {
         if (index >= 0 && index < history.length) {
-            const newState = history[index];
+            const historyEntry = history[index];
+            const newState = historyEntry.state;
             setCurrentIndex(index);
             setCurrentState(newState);
             
@@ -303,7 +381,7 @@ export function useAdjustmentHistory(
 
     // Clear all history and start fresh
     const clearHistory = useCallback(() => {
-        setHistory([currentState]);
+        setHistory([{ state: currentState }]);
         setCurrentIndex(0);
         batchModeRef.current = internalOptions.enableBatching;
         batchStartIndexRef.current = null;
@@ -312,7 +390,7 @@ export function useAdjustmentHistory(
 
     // Get copy of entire history
     const getHistory = useCallback(() => {
-        return [...history];
+        return history.map(entry => entry.state);
     }, [history]);
 
     // Manually trim history
@@ -361,8 +439,8 @@ export function useAdjustmentHistory(
         let finalIndex = targetIndex ?? newHistory.length - 1; // Default to last item
         finalIndex = Math.max(0, Math.min(finalIndex, newHistory.length - 1)); // Clamp to valid range
 
-        // Create a copy of the new history to avoid mutations
-        const historyToSet = newHistory.map(state => ({ ...state }));
+        // Create a copy of the new history to avoid mutations and convert to HistoryEntry format
+        const historyToSet = newHistory.map(state => ({ state: { ...state } }));
 
         // Apply max size limit if needed
         if (maxSizeRef.current !== 'unlimited' && historyToSet.length > maxSizeRef.current) {
@@ -374,7 +452,7 @@ export function useAdjustmentHistory(
             
             setHistory(trimmedHistory);
             setCurrentIndex(finalIndex);
-            setCurrentState(trimmedHistory[finalIndex]);
+            setCurrentState(trimmedHistory[finalIndex].state);
             
             if (devWarningsRef.current) {
                 console.warn(`syncHistory: Trimmed ${trimAmount} entries to respect maxSize of ${maxSizeRef.current}`);
@@ -383,7 +461,7 @@ export function useAdjustmentHistory(
             // Set history as-is
             setHistory(historyToSet);
             setCurrentIndex(finalIndex);
-            setCurrentState(historyToSet[finalIndex]);
+            setCurrentState(historyToSet[finalIndex].state);
         }
 
         if (devWarningsRef.current) {
@@ -399,7 +477,7 @@ export function useAdjustmentHistory(
         }
     }, [enforceMaxSize]);
 
-    const setBatchMode = useCallback((enabled: boolean) => {
+    const setBatchMode = useCallback(async (enabled: boolean) => {
         const wasInBatch = batchModeRef.current;
         
         if (enabled && !wasInBatch) {
@@ -417,8 +495,47 @@ export function useAdjustmentHistory(
                 
                 setHistory(prevHistory => {
                     const truncatedHistory = prevHistory.slice(0, batchStartIndexRef.current! + 1);
-                    const newHistory = [...truncatedHistory, currentState];
+                    
+                    // Generate a unique task ID for this history entry
+                    const taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    const newHistoryEntry: HistoryEntry = {
+                        state: currentState,
+                        taskId: taskId
+                    };
+                    
+                    const newHistory = [...truncatedHistory, newHistoryEntry];
                     setCurrentIndex(newHistory.length - 1);
+
+                    // Call controller to create history in backend
+                    if (internalOptions.controller && internalOptions.firebaseUid && internalOptions.currentImageId) {
+                        try {
+                            console.log('🔄 Creating editor history in backend for batch mode end');
+                            
+                            const createEditorConfigPayload: CreateEditorTaskRequest = {
+                                gallery_id: internalOptions.currentImageId,
+                                task_id: taskId,
+                                color_adjustment: convertAdjustmentStateToColorAdjustment(currentState)
+                            };
+                            
+                            // Create editor config with current adjustments
+                            internalOptions.controller.createEditorConfig(
+                                internalOptions.firebaseUid, 
+                                createEditorConfigPayload
+                            ).then(() => {
+                                console.log('✅ Successfully created editor history in backend');
+                            }).catch((error: unknown) => {
+                                console.error('❌ Failed to create editor history in backend:', error);
+                            });
+                        } catch (error) {
+                            console.error('❌ Error calling controller.createEditorConfig:', error);
+                        }
+                    } else {
+                        if (internalOptions.devWarnings) {
+                            console.warn('⚠️ Controller, firebaseUid, or currentImageId not provided - skipping backend history creation');
+                        }
+                    }
+                    
                     return newHistory;
                 });
             }
@@ -426,7 +543,7 @@ export function useAdjustmentHistory(
             batchStartIndexRef.current = null;
             batchStartStateRef.current = null;
         }
-    }, [currentIndex, currentState]);
+    }, [currentIndex, currentState, internalOptions]);
 
     // History info object
     const historyInfo: HistoryInfo = useMemo(() => ({

@@ -1,4 +1,5 @@
 export { useHonchoEditor } from './hooks/editor/useHonchoEditor';
+export { useHonchoEditorSingle } from './hooks/editor/useHonchoEditorSingle';
 export type {
   Controller,
   AdjustmentState,

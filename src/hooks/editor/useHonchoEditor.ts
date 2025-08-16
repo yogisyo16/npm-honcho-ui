@@ -600,11 +600,11 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
 
     const handleCopyParentChange = (
         event: React.ChangeEvent<HTMLInputElement>,
-        setter: React.Dispatch<React.SetStateAction<any>>
+        setter: React.Dispatch<React.SetStateAction<{ [key: string]: boolean }>>
     ) => {
         const isChecked = event.target.checked;
-        setter((prev: any) => {
-            const newState: any = {};
+        setter((prev: { [key: string]: boolean }) => {
+            const newState: { [key: string]: boolean } = {};
             Object.keys(prev).forEach(key => { newState[key] = isChecked; });
             return newState;
         });
@@ -612,9 +612,9 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
     
     const handleCopyChildChange = (
         event: React.ChangeEvent<HTMLInputElement>,
-        setter: React.Dispatch<React.SetStateAction<any>>
+        setter: React.Dispatch<React.SetStateAction<{ [key: string]: boolean }>>
     ) => {
-        setter((prev: any) => ({
+        setter((prev: { [key: string]: boolean }) => ({
             ...prev,
             [event.target.name]: event.target.checked,
         }));

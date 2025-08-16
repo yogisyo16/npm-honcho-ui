@@ -134,15 +134,15 @@ export function usePaging(
     }
 
     // Helper function to log debug messages
-    const debugLog = useCallback((message: string, data?: any) => {
+    const debugLog = useCallback((message: string, data?: unknown) => {
         if (memoizedOptions.devWarnings) {
             console.log(`[usePaging] ${message}`, data || '');
         }
     }, [memoizedOptions.devWarnings]);
 
     // Helper function to handle errors
-    const handleError = useCallback((operation: string, error: any) => {
-        const errorMessage = `Failed to ${operation}: ${error?.message || error}`;
+    const handleError = useCallback((operation: string, error: unknown) => {
+        const errorMessage = `Failed to ${operation}: ${error instanceof Error ? error.message : String(error)}`;
         setError(errorMessage);
         debugLog(`Error in ${operation}`, error);
     }, [debugLog]);
