@@ -1,3 +1,5 @@
 node_modules
 coverage
 claude.md
+test-app/
+dist/

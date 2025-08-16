@@ -40,21 +40,6 @@ const mapToImageAdjustmentConfig = (gallery: Gallery): ImageAdjustmentConfig => 
     };
 };
 
-export interface ControllerBulk {
-    // Image Handling
-    onGetImage(firebaseUid: string, imageID: string): Promise<Gallery>;
-    getImageList(firebaseUid: string, eventID: string, page: number): Promise<ResponseGalleryPaging>;
-
-    // syncConfig
-    syncConfig(firebaseUid: string): Promise<void>;
-    handleBack(firebaseUid: string, lastImageID: string):void;
-
-    // Preset
-    getPresets(firebaseUid: string): Promise<Preset[]>;
-    createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<Preset>;
-    deletePreset(firebaseUid: string, presetId: string): Promise<void>;
-}
-
 function mapColorAdjustmentToAdjustmentState(adj: ColorAdjustment | undefined): AdjustmentState | undefined {
     if (!adj) return undefined;
 
@@ -75,8 +60,11 @@ function mapColorAdjustmentToAdjustmentState(adj: ColorAdjustment | undefined): 
 }
 
 export function useHonchoEditorBulk(controller: Controller, eventID: string, firebaseUid: string) {
-    const { currentBatch, selectedIds, actions: batchActions } = useAdjustmentHistoryBatch();
-    const { images, info, actions } = usePaging(controller, firebaseUid, eventID);
+    const { currentBatch, selectedIds, actions: batchActions, historyInfo } = useAdjustmentHistoryBatch();
+    const { images, info, actions } = usePaging(controller, firebaseUid, eventID, {
+        autoLoad: true,
+        autoReset: false  // Prevent auto-reset to avoid loops
+    });
 
     // Track which images have been synced to prevent loops
     const lastSyncedImageIds = useRef<Set<string>>(new Set());
@@ -90,14 +78,33 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
     const hasMore = info.hasMore;
 
     const imageData = useMemo(() => {
-        return images.map(item => {
+        console.debug("imageData recalculating with:", {
+            imagesLength: images.length,
+            selectedIds,
+            currentBatch_allImages: currentBatch.allImages,
+            currentBatch_allImages_keys: Object.keys(currentBatch.allImages)
+        });
+        
+        const res = images.map(item => {
             const basePhoto = mapGalleryToPhotoData(item, selectedIds);
             const batchAdjustment = currentBatch.allImages[item.id];
+            
+            console.debug(`Processing image ${item.id}:`, {
+                basePhoto,
+                batchAdjustment,
+                hasBatchAdjustment: !!batchAdjustment
+            });
             
             // Merge batch adjustments over backend adjustments
             return batchAdjustment ? { ...basePhoto, ...batchAdjustment } : basePhoto;
         });
+        console.debug("imageData result:", res);
+        return res;
     }, [images, selectedIds, currentBatch.allImages]);
+
+    // Store the latest batchActions.syncAdjustment in a ref to avoid dependency issues
+    const syncAdjustmentRef = useRef(batchActions.syncAdjustment);
+    syncAdjustmentRef.current = batchActions.syncAdjustment;
 
     // Safe sync: Only sync new images to prevent infinite loops
     useEffect(() => {
@@ -109,10 +116,10 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
         
         if (hasNewImages) {
             console.log('[useHonchoEditorBulk] Syncing new images to batch:', images.length);
-            batchActions.syncAdjustment(images.map(mapToImageAdjustmentConfig));
+            syncAdjustmentRef.current(images.map(mapToImageAdjustmentConfig));
             lastSyncedImageIds.current = currentImageIds;
         }
-    }, [images, batchActions]);
+    }, [images]); // Only depend on images, not batchActions
 
     const handleBackCallbackBulk = useCallback(() => {
         const lastSelectedId = selectedIds.length > 0 ? selectedIds[selectedIds.length - 1] : "";
@@ -123,8 +130,15 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
     // This factory creates functions that adjust a value for all selected images
     
     const createRelativeAdjuster = useCallback((key: keyof AdjustmentState, amount: number) => () => {
+        console.debug("createRelativeAdjuster called:", { key, amount, selectedIds });
+        console.debug("currentBatch.allImages before:", currentBatch.allImages);
         batchActions.adjustSelected({ [key]: amount });
-    }, [batchActions]);
+        
+        // Debug after a short delay to see if the state changed
+        setTimeout(() => {
+            console.debug("currentBatch.allImages after:", currentBatch.allImages);
+        }, 100);
+    }, [batchActions, selectedIds, currentBatch.allImages]);
 
     const handleBulkTempDecreaseMax = createRelativeAdjuster('tempScore', -20);
     const handleBulkTempDecrease = createRelativeAdjuster('tempScore', -5);
@@ -303,5 +317,11 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
         handleBulkSharpnessDecrease,
         handleBulkSharpnessIncrease,
         handleBulkSharpnessIncreaseMax,
+        
+        // History actions
+        handleUndo: batchActions.undo,
+        handleRedo: batchActions.redo,
+        handleReset: batchActions.reset,
+        historyInfo,
     };
 }

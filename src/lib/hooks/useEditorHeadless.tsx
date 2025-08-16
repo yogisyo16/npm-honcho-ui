@@ -1,7 +1,17 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { AdjustmentValues, HonchoEditor, HonchoEditorUtils } from '../editor/honcho-editor';
+import type { AdjustmentValues, HonchoEditor } from '../editor/honcho-editor';
+
+// Access HonchoEditor from global window object since it's not exported as ES module
+declare global {
+  interface Window {
+    HonchoEditor: new () => any;
+    HonchoEditorUtils: {
+      imageDataToBlob: (imageData: ImageData, format?: string, quality?: number) => Promise<Blob>;
+    };
+  }
+}
 
 interface EditorTask {
     id: string;
@@ -67,10 +77,10 @@ export function useEditorHeadless() {
                 console.debug('Script loaded, initializing editor...');
                 
                 if (!editorRef.current) {
-                    editorRef.current = new HonchoEditor();
+                    editorRef.current = new window.HonchoEditor();
                 }
 
-                await editorRef.current.initialize(false);
+                await editorRef.current!!.initialize(false);
                 setIsReady(true);
             } catch (e) {
                 console.error("Failed to initialize editor:", e);
@@ -145,7 +155,7 @@ export function useEditorHeadless() {
             );
 
             // Convert ImageData to Blob
-            const processedBlob = await HonchoEditorUtils.imageDataToBlob(processedImageData);
+            const processedBlob = await window.HonchoEditorUtils.imageDataToBlob(processedImageData);
             
             // Create blob URL for processed result
             const blobUrl = URL.createObjectURL(processedBlob);

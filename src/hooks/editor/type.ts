@@ -109,3 +109,76 @@ export interface ResponseGalleryPaging {
 	next_page: number;
 	sum_of_image?: number;
 }
+
+/*
+{
+      "id": "789d14c3333460dbd3bd45be",
+      "gallery_id": "16037f2c2065338cf83c77b8",
+      "event_id": "689d60c3333460dbd3bd96be",
+      "task_id": "very-unique-id-567891234567",
+      "editor_config": {
+        "color_adjustment": {
+          "temperature": 15,
+          "tint": 0,
+          "saturation": 0,
+          "vibrance": 10,
+          "exposure": 0,
+          "contrast": 20,
+          "highlights": 0,
+          "shadows": 5,
+          "whites": 0,
+          "blacks": 0,
+          "clarity": 0,
+          "sharpness": 0
+        }
+      },
+      "log": {
+        "created_at": "2025-08-15T10:04:53.704+07:00",
+        "updated_at": "2025-08-15T10:04:38.306+07:00"
+      }
+    }
+*/
+export interface EditorConfig {
+	id: string;
+	gallery_id: string;
+	event_id: string;
+	task_id: string;
+	editor_config: EditorConfig;
+	log: Log;
+}
+
+/*
+{
+  "gallery_id": "689da9b7807073e65d402ff1",
+  "task_id": "very-unique-id-0123456789",
+  "color_adjustment": {
+    "temperature": 15,
+    "tint": 0,
+    "saturation": 0,
+    "vibrance": 10,
+    "exposure": 0,
+    "contrast": 20,
+    "highlights": 0,
+    "shadows": 5,
+    "whites": 0,
+    "blacks": 0,
+    "clarity": 0,
+    "sharpness": 0
+  },
+  "replace_from": "very-unique-id-9876543210"
+}
+*/
+export interface CreateEditorTaskRequest {
+	gallery_id: string;
+	task_id: string;
+	color_adjustment: ColorAdjustment;
+	replace_from?: string;
+}
+
+export interface GetHistoryResponse {
+	history: EditorConfig[];
+}
+
+export interface GetGalleryUpdateTimestampResponse {
+	gallery: string[]
+}

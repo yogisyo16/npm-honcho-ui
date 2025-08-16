@@ -1,11 +1,17 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { HonchoEditor } from '../../lib/editor/honcho-editor';
-import { Gallery, ResponseGalleryPaging } from '../../hooks/editor/type'
+// Access HonchoEditor from global window object since it's not exported as ES module
+declare global {
+  interface Window {
+    HonchoEditor: new () => any;
+  }
+}
+import { CreateEditorTaskRequest, Gallery, GetGalleryUpdateTimestampResponse, GetHistoryResponse, ResponseGalleryPaging } from '../../hooks/editor/type'
 import { mapAdjustmentStateToAdjustmentEditor, mapColorAdjustmentToAdjustmentState } from '../../utils/adjustment';
 import { useAdjustmentHistory } from '../useAdjustmentHistory';
 import { useGallerySwipe } from '../useGallerySwipe';
+import HonchoEditor from "../../lib/editor/honcho-editor";
 
 // Augment the global window object for the WASM Module
 declare global {
@@ -38,6 +44,12 @@ export interface Controller {
     createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<void>;
     deletePreset(firebaseUid: string, presetId: string): Promise<void>;
     updatePreset(firebaseUid: string, data: Preset): Promise<void>;
+
+    // EditorConfig
+    createEditorConfig(firebaseUid: string, payload: CreateEditorTaskRequest): Promise<void>;
+    getEditorHistory(firebaseUid: string, imageID: string): Promise<GetHistoryResponse>;
+    getGalleryUpdateTimestamp(firebaseUid: string, eventID: string): Promise<GetGalleryUpdateTimestampResponse>;
+    setHistoryIndex(firebaseUid: string, imageID: string, taskID: string): Promise<void>;
 }
 
 export type AdjustmentState = {
@@ -286,7 +298,7 @@ export function useHonchoEditor(controller: Controller, initImageId: string, fir
             console.log("[Editor] window.Module found. Initializing editor..."); // Log entry
             try {
                 setEditorStatus("Loading WASM module...");
-                const editor = new HonchoEditor();
+                const editor = new window.HonchoEditor();
                 await editor.initialize(true);
                 editorRef.current = editor;
                 setIsEditorReady(true);

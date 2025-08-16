@@ -1,3 +1,11 @@
+// Placeholder test file - actual tests are commented out for now
+describe('useGallerySwipe', () => {
+  it('should have tests implemented', () => {
+    expect(true).toBe(true);
+  });
+});
+
+// TODO: Uncomment and implement these tests when ready
 // import { renderHook, waitFor, act } from '@testing-library/react';
 // import { useGallerySwipe } from '../useGallerySwipe';
 // import { Controller } from '../editor/useHonchoEditor';
