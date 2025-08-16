@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Gallery } from './editor/type';
-import { Controller } from "./editor/useHonchoEditor";
+import { Controller } from "./editor/type";
 
 /**
  * Configuration options for the paging hook

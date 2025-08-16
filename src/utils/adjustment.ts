@@ -1,5 +1,5 @@
 import { ColorAdjustment } from "../hooks/editor/type";
-import { AdjustmentState } from "../hooks/editor/useHonchoEditor";
+import { AdjustmentState } from "../hooks/editor/type";
 import { AdjustmentValues } from "../lib/editor/honcho-editor";
 
 export function mapAdjustmentStateToAdjustmentEditor(state: AdjustmentState): AdjustmentValues {

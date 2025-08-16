@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { Controller, Preset, AdjustmentState } from './editor/useHonchoEditor';
+import { Controller, Preset, AdjustmentState } from './editor/type';
 
 /**
  * Configuration options for the preset hook

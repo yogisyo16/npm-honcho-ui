@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { AdjustmentState, Controller } from './editor/useHonchoEditor';
+import { AdjustmentState, Controller } from './editor/type';
 import { CreateEditorTaskRequest, ColorAdjustment } from './editor/type';
 
 /**

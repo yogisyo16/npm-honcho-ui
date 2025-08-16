@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { AdjustmentState, Controller } from './editor/useHonchoEditor';
+import { AdjustmentState, Controller } from './editor/type';
 import { mapAdjustmentStateToColorAdjustment, mapColorAdjustmentToAdjustmentState } from '../utils/adjustment';
 
 export interface HistoryAdjustmentBatch {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Controller } from "./editor/useHonchoEditor";
+import { Controller } from "./editor/type";
 import { Gallery, ResponseGalleryPaging } from "./editor/type";
 
 /**

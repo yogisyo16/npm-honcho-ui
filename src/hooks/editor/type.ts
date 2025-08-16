@@ -183,3 +183,68 @@ export interface GetHistoryResponse {
 export interface GetGalleryUpdateTimestampResponse {
 	gallery: string[]
 }
+
+// Adjustment State interface for editor adjustments
+export interface AdjustmentState {
+    tempScore: number;
+    tintScore: number;
+    vibranceScore: number;
+    saturationScore: number;
+    exposureScore: number;
+    highlightsScore: number;
+    shadowsScore: number;
+    whitesScore: number;
+    blacksScore: number;
+    contrastScore: number;
+    clarityScore: number;
+    sharpnessScore: number;
+}
+
+// Preset interface for saving and applying adjustment presets
+export interface Preset {
+    id: string;
+    name: string;
+    is_default: boolean;
+    temperature: number;
+    tint: number;
+    saturation: number;
+    vibrance: number;
+    exposure: number;
+    contrast: number;
+    highlights: number;
+    shadows: number;
+    whites: number;
+    blacks: number;
+    clarity: number;
+    sharpness: number;
+}
+
+// Controller interface defining all backend operations
+export interface Controller {
+    // Image Handling
+    onGetImage(firebaseUid: string, imageID: string): Promise<Gallery>;
+    getImageList(firebaseUid: string, eventId: string, page: number): Promise<ResponseGalleryPaging>;
+
+    // syncConfig
+    syncConfig(firebaseUid: string): Promise<void>;
+    handleBack(firebaseUid: string, imageID: string): void;
+
+    // Preset
+    getPresets(firebaseUid: string): Promise<Preset[]>;
+    createPreset(firebaseUid: string, name: string, settings: AdjustmentState): Promise<void>;
+    deletePreset(firebaseUid: string, presetId: string): Promise<void>;
+    updatePreset(firebaseUid: string, data: Preset): Promise<void>;
+
+    // EditorConfig
+    createEditorConfig(firebaseUid: string, payload: CreateEditorTaskRequest): Promise<void>;
+    getEditorHistory(firebaseUid: string, imageID: string): Promise<GetHistoryResponse>;
+    getGalleryUpdateTimestamp(firebaseUid: string, eventID: string): Promise<GetGalleryUpdateTimestampResponse>;
+    setHistoryIndex(firebaseUid: string, imageID: string, taskID: string): Promise<void>;
+}
+
+// Bulk Image List item for file uploads
+export interface ImageItem {
+    id: string;
+    url: string;    // Temporary URL for displaying the thumbnails
+    file: File;     // The actual File object
+}

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { SelectChangeEvent } from "@mui/material";
-import { AdjustmentState, Controller, Preset } from './useHonchoEditor';
+import { AdjustmentState, Controller, Preset } from './type';
 import { ColorAdjustment, Gallery } from '../../hooks/editor/type'
 import { useAdjustmentHistoryBatch, ImageAdjustmentConfig  } from '../useAdjustmentHistoryBatch';
 import { AdjustmentValues } from "../../lib/editor/honcho-editor";

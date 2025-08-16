@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { HistoryOptions, useAdjustmentHistory } from '../useAdjustmentHistory';
 import { useGallerySwipe } from '../useGallerySwipe';
 import { usePreset } from '../usePreset';
-import { Controller, AdjustmentState, Preset } from './useHonchoEditor';
+import { Controller, AdjustmentState, Preset } from './type';
 import { Gallery } from './type';
 import { AdjustmentValues } from '../../lib/editor/honcho-editor';
 

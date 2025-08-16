@@ -1,12 +1,11 @@
-export { useHonchoEditor } from './hooks/editor/useHonchoEditor';
 export { useHonchoEditorSingle } from './hooks/editor/useHonchoEditorSingle';
+export { useHonchoEditorBulk } from './hooks/editor/useHonchoEditorBulk';
 export type {
   Controller,
   AdjustmentState,
   Preset,
   ImageItem,
-} from './hooks/editor/useHonchoEditor';
-export { useHonchoEditorBulk } from './hooks/editor/useHonchoEditorBulk';
+} from './hooks/editor/type';
 export type { 
     PhotoData 
 } from './hooks/editor/useHonchoEditorBulk';

@@ -32,7 +32,7 @@ import {
 } from '@mui/icons-material';
 import { useHonchoEditorSingle } from '../editor/useHonchoEditorSingle';
 import { useEditorHeadless } from '../../lib/hooks/useEditorHeadless';
-import { Controller, AdjustmentState, Preset } from '../editor/useHonchoEditor';
+import { Controller, AdjustmentState, Preset } from '../editor/type';
 import { Gallery, CreateEditorTaskRequest } from '../editor/type';
 import { ImageSize } from '../../lib/editor/honcho-editor';
 

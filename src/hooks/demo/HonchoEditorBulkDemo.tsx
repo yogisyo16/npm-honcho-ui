@@ -23,7 +23,7 @@ import {
     Stack
 } from '@mui/material';
 import { useHonchoEditorBulk } from '../editor/useHonchoEditorBulk';
-import { Controller, AdjustmentState, Preset } from '../editor/useHonchoEditor';
+import { Controller, AdjustmentState, Preset } from '../editor/type';
 import { Gallery, ResponseGalleryPaging, CreateEditorTaskRequest, GetHistoryResponse, GetGalleryUpdateTimestampResponse } from '../editor/type';
 
 // Mock data for demonstration
