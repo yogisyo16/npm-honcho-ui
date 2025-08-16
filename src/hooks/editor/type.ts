@@ -176,6 +176,7 @@ export interface CreateEditorTaskRequest {
 }
 
 export interface GetHistoryResponse {
+	current_task_id: string;
 	history: EditorHistoryEntry[];
 }
 

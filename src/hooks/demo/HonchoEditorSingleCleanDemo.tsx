@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
     Box,
     Container,
@@ -110,21 +110,21 @@ const createMockController = (): Controller => {
 
     return {
         onGetImage: async (uid: string, imageId: string) => {
-            console.log(`📷 onGetImage called: uid=${uid}, imageId=${imageId}`);
+            console.log(`[Controller] 📷 onGetImage called: uid=${uid}, imageId=${imageId}`);
             await new Promise(resolve => setTimeout(resolve, 300));
             const image = mockImages.find(img => img.id === imageId);
             if (!image) throw new Error(`Image ${imageId} not found`);
-            console.log(`📷 onGetImage returning image:`, image.id);
+            console.log(`[Controller] 📷 onGetImage returning image:`, image.id);
             return image;
         },
         getImageList: async (uid: string, eventId: string, page: number) => {
-            console.log(`📋 getImageList called: uid=${uid}, eventId=${eventId}, page=${page}`);
+            console.log(`[Controller] 📋 getImageList called: uid=${uid}, eventId=${eventId}, page=${page}`);
             await new Promise(resolve => setTimeout(resolve, 500));
             const pageSize = 4;
             const startIndex = (page - 1) * pageSize;
             const endIndex = startIndex + pageSize;
             const pageImages = mockImages.slice(startIndex, endIndex);
-            console.log(`📋 getImageList returning ${pageImages.length} images for page ${page}`);
+            console.log(`[Controller] 📋 getImageList returning ${pageImages.length} images for page ${page}`);
             return {
                 gallery: pageImages,
                 limit: pageSize,
@@ -135,15 +135,15 @@ const createMockController = (): Controller => {
             };
         },
         syncConfig: async (uid: string) => { 
-            console.log(`🔄 syncConfig called: uid=${uid}`);
+            console.log(`[Controller] 🔄 syncConfig called: uid=${uid}`);
             await new Promise(resolve => setTimeout(resolve, 200)); 
         },
         handleBack: (uid: string, imageId: string) => { 
-            console.log(`⬅️ handleBack called: uid=${uid}, imageId=${imageId}`);
+            console.log(`[Controller] ⬅️ handleBack called: uid=${uid}, imageId=${imageId}`);
             console.log(`Back to gallery from image: ${imageId}`); 
         },
         getPresets: async (uid: string) => {
-            console.log(`🎨 getPresets called: uid=${uid}`);
+            console.log(`[Controller] 🎨 getPresets called: uid=${uid}`);
             await new Promise(resolve => setTimeout(resolve, 300));
             const presets = [
                 { id: '1', name: 'Warm Sunset', is_default: false, temperature: 15, tint: 5, saturation: 8, vibrance: 12, exposure: 2, contrast: 5, highlights: -10, shadows: 8, whites: 3, blacks: -5, clarity: 4, sharpness: 6 },
@@ -154,37 +154,37 @@ const createMockController = (): Controller => {
             return presets;
         },
         createPreset: async (uid: string, name: string, settings: AdjustmentState) => {
-            console.log(`➕ createPreset called: uid=${uid}, name=${name}`, settings);
+            console.log(`[Controller] ➕ createPreset called: uid=${uid}, name=${name}`, settings);
             await new Promise(resolve => setTimeout(resolve, 500));
             console.log(`Creating preset: ${name}`, settings);
         },
         deletePreset: async (uid: string, presetId: string) => {
-            console.log(`🗑️ deletePreset called: uid=${uid}, presetId=${presetId}`);
+            console.log(`[Controller] 🗑️ deletePreset called: uid=${uid}, presetId=${presetId}`);
             await new Promise(resolve => setTimeout(resolve, 300));
             console.log(`Deleting preset: ${presetId}`);
         },
         updatePreset: async (uid: string, data: Preset) => {
-            console.log(`🔄 updatePreset called: uid=${uid}`, data);
+            console.log(`[Controller] 🔄 updatePreset called: uid=${uid}`, data);
             await new Promise(resolve => setTimeout(resolve, 300));
             console.log(`Updating preset:`, data);
         },
         createEditorConfig: async (uid: string, payload: CreateEditorTaskRequest) => {
-            console.log(`⚙️ createEditorConfig called: uid=${uid}`, payload);
+            console.log(`[Controller] ⚙️ createEditorConfig called: uid=${uid}`, payload);
             await new Promise(resolve => setTimeout(resolve, 200));
             console.log('Creating editor config:', payload);
         },
         getEditorHistory: async (uid: string, imageId: string) => {
-            console.log(`📚 getEditorHistory called: uid=${uid}, imageId=${imageId}`);
+            console.log(`[Controller] 📚 getEditorHistory called: uid=${uid}, imageId=${imageId}`);
             await new Promise(resolve => setTimeout(resolve, 200));
-            return { history: [] };
+            return { current_task_id: "", history: [] };
         },
         getGalleryUpdateTimestamp: async (uid: string, eventId: string) => {
-            console.log(`⏰ getGalleryUpdateTimestamp called: uid=${uid}, eventId=${eventId}`);
+            console.log(`[Controller] ⏰ getGalleryUpdateTimestamp called: uid=${uid}, eventId=${eventId}`);
             await new Promise(resolve => setTimeout(resolve, 100));
             return { gallery: [] };
         },
         setHistoryIndex: async (uid: string, imageId: string, taskId: string) => {
-            console.log(`📍 setHistoryIndex called: uid=${uid}, imageId=${imageId}, taskId=${taskId}`);
+            console.log(`[Controller] 📍 setHistoryIndex called: uid=${uid}, imageId=${imageId}, taskId=${taskId}`);
             await new Promise(resolve => setTimeout(resolve, 100));
             console.log(`Setting history index for image ${imageId} to task ${taskId}`);
         },
@@ -397,6 +397,18 @@ export const HonchoEditorSingleCleanDemo: React.FC = () => {
             console.error('Error creating preset:', error);
         }
     };
+
+    const navigationNext = useCallback(() => {
+        // Must be set to avoid adjust without image
+        setIsImageLoaded(false);
+        actions.navigateNext();
+    }, [actions]);
+
+    const navigationPrev = useCallback(() => {
+        // Must be set to avoid adjust without image
+        setIsImageLoaded(false);
+        actions.navigatePrev();
+    }, [actions]);
     
     const getAdjustmentSummary = (adjustments: AdjustmentState) => {
         const summary = [];
@@ -437,7 +449,7 @@ export const HonchoEditorSingleCleanDemo: React.FC = () => {
                                 <Tooltip title="Previous Image">
                                     <span>
                                         <IconButton
-                                            onClick={actions.navigatePrev}
+                                            onClick={navigationPrev}
                                             disabled={!state.isPrevAvailable || state.isGalleryLoading}
                                         >
                                             <NavigateBefore />
@@ -448,7 +460,7 @@ export const HonchoEditorSingleCleanDemo: React.FC = () => {
                                 <Tooltip title="Next Image">
                                     <span>
                                         <IconButton
-                                            onClick={actions.navigateNext}
+                                            onClick={navigationNext}
                                             disabled={!state.isNextAvailable || state.isGalleryLoading}
                                         >
                                             <NavigateNext />

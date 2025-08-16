@@ -164,6 +164,7 @@ const createMockController = (): Controller => {
             await new Promise(resolve => setTimeout(resolve, 200));
             // Mock history response - return empty history for demo
             return {
+                current_task_id: "",
                 history: []
             };
         },
