@@ -252,8 +252,9 @@ export function useAdjustmentHistory(
     const undo = useCallback(() => {
         if (currentIndex > 0) {
             const newIndex = currentIndex - 1;
+            const newState = history[newIndex];
             setCurrentIndex(newIndex);
-            setCurrentState(history[newIndex]);
+            setCurrentState(newState);
             
             // Exit batch mode when undoing
             if (batchModeRef.current) {
@@ -268,8 +269,9 @@ export function useAdjustmentHistory(
     const redo = useCallback(() => {
         if (currentIndex < history.length - 1) {
             const newIndex = currentIndex + 1;
+            const newState = history[newIndex];
             setCurrentIndex(newIndex);
-            setCurrentState(history[newIndex]);
+            setCurrentState(newState);
         }
     }, [currentIndex, history]);
 
@@ -286,8 +288,9 @@ export function useAdjustmentHistory(
     // Jump to specific index in history
     const jumpToIndex = useCallback((index: number) => {
         if (index >= 0 && index < history.length) {
+            const newState = history[index];
             setCurrentIndex(index);
-            setCurrentState(history[index]);
+            setCurrentState(newState);
             
             // Exit batch mode when jumping
             if (batchModeRef.current) {

@@ -2,6 +2,67 @@
 
 This directory contains demo components for testing and demonstrating the Honcho Editor hooks.
 
+## HonchoEditorSingleDemo
+
+A comprehensive demo of the `useHonchoEditor` hook that shows:
+
+### Features Demonstrated
+- **Single Image Editing**: Uses slide instances with delta adjustments
+- **Image Navigation**: Navigate between images using useGallerySwipe
+- **Adjustment History**: Undo/redo functionality with useAdjustmentHistory
+- **Preset Management**: Apply and create presets using usePreset
+- **Real-time Adjustments**: Color, light, and detail controls with sliders
+- **Zoom Controls**: Zoom in/out, fit to screen functionality
+- **Loading States**: Shows loading indicators during operations
+- **Error Handling**: Displays errors if operations fail
+
+### How to Use
+
+1. **Import the demo**:
+   ```tsx
+   import { HonchoEditorSingleDemo } from '@yogiswara/honcho-editor-ui/hooks/demo';
+   ```
+
+2. **Use in your Next.js page**:
+   ```tsx
+   export default function DemoPage() {
+     return <HonchoEditorSingleDemo />;
+   }
+   ```
+
+### Mock Controller
+
+The demo includes a fully functional mock controller that:
+- Simulates realistic API delays (200-500ms)
+- Returns individual image data for gallery navigation
+- Provides preset management with 5 predefined presets
+- Includes mock editor history functionality
+
+### Testing Scenarios
+
+1. **Image Navigation**: Use prev/next buttons to navigate between images
+2. **Adjustments**: Use sliders to adjust color, light, and detail settings
+3. **History**: Test undo/redo functionality
+4. **Presets**: Apply existing presets or create new ones
+5. **Zoom**: Test zoom controls and mouse wheel zooming
+
+### Visual Features
+
+- Canvas-based image editor integration
+- Real-time adjustment previews
+- Preset cards with apply/delete functionality
+- Responsive grid layout for mobile and desktop
+- Loading states with progress indicators
+- Clean Material-UI interface
+
+### Code Structure
+
+- **Mock Data**: Creates realistic Gallery objects with varying adjustments
+- **Mock Controller**: Implements the full Controller interface
+- **Demo UI**: Comprehensive interface showing all hook integrations
+- **Hook Integration**: Demonstrates useHonchoEditor with useAdjustmentHistory, useGallerySwipe, and usePreset
+- **Responsive Design**: Works well on all screen sizes
+
 ## HonchoEditorBulkDemo
 
 A comprehensive demo of the `useHonchoEditorBulk` hook that shows:
@@ -68,4 +129,4 @@ The demo includes a fully functional mock controller that:
 - Can be easily modified to test different scenarios
 - Perfect for manual testing and integration verification
 
-This demo serves as both a testing tool and documentation of how to properly use the `useHonchoEditorBulk` hook.
+Both demos serve as testing tools and documentation of how to properly use the respective Honcho Editor hooks.
