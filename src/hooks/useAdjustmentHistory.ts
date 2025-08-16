@@ -73,7 +73,7 @@ export interface HistoryConfig {
     /** Set maximum history size */
     setMaxSize: (size: number | 'unlimited') => void;
     /** Enable or disable batch mode */
-    setBatchMode: (enabled: boolean) => void;
+    setBatchMode: (enabled: boolean) => Promise<void>;
     /** Get current memory usage estimate */
     getMemoryUsage: () => number;
 }
@@ -268,11 +268,6 @@ export function useAdjustmentHistory(
 
     // Push new state to history
     const pushState = useCallback((newState: AdjustmentState) => {
-        // Skip if state hasn't changed
-        if (compareAdjustmentStates(newState, currentState)) {
-            return;
-        }
-
         // Always update currentState immediately for smooth UI
         setCurrentState(newState);
 
@@ -485,9 +480,12 @@ export function useAdjustmentHistory(
             batchModeRef.current = true;
             batchStartIndexRef.current = currentIndex;
             batchStartStateRef.current = currentState;
+            console.log("Current start batch ", currentState);
         } else if (!enabled && wasInBatch) {
             // Ending batch mode - commit final state to history
             batchModeRef.current = false;
+
+            console.log("current state", currentState);
             
             // Only add to history if state actually changed from batch start
             if (batchStartStateRef.current && 
@@ -512,10 +510,22 @@ export function useAdjustmentHistory(
                         try {
                             console.log('🔄 Creating editor history in backend for batch mode end');
                             
+                            // Check if we were in the middle of history (not at the latest)
+                            const wasInMiddleOfHistory = batchStartIndexRef.current! < prevHistory.length - 1;
+                            let replaceFromTaskId: string | undefined;
+                            
+                            if (wasInMiddleOfHistory) {
+                                // Get the task_id from the current history entry to use as replace_from
+                                const currentHistoryEntry = prevHistory[batchStartIndexRef.current!];
+                                replaceFromTaskId = currentHistoryEntry?.taskId;
+                                console.log(`📍 In middle of history (index ${batchStartIndexRef.current!}), using replace_from: ${replaceFromTaskId}`);
+                            }
+                            
                             const createEditorConfigPayload: CreateEditorTaskRequest = {
                                 gallery_id: internalOptions.currentImageId,
                                 task_id: taskId,
-                                color_adjustment: convertAdjustmentStateToColorAdjustment(currentState)
+                                color_adjustment: convertAdjustmentStateToColorAdjustment(currentState),
+                                ...(replaceFromTaskId && { replace_from: replaceFromTaskId })
                             };
                             
                             // Create editor config with current adjustments

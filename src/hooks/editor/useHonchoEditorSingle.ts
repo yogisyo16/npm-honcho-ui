@@ -131,9 +131,18 @@ export function useHonchoEditorSingle({
         adjustmentHistory.actions.redo();
     }, [adjustmentHistory.actions.redo]);
     
-    const reset = useCallback(() => {
-        adjustmentHistory.actions.reset(initialAdjustments);
-    }, [adjustmentHistory.actions.reset]);
+    const reset = useCallback(async () => {
+        // Reset means setting all adjustments to 0 and adding it as new history entry
+        // This allows users to undo the reset operation
+        // Reset acts like normal adjustment - each reset creates a new history entry
+        console.log('Resetting adjustments to 0 - adding to history and sending to backend');
+        
+        await adjustmentHistory.config.setBatchMode(true);
+        adjustmentHistory.actions.pushState(initialAdjustments);
+        adjustmentHistory.actions.pushState(initialAdjustments);
+        adjustmentHistory.actions.pushState(initialAdjustments);
+        await adjustmentHistory.config.setBatchMode(false);
+    }, [adjustmentHistory.actions.pushState, adjustmentHistory.config.setBatchMode]);
     
     const loadPresets = useCallback(async () => {
         await presetHook.actions.load();
