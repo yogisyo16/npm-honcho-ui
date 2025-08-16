@@ -140,24 +140,18 @@ export function usePreset(
         setIsLoading(true);
         setError(null);
 
-        console.log('before GOINT to load 2.5. STATE UPDATE: setPresets is being called with:', presets);
         try {
             debugLog('Loading presets from backend...');
             const loadedPresets = await controllerRef.current.getPresets(firebaseUidRef.current);
-            console.log('✅ 3. STATE UPDATE: setPresets is being called with:', loadedPresets);
 
             setPresets(loadedPresets);
-            console.log('✅ 4. STATE UPDATE: setIsInitialized is being called with:', true);
-            console.log('presets thats called:', presets);
             setIsInitialized(true);
 
             debugLog('Presets loaded successfully', { count: loadedPresets.length });
         } catch (err) {
             handleError('load presets', err);
-            console.log('4. catch ERROR!');
             setPresets([]); // Clear presets on error
         } finally {
-            console.log('5. STATE UPDATE: setIsLoading is being called with:', false);
             setIsLoading(false);
         }
     }, [debugLog, handleError]);
