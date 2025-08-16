@@ -192,6 +192,7 @@ export function useAdjustmentHistory(
     const batchModeRef = useRef(internalOptions.enableBatching);
     const batchStartIndexRef = useRef<number | null>(null);
     const batchStartStateRef = useRef<AdjustmentState | null>(null);
+    const batchModeProcessingRef = useRef(false); // Guard against double execution
     
     // Configuration refs - prevent re-renders when config changes
     const maxSizeRef = useRef(internalOptions.maxSize);
@@ -477,27 +478,39 @@ export function useAdjustmentHistory(
     const setBatchMode = useCallback(async (enabled: boolean) => {
         const wasInBatch = batchModeRef.current;
         
+        console.log(`🔧 setBatchMode called: enabled=${enabled}, wasInBatch=${wasInBatch}, currentIndex=${currentIndex}, historyLength=${history.length}`);
+        
         if (enabled && !wasInBatch) {
             // Starting batch mode - save current state as batch start
             batchModeRef.current = true;
             batchStartIndexRef.current = currentIndex;
             batchStartStateRef.current = currentState;
-            console.log("Current start batch ", currentState);
+            console.log("Current start batch ", currentState, `batchStartIndex=${currentIndex}`);
         } else if (!enabled && wasInBatch) {
+            // Guard against double execution
+            if (batchModeProcessingRef.current) {
+                console.log("⚠️ setBatchMode(false) already processing, skipping duplicate call");
+                return;
+            }
+            
             // Ending batch mode - commit final state to history
+            batchModeProcessingRef.current = true;
             batchModeRef.current = false;
-
-            console.log("current state", currentState);
             
             // Only add to history if state actually changed from batch start
             if (batchStartStateRef.current && 
                 !compareAdjustmentStates(currentState, batchStartStateRef.current)) {
                 
+                // Generate a unique task ID for this history entry
+                const taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                
                 setHistory(prevHistory => {
-                    const truncatedHistory = prevHistory.slice(0, batchStartIndexRef.current! + 1);
+                    // Check if we were in the middle of history BEFORE any truncation
+                    // Handle case where batchStartIndexRef.current might be null (e.g., after undo)
+                    const batchStartIndex = batchStartIndexRef.current ?? currentIndex;
+                    const wasInMiddleOfHistory = batchStartIndex < prevHistory.length - 1;
                     
-                    // Generate a unique task ID for this history entry
-                    const taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    const truncatedHistory = prevHistory.slice(0, batchStartIndex + 1);
                     
                     const newHistoryEntry: HistoryEntry = {
                         state: currentState,
@@ -506,54 +519,57 @@ export function useAdjustmentHistory(
                     
                     const newHistory = [...truncatedHistory, newHistoryEntry];
                     setCurrentIndex(newHistory.length - 1);
-
-                    // Call controller to create history in backend
-                    if (internalOptions.controller && internalOptions.firebaseUid && internalOptions.currentImageId) {
-                        try {
-                            console.log('🔄 Creating editor history in backend for batch mode end');
-                            
-                            // Check if we were in the middle of history (not at the latest)
-                            const wasInMiddleOfHistory = batchStartIndexRef.current! < prevHistory.length - 1;
-                            let replaceFromTaskId: string | undefined;
-                            
-                            if (wasInMiddleOfHistory) {
-                                // Get the task_id from the current history entry to use as replace_from
-                                const currentHistoryEntry = prevHistory[batchStartIndexRef.current!];
-                                replaceFromTaskId = currentHistoryEntry?.taskId;
-                                console.log(`📍 In middle of history (index ${batchStartIndexRef.current!}), using replace_from: ${replaceFromTaskId}`);
-                            }
-                            
-                            const createEditorConfigPayload: CreateEditorTaskRequest = {
-                                gallery_id: internalOptions.currentImageId,
-                                task_id: taskId,
-                                color_adjustment: convertAdjustmentStateToColorAdjustment(currentState),
-                                ...(replaceFromTaskId && { replace_from: replaceFromTaskId })
-                            };
-                            
-                            // Create editor config with current adjustments
-                            internalOptions.controller.createEditorConfig(
-                                internalOptions.firebaseUid, 
-                                createEditorConfigPayload
-                            ).then(() => {
-                                console.log('✅ Successfully created editor history in backend');
-                            }).catch((error: unknown) => {
-                                console.error('❌ Failed to create editor history in backend:', error);
-                            });
-                        } catch (error) {
-                            console.error('❌ Error calling controller.createEditorConfig:', error);
-                        }
-                    } else {
-                        if (internalOptions.devWarnings) {
-                            console.warn('⚠️ Controller, firebaseUid, or currentImageId not provided - skipping backend history creation');
-                        }
-                    }
                     
                     return newHistory;
                 });
+
+                // Call controller to create history in backend - OUTSIDE of setHistory callback
+                if (internalOptions.controller && internalOptions.firebaseUid && internalOptions.currentImageId) {
+                    try {
+                        console.log('🔄 Creating editor history in backend for batch mode end');
+                        
+                        let replaceFromTaskId: string | undefined;
+                        const batchStartIndex = batchStartIndexRef.current ?? currentIndex;
+                        const wasInMiddleOfHistory = batchStartIndex < history.length - 1;
+                        
+                        if (wasInMiddleOfHistory) {
+                            // Get the task_id from the original history entry to use as replace_from
+                            const currentHistoryEntry = history[batchStartIndex];
+                            replaceFromTaskId = currentHistoryEntry?.taskId;
+                            console.log(`📍 Was in middle of history (index ${batchStartIndex}), using replace_from: ${replaceFromTaskId}`);
+                        } else {
+                            console.log(`📍 At latest history (index ${batchStartIndex}), no replace_from needed`);
+                        }
+                        
+                        const createEditorConfigPayload: CreateEditorTaskRequest = {
+                            gallery_id: internalOptions.currentImageId,
+                            task_id: taskId,
+                            color_adjustment: convertAdjustmentStateToColorAdjustment(currentState),
+                            ...(replaceFromTaskId && { replace_from: replaceFromTaskId })
+                        };
+                        
+                        // Create editor config with current adjustments
+                        internalOptions.controller.createEditorConfig(
+                            internalOptions.firebaseUid, 
+                            createEditorConfigPayload
+                        ).then(() => {
+                            console.log('✅ Successfully created editor history in backend');
+                        }).catch((error: unknown) => {
+                            console.error('❌ Failed to create editor history in backend:', error);
+                        });
+                    } catch (error) {
+                        console.error('❌ Error calling controller.createEditorConfig:', error);
+                    }
+                } else {
+                    if (internalOptions.devWarnings) {
+                        console.warn('⚠️ Controller, firebaseUid, or currentImageId not provided - skipping backend history creation');
+                    }
+                }
             }
             
             batchStartIndexRef.current = null;
             batchStartStateRef.current = null;
+            batchModeProcessingRef.current = false; // Reset processing flag
         }
     }, [currentIndex, currentState, internalOptions]);
 

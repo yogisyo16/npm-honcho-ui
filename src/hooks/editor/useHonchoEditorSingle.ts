@@ -114,12 +114,10 @@ export function useHonchoEditorSingle({
     }, [adjustmentHistory.config.setBatchMode]);
     
     const startBatchMode = useCallback(() => {
-        console.log('Starting batch mode');
         adjustmentHistory.config.setBatchMode(true);
     }, [adjustmentHistory.config.setBatchMode]);
     
     const endBatchMode = useCallback(() => {
-        console.log('Ending batch mode');
         adjustmentHistory.config.setBatchMode(false);
     }, [adjustmentHistory.config.setBatchMode]);
     

@@ -241,12 +241,22 @@ const AdjustmentSlider: React.FC<{
                 value={value}
                 onChange={(_, newValue) => {
                     const numValue = newValue as number;
+                    onValueChange(field, numValue);
+                }}
+                onMouseDown={() => {
                     if (!isBatchMode) {
                         onDragStart();
                     }
-                    onValueChange(field, numValue);
                 }}
-                onChangeCommitted={() => {
+                onMouseUp={() => {
+                    onDragEnd();
+                }}
+                onTouchStart={() => {
+                    if (!isBatchMode) {
+                        onDragStart();
+                    }
+                }}
+                onTouchEnd={() => {
                     onDragEnd();
                 }}
                 min={min}
