@@ -1,3 +1,8 @@
+// START: delete later
+export { HonchoEditorBulkDemo } from './hooks/demo/HonchoEditorBulkDemo';
+export { HonchoEditorSingleCleanDemo } from './hooks/demo/HonchoEditorSingleCleanDemo';
+// END
+
 export { useHonchoEditorSingle } from './hooks/editor/useHonchoEditorSingle';
 export { useHonchoEditorBulk } from './hooks/editor/useHonchoEditorBulk';
 export type {
