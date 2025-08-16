@@ -84,6 +84,8 @@ export interface BatchHistoryInfo {
 export interface BatchHistoryActions {
   /** Apply adjustment deltas to selected images */
   adjustSelected: (delta: Partial<AdjustmentState>) => void;
+  /** Apply preset values directly to selected images (preserves history) */
+  adjustSelectedWithPreset: (presetAdjustments: AdjustmentState) => void;
   /** Undo last changes to selected images */
   undo: () => void;
   /** Redo next changes to selected images */
@@ -442,6 +444,118 @@ export function useAdjustmentHistoryBatch(
         }
       } catch (error) {
         console.error('[useAdjustmentHistoryBatch] Failed to sync adjustments to backend:', error);
+      }
+    }
+  }, [selectedIds, internalOptions]);
+
+  // Apply preset values directly to selected images - preserves history for each image individually
+  const adjustSelectedWithPreset = useCallback(async (presetAdjustments: AdjustmentState) => {
+    if (selectedIds.length === 0) {
+      if (devWarningsRef.current) {
+        console.warn('[useAdjustmentHistoryBatch] adjustSelectedWithPreset called with no selection');
+      }
+      return;
+    }
+
+    // Store backend operations to perform after state update
+    const backendOperations: Array<{
+      imageId: string;
+      taskId: string;
+      adjustment: AdjustmentState;
+      replaceFromTaskId?: string;
+    }> = [];
+
+    setImageHistories(prevHistories => {
+      return prevHistories.map(imageHistory => {
+        if (!selectedIds.includes(imageHistory.imageId)) {
+          return imageHistory; // No change for unselected images
+        }
+
+        // Get current adjustment from current entry
+        const currentEntry = imageHistory.history.find(entry => entry.id === imageHistory.currentHistoryEntryId);
+        const currentAdjustment = currentEntry?.adjustment || createDefaultAdjustmentState(internalOptions.defaultAdjustmentState);
+        
+        // Apply preset values with clamping (same as adjustSelected logic)
+        const newAdjustment = { ...presetAdjustments };
+        (Object.keys(newAdjustment) as (keyof AdjustmentState)[]).forEach(key => {
+          const presetValue = newAdjustment[key] as number;
+          newAdjustment[key] = Math.max(-100, Math.min(100, presetValue)) as any;
+        });
+
+        // Check if user is in the middle of history (not at latest state)
+        const currentEntryIndex = imageHistory.history.findIndex(entry => entry.id === imageHistory.currentHistoryEntryId);
+        const isInMiddleOfHistory = currentEntryIndex < imageHistory.history.length - 1;
+        let replaceFromTaskId: string | undefined;
+
+        if (isInMiddleOfHistory) {
+          // If user is in middle of history, get the task ID of current position
+          replaceFromTaskId = currentEntry?.id;
+        }
+
+        // Generate new task ID for backend (same as entry ID)
+        const taskId = generateTaskId();
+
+        // Create new entry with task ID
+        const newEntryId = taskId; // Use the same ID for both entry and task
+        const newEntry: HistoryAdjustmentEntry = {
+          id: newEntryId,
+          adjustment: newAdjustment
+        };
+
+        // Prepare backend operation
+        if (internalOptions.controller && internalOptions.firebaseUid) {
+          backendOperations.push({
+            imageId: imageHistory.imageId,
+            taskId,
+            adjustment: newAdjustment,
+            replaceFromTaskId
+          });
+        }
+
+        // Build new history
+        let newHistory: HistoryAdjustmentEntry[];
+        
+        if (isInMiddleOfHistory) {
+          // If in middle of history, truncate from current position and add new entry
+          newHistory = [...imageHistory.history.slice(0, currentEntryIndex + 1), newEntry];
+        } else {
+          // If at end of history, just add new entry
+          newHistory = [...imageHistory.history, newEntry];
+        }
+        
+        // Trim if needed
+        const maxSize = maxSizeRef.current;
+        const trimmedHistory = typeof maxSize === 'number' && newHistory.length > maxSize
+          ? newHistory.slice(-maxSize)
+          : newHistory;
+
+        return {
+          ...imageHistory,
+          history: trimmedHistory,
+          currentHistoryEntryId: newEntryId // Update current pointer
+        };
+      });
+    });
+
+    // Perform backend operations asynchronously
+    if (backendOperations.length > 0 && internalOptions.controller && internalOptions.firebaseUid) {
+      try {
+        const promises = backendOperations.map(async (operation) => {
+          await internalOptions.controller!.createEditorConfig(internalOptions.firebaseUid!, {
+            gallery_id: operation.imageId,
+            task_id: operation.taskId,
+            color_adjustment: mapAdjustmentStateToColorAdjustment(operation.adjustment),
+            replace_from: operation.replaceFromTaskId
+          });
+        });
+
+        await Promise.all(promises);
+        
+        if (devWarningsRef.current) {
+          console.log(`[useAdjustmentHistoryBatch] Synced ${backendOperations.length} preset adjustments to backend`);
+        }
+      } catch (error) {
+        console.error('[useAdjustmentHistoryBatch] Failed to sync preset adjustments to backend:', error);
       }
     }
   }, [selectedIds, internalOptions]);
@@ -1050,6 +1164,7 @@ export function useAdjustmentHistoryBatch(
   // Actions object - stabilized with useMemo
   const actions: BatchHistoryActions = useMemo(() => ({
     adjustSelected,
+    adjustSelectedWithPreset,
     undo,
     redo,
     reset,
@@ -1063,7 +1178,7 @@ export function useAdjustmentHistoryBatch(
     getCurrentBatch,
     syncBatch
   }), [
-    adjustSelected, undo, redo, reset,
+    adjustSelected, adjustSelectedWithPreset, undo, redo, reset,
     setSelection, syncAdjustment, toggleSelection, selectAll, clearSelection,
     jumpToIndex, clearHistory, getCurrentBatch, syncBatch
   ]);

@@ -2,11 +2,12 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { SelectChangeEvent } from "@mui/material";
-import { AdjustmentState, Controller } from './useHonchoEditor';
+import { AdjustmentState, Controller, Preset } from './useHonchoEditor';
 import { ColorAdjustment, Gallery } from '../../hooks/editor/type'
 import { useAdjustmentHistoryBatch, ImageAdjustmentConfig  } from '../useAdjustmentHistoryBatch';
 import { AdjustmentValues } from "../../lib/editor/honcho-editor";
 import { usePaging } from "../usePaging";
+import { usePreset } from "../usePreset";
 
 export interface PhotoData {
     key: string;
@@ -59,6 +60,35 @@ function mapColorAdjustmentToAdjustmentState(adj: ColorAdjustment | undefined): 
     };
 }
 
+// Helper function to convert Preset to AdjustmentState
+const presetToAdjustmentState = (preset: Preset): AdjustmentState => {
+    return {
+        tempScore: preset.temperature || 0,
+        tintScore: preset.tint || 0,
+        vibranceScore: preset.vibrance || 0,
+        saturationScore: preset.saturation || 0,
+        exposureScore: preset.exposure || 0,
+        highlightsScore: preset.highlights || 0,
+        shadowsScore: preset.shadows || 0,
+        whitesScore: preset.whites || 0,
+        blacksScore: preset.blacks || 0,
+        contrastScore: preset.contrast || 0,
+        clarityScore: preset.clarity || 0,
+        sharpnessScore: preset.sharpness || 0,
+    };
+};
+
+// Helper function to compare adjustment states
+const adjustmentsMatch = (a: AdjustmentState, b: AdjustmentState): boolean => {
+    const keys: (keyof AdjustmentState)[] = [
+        'tempScore', 'tintScore', 'vibranceScore', 'saturationScore',
+        'exposureScore', 'highlightsScore', 'shadowsScore', 'whitesScore',
+        'blacksScore', 'contrastScore', 'clarityScore', 'sharpnessScore'
+    ];
+
+    return keys.every(key => (a[key] || 0) === (b[key] || 0));
+};
+
 export function useHonchoEditorBulk(controller: Controller, eventID: string, firebaseUid: string) {
     const { currentBatch, selectedIds, actions: batchActions, historyInfo } = useAdjustmentHistoryBatch({
         controller,
@@ -71,11 +101,57 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
         autoReset: false  // Prevent auto-reset to avoid loops
     });
 
+    // Preset management
+    const { presets, actions: presetActions } = usePreset(controller, firebaseUid, {
+        autoLoad: true,
+        devWarnings: true
+    });
+
     // Track which images have been synced to prevent loops
     const lastSyncedImageIds = useRef<Set<string>>(new Set());
 
     // State for Bulk Editing  
-    const [selectedBulkPreset, setSelectedBulkPreset] = useState<string>('preset1');
+    const [selectedBulkPreset, setSelectedBulkPreset] = useState<string>('');
+
+    // Calculate active preset based on selected images' adjustments
+    const activePreset = useMemo(() => {
+        if (selectedIds.length === 0) {
+            return null;
+        }
+
+        // Get adjustments for all selected images
+        const selectedAdjustments: AdjustmentState[] = selectedIds.map(imageId => {
+            return currentBatch.allImages[imageId] || {
+                tempScore: 0, tintScore: 0, vibranceScore: 0, saturationScore: 0,
+                exposureScore: 0, highlightsScore: 0, shadowsScore: 0, whitesScore: 0,
+                blacksScore: 0, contrastScore: 0, clarityScore: 0, sharpnessScore: 0,
+            };
+        });
+
+        // Check if all selected images have the same adjustments
+        const firstAdjustment = selectedAdjustments[0];
+        const allSameAdjustments = selectedAdjustments.every(adj => 
+            adjustmentsMatch(adj, firstAdjustment)
+        );
+
+        if (!allSameAdjustments) {
+            // Selected images have different adjustments
+            return null;
+        }
+
+        // Find preset that matches the common adjustment state
+        const matchingPreset = presets.find(preset => {
+            const presetAdjustments = presetToAdjustmentState(preset);
+            return adjustmentsMatch(presetAdjustments, firstAdjustment);
+        });
+
+        return matchingPreset || null;
+    }, [selectedIds, currentBatch.allImages, presets]);
+
+    // Update selectedBulkPreset when activePreset changes
+    useEffect(() => {
+        setSelectedBulkPreset(activePreset?.id || '');
+    }, [activePreset]);
 
     // Use loading states from usePaging instead of local state
     const isLoading = info.isLoading;
@@ -131,7 +207,22 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
         controller.handleBack(firebaseUid, lastSelectedId);
     }, [controller, firebaseUid, selectedIds]);
     
-    const handleSelectBulkPreset = (event: SelectChangeEvent<string>) => setSelectedBulkPreset(event.target.value as string);
+    const handleSelectBulkPreset = useCallback((event: SelectChangeEvent<string>) => {
+        const presetId = event.target.value as string;
+        setSelectedBulkPreset(presetId);
+
+        if (presetId && selectedIds.length > 0) {
+            // Find the preset
+            const preset = presets.find(p => p.id === presetId);
+            if (preset) {
+                // Convert preset to adjustment state
+                const presetAdjustments = presetToAdjustmentState(preset);
+                
+                // Apply preset directly to all selected images using the clean action
+                batchActions.adjustSelectedWithPreset(presetAdjustments);
+            }
+        }
+    }, [presets, selectedIds, batchActions]);
     // This factory creates functions that adjust a value for all selected images
     
     const createRelativeAdjuster = useCallback((key: keyof AdjustmentState, amount: number) => () => {
@@ -265,12 +356,20 @@ export function useHonchoEditorBulk(controller: Controller, eventID: string, fir
         // Gallery Handlers
         handleBackCallbackBulk,
 
+        // Preset functionality
+        presets,
         selectedBulkPreset,
+        activePreset,
+        handleSelectBulkPreset,
+        
+        // Preset creation handlers
+        handleOpenPresetModal: () => {}, // TODO: Implement preset modal for bulk editing
+        presetActions, // Expose preset actions for create/rename/delete
+        
         handleToggleImageSelection: batchActions.toggleSelection,
         handleLoadMore: actions.loadMore,
         handleRefresh: actions.refresh,
 
-        handleSelectBulkPreset,
         // Adjustment
         handleBulkTempDecreaseMax,
         handleBulkTempDecrease,

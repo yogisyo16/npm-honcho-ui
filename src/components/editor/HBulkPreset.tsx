@@ -81,10 +81,15 @@ export default function HBulkPreset(props: Props) {
                                 onChange={props.onSelectPreset}
                                 IconComponent={CustomSelectIcon}
                                 renderValue={(selectedId) => {
+                                    // Handle empty selection case
+                                    if (!selectedId) {
+                                        return <Typography sx={{ ...typography.bodyMedium, color: colors.surface, opacity: 0.7 }}>Select Preset</Typography>;
+                                    }
+                                    
                                     // Uses props.presets to find the name
                                     const selectedPresetObject = props.presets.find(p => p.id === selectedId);
                                     if (!selectedPresetObject) {
-                                        return <Typography sx={{ ...typography.bodyMedium }}>Select</Typography>;
+                                        return <Typography sx={{ ...typography.bodyMedium, color: colors.surface, opacity: 0.7 }}>Select Preset</Typography>;
                                     }
                                     return <Typography sx={{ ...typography.bodyMedium }}>{selectedPresetObject.name}</Typography>;
                                 }}
@@ -93,6 +98,21 @@ export default function HBulkPreset(props: Props) {
                                 }}
                                 sx={{ border: `1px solid ${colors.outlineVariant}`, height: '44px', width: '215px', boxShadow: 'none' }}
                             >
+                                {/* Add empty option for no preset selected */}
+                                <MenuItem value="" sx={{ borderRadius: '4px', py: '4px', my: '0px', px: '0px', mx: '0px'}}>
+                                    <Stack direction="row" justifyContent="center" alignItems="center" sx={{ width: '100%', py: '0px', px: '0px', mx: '0px', my: '4px'}}>
+                                        <Typography sx={{ 
+                                            width: '100%', 
+                                            textAlign: 'center',
+                                            color: colors.surface, 
+                                            opacity: 0.7,
+                                            ...typography.bodyMedium 
+                                        }}>
+                                            No Preset
+                                        </Typography>
+                                    </Stack>
+                                </MenuItem>
+                                
                                 {/* Maps over props.presets */}
                                 {props.presets.map((preset) => (
                                     <MenuItem key={preset.id} value={preset.id} sx={{ borderRadius: '4px', py: '4px', my: '0px', px: '0px', mx: '0px'}}>

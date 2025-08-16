@@ -102,24 +102,26 @@ export function usePreset(
     const [error, setError] = useState<string | null>(null);
     const [isInitialized, setIsInitialized] = useState(false);
 
-    // Track controller and firebaseUid changes with stable refs
-    const controllerRef = useRef(controller);
-    const firebaseUidRef = useRef(firebaseUid);
-    
-    // Only update refs when values actually change
-    if (controllerRef.current !== controller) {
-        controllerRef.current = controller;
-    }
-    if (firebaseUidRef.current !== firebaseUid) {
-        firebaseUidRef.current = firebaseUid;
-    }
-
     // Helper function to log debug messages - memoized to prevent re-renders
     const debugLog = useCallback((message: string, data?: any) => {
         if (memoizedOptions.devWarnings) {
             console.log(`[usePreset] ${message}`, data || '');
         }
     }, [memoizedOptions.devWarnings]);
+
+    // Stable references for controller and firebaseUid to detect actual changes
+    const stableControllerRef = useRef(controller);
+    const stableFirebaseUidRef = useRef(firebaseUid);
+    const prevStableControllerRef = useRef(controller);
+    const prevStableFirebaseUidRef = useRef(firebaseUid);
+
+    // Update refs only when values actually change (by reference)
+    if (stableControllerRef.current !== controller) {
+        stableControllerRef.current = controller;
+    }
+    if (stableFirebaseUidRef.current !== firebaseUid) {
+        stableFirebaseUidRef.current = firebaseUid;
+    }
 
     // Helper function to handle errors
     const handleError = useCallback((operation: string, error: any) => {
@@ -132,7 +134,7 @@ export function usePreset(
     // Load presets from backend
     const load = useCallback(async () => {
         console.log("Load Presets Get Function Called");
-        if (!controllerRef.current || !firebaseUidRef.current) {
+        if (!stableControllerRef.current || !stableFirebaseUidRef.current) {
             debugLog('Load skipped: missing controller or firebaseUid');
             return;
         }
@@ -142,7 +144,7 @@ export function usePreset(
 
         try {
             debugLog('Loading presets from backend...');
-            const loadedPresets = await controllerRef.current.getPresets(firebaseUidRef.current);
+            const loadedPresets = await stableControllerRef.current.getPresets(stableFirebaseUidRef.current);
 
             setPresets(loadedPresets);
             setIsInitialized(true);
@@ -158,7 +160,7 @@ export function usePreset(
 
     // Fire-and-forget version of load for internal use
     const loadInBackground = useCallback(() => {
-        if (!controllerRef.current || !firebaseUidRef.current) {
+        if (!stableControllerRef.current || !stableFirebaseUidRef.current) {
             debugLog('Background load skipped: missing controller or firebaseUid');
             return;
         }
@@ -166,15 +168,15 @@ export function usePreset(
         debugLog('Background loading presets...');
         
         // Don't set loading state for background operations
-        controllerRef.current.getPresets(firebaseUidRef.current)
-            .then(loadedPresets => {
+        stableControllerRef.current.getPresets(stableFirebaseUidRef.current)
+            .then((loadedPresets: Preset[]) => {
                 setPresets(loadedPresets);
                 if (!isInitialized) {
                     setIsInitialized(true);
                 }
                 debugLog('Background presets loaded successfully', { count: loadedPresets.length });
             })
-            .catch(err => {
+            .catch((err: any) => {
                 debugLog('Background load failed:', err);
                 // Don't set error state for background operations
             });
@@ -183,7 +185,7 @@ export function usePreset(
     // Create a new preset
     const create = useCallback(async (name: string, settings: AdjustmentState): Promise<Preset | null> => {
         console.log("Create Preset Get Function Called");
-        if (!controllerRef.current || !firebaseUidRef.current) {
+        if (!stableControllerRef.current || !stableFirebaseUidRef.current) {
             debugLog('Create skipped: missing controller or firebaseUid');
             return null;
         }
@@ -206,8 +208,8 @@ export function usePreset(
             debugLog('Creating preset...', { name, settings });
             
             // Fire the create request but don't wait for preset data in response
-            await controllerRef.current.createPreset(
-                firebaseUidRef.current,
+            await stableControllerRef.current.createPreset(
+                stableFirebaseUidRef.current,
                 name,
                 settings
             );
@@ -254,7 +256,7 @@ export function usePreset(
 
     // Rename an existing preset
     const rename = useCallback(async (presetId: string, newName: string): Promise<boolean> => {
-        if (!controllerRef.current || !firebaseUidRef.current) {
+        if (!stableControllerRef.current || !stableFirebaseUidRef.current) {
             debugLog('Rename skipped: missing controller or firebaseUid');
             return false;
         }
@@ -283,7 +285,7 @@ export function usePreset(
             debugLog('Renaming preset...', { presetId, oldName: existingPreset.name, newName });
 
             const updatedPreset = { ...existingPreset, name: newName };
-            await controllerRef.current.updatePreset(firebaseUidRef.current, updatedPreset);
+            await stableControllerRef.current.updatePreset(stableFirebaseUidRef.current, updatedPreset);
 
             // Update local state
             setPresets(prev => prev.map(p => p.id === presetId ? updatedPreset : p));
@@ -301,7 +303,7 @@ export function usePreset(
     // Delete a preset
     const deletePreset = useCallback(async (presetId: string): Promise<boolean> => {
         console.log("Delete Presets Get Function Called");
-        if (!controllerRef.current || !firebaseUidRef.current) {
+        if (!stableControllerRef.current || !stableFirebaseUidRef.current) {
             debugLog('Delete skipped: missing controller or firebaseUid');
             return false;
         }
@@ -318,7 +320,7 @@ export function usePreset(
         try {
             debugLog('Deleting preset...', { presetId, name: existingPreset.name });
 
-            await controllerRef.current.deletePreset(firebaseUidRef.current, presetId);
+            await stableControllerRef.current.deletePreset(stableFirebaseUidRef.current, presetId);
 
             // Remove from local state
             setPresets(prev => prev.filter(p => p.id !== presetId));
@@ -390,21 +392,27 @@ export function usePreset(
     
     // Auto-load presets on initialization - stable dependencies
     useEffect(() => {
-        if (memoizedOptions.autoLoad && controller && firebaseUid && !isInitialized) {
+        if (memoizedOptions.autoLoad && stableControllerRef.current && stableFirebaseUidRef.current && !isInitialized) {
             debugLog('Auto-loading presets...');
             load();
         }
-    }, [memoizedOptions.autoLoad, controller, firebaseUid, isInitialized, load, debugLog]);
+    }, [memoizedOptions.autoLoad, isInitialized, load]);
 
-    // Clear state when controller or firebaseUid changes
+    // Clear state when controller or firebaseUid changes - but only when they actually change
     useEffect(() => {
-        if (isInitialized) {
+        const controllerChanged = prevStableControllerRef.current !== stableControllerRef.current;
+        const firebaseUidChanged = prevStableFirebaseUidRef.current !== stableFirebaseUidRef.current;
+        
+        if ((controllerChanged || firebaseUidChanged) && isInitialized) {
             debugLog('Controller or firebaseUid changed, clearing state');
-            // setPresets([]);
             setError(null);
             setIsInitialized(false);
+            // Don't clear presets to avoid flicker - they'll be reloaded
         }
-    }, [controller, firebaseUid, isInitialized, debugLog]);
+        
+        prevStableControllerRef.current = stableControllerRef.current;
+        prevStableFirebaseUidRef.current = stableFirebaseUidRef.current;
+    }, [stableControllerRef.current, stableFirebaseUidRef.current, isInitialized]);
 
     // Preset info object - memoized to prevent re-renders
     const info: PresetInfo = useMemo(() => ({
